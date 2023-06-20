@@ -3,6 +3,8 @@
  */
 using System;
 using System.Buffers;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace ValveResourceFormat.Compression
 {
@@ -13,6 +15,7 @@ namespace ValveResourceFormat.Compression
         private const int VertexBlockSizeBytes = 8192;
         private const int VertexBlockMaxSize = 256;
         private const int ByteGroupSize = 16;
+        private const int ByteGroupDecodeLimit = 24;
         private const int TailMaxSize = 32;
 
         private static int GetVertexBlockSize(int vertexSize)
@@ -26,6 +29,102 @@ namespace ValveResourceFormat.Compression
         private static byte Unzigzag8(byte v)
         {
             return (byte)(-(v & 1) ^ (v >> 1));
+        }
+
+        private static readonly byte[][] DecodeBytesGroupShuffle = new byte[256][];
+        private static readonly byte[] DecodeBytesGroupCount = new byte[256];
+
+        static MeshOptimizerVertexDecoder()
+        {
+            for (var mask = 0; mask < 256; mask++)
+            {
+                var shuffle = new byte[8];
+                byte count = 0;
+
+                for (var i = 0; i < 8; i++)
+                {
+                    var maski = (mask >> i) & 1;
+                    shuffle[i] = maski != 0 ? count : (byte)0x80;
+                    count += (byte)maski;
+                }
+
+                DecodeBytesGroupShuffle[mask] = shuffle;
+                DecodeBytesGroupCount[mask] = count;
+            }
+        }
+
+        private static Vector128<byte> DecodeShuffleMask(byte mask0, byte mask1)
+        {
+            var m0 = DecodeBytesGroupShuffle[mask0];
+            var m1 = DecodeBytesGroupShuffle[mask1];
+            var sm0 = Vector128.Create(m0[0], m0[1], m0[2], m0[3], m0[4], m0[5], m0[6], m0[7], 0, 0, 0, 0, 0, 0, 0, 0);
+            var sm1 = Vector128.Create(m1[0], m1[1], m1[2], m1[3], m1[4], m1[5], m1[6], m1[7], 0, 0, 0, 0, 0, 0, 0, 0);
+            var sm1off = Vector128.Create(DecodeBytesGroupCount[mask0]);
+
+            var sm1r = Sse2.Add(sm1, sm1off);
+
+            return Sse2.UnpackLow(sm0.AsInt64(), sm1r.AsInt64()).AsByte();
+        }
+
+        private static Span<byte> DecodeBytesGroupSimd(Span<byte> data, Span<byte> destination, int bitslog2)
+        {
+            switch (bitslog2)
+            {
+                case 0:
+                    for (var k = 0; k < ByteGroupSize; k++)
+                    {
+                        destination[k] = 0;
+                    }
+
+                    return data;
+                case 1:
+                    {
+                        var sel2 = Vector128.Create(data[0], data[1], data[2], data[3], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                        var rest = Vector128.Create(data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17], data[18], data[19]);
+
+                        var sel22 = Sse2.UnpackLow(Sse2.ShiftRightLogical(sel2.AsInt16(), 4).AsByte(), sel2);
+                        var sel2222 = Sse2.UnpackLow(Sse2.ShiftRightLogical(sel22.AsInt16(), 2).AsByte(), sel22);
+                        var sel = Sse2.And(sel2222, Vector128.Create((byte)3));
+
+                        var mask = Sse2.CompareEqual(sel, Vector128.Create((byte)3));
+                        var mask16 = Sse2.MoveMask(mask);
+                        var mask0 = (byte)(mask16 & 255);
+                        var mask1 = (byte)(mask16 >> 8);
+
+                        var shuf = DecodeShuffleMask(mask0, mask1);
+                        var result = Sse2.Or(Ssse3.Shuffle(rest, shuf), Sse2.AndNot(mask, sel));
+
+                        Vector128.TryCopyTo(result, destination);
+
+                        return data[(4 + DecodeBytesGroupCount[mask0] + DecodeBytesGroupCount[mask1])..];
+                    }
+                case 2:
+                    {
+                        var sel4 = Vector128.Create(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], 0, 0, 0, 0, 0, 0, 0, 0);
+                        var rest = Vector128.Create(data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17], data[18], data[19], data[20], data[21], data[22], data[23]);
+
+                        var sel44 = Sse2.UnpackLow(Sse2.ShiftRightLogical(sel4.AsInt16(), 4).AsByte(), sel4);
+                        var sel = Sse2.And(sel44, Vector128.Create((byte)15));
+
+                        var mask = Sse2.CompareEqual(sel, Vector128.Create((byte)15));
+                        var mask16 = Sse2.MoveMask(mask);
+                        var mask0 = (byte)(mask16 & 255);
+                        var mask1 = (byte)(mask16 >> 8);
+
+                        var shuf = DecodeShuffleMask(mask0, mask1);
+                        var result = Sse2.Or(Ssse3.Shuffle(rest, shuf), Sse2.AndNot(mask, sel));
+
+                        Vector128.TryCopyTo(result, destination);
+
+                        return data[(8 + DecodeBytesGroupCount[mask0] + DecodeBytesGroupCount[mask1])..];
+                    }
+                case 3:
+                    data[..ByteGroupSize].CopyTo(destination);
+
+                    return data[ByteGroupSize..];
+                default:
+                    throw new ArgumentException("Unexpected bit length");
+            }
         }
 
         private static Span<byte> DecodeBytesGroup(Span<byte> data, Span<byte> destination, int bitslog2)
@@ -131,6 +230,51 @@ namespace ValveResourceFormat.Compression
             }
         }
 
+
+        private static Span<byte> DecodeBytesSimd(Span<byte> data, Span<byte> destination)
+        {
+            if (destination.Length % ByteGroupSize != 0)
+            {
+                throw new ArgumentException("Expected data length to be a multiple of ByteGroupSize.");
+            }
+
+            var headerSize = ((destination.Length / ByteGroupSize) + 3) / 4;
+            var header = data[..];
+
+            data = data[headerSize..];
+
+            int i = 0;
+
+            // fast-path: process 4 groups at a time, do a shared bounds check - each group reads <=24b
+            for (; i + ByteGroupSize * 4 <= destination.Length && data.Length >= ByteGroupDecodeLimit * 4; i += ByteGroupSize * 4)
+            {
+                var header_offset = i / ByteGroupSize;
+                var header_byte = header[header_offset / 4];
+
+                data = DecodeBytesGroupSimd(data, destination[(i + ByteGroupSize * 0)..], (header_byte >> 0) & 3);
+                data = DecodeBytesGroupSimd(data, destination[(i + ByteGroupSize * 1)..], (header_byte >> 2) & 3);
+                data = DecodeBytesGroupSimd(data, destination[(i + ByteGroupSize * 2)..], (header_byte >> 4) & 3);
+                data = DecodeBytesGroupSimd(data, destination[(i + ByteGroupSize * 3)..], (header_byte >> 6) & 3);
+            }
+
+            // slow-path: process remaining groups
+            for (; i < destination.Length; i += ByteGroupSize)
+            {
+                if (data.Length < TailMaxSize)
+                {
+                    throw new InvalidOperationException("Cannot decode");
+                }
+
+                var headerOffset = i / ByteGroupSize;
+
+                var bitslog2 = (header[headerOffset / 4] >> (headerOffset % 4 * 2)) & 3;
+
+                data = DecodeBytesGroupSimd(data, destination[i..], bitslog2);
+            }
+
+            return data;
+        }
+
         private static Span<byte> DecodeBytes(Span<byte> data, Span<byte> destination)
         {
             if (destination.Length % ByteGroupSize != 0)
@@ -178,7 +322,8 @@ namespace ValveResourceFormat.Compression
 
                 for (var k = 0; k < vertexSize; ++k)
                 {
-                    data = DecodeBytes(data, buffer[..vertexCountAligned]);
+                    //data = DecodeBytes(data, buffer[..vertexCountAligned]);
+                    data = DecodeBytesSimd(data, buffer[..vertexCountAligned]);
 
                     var vertexOffset = k;
 
