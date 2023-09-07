@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -76,13 +77,14 @@ namespace GUI
             searchForm = new SearchForm();
 
             Settings.Load();
+        }
 
-            var args = Environment.GetCommandLineArgs();
-
+        public void HandleArgs(ReadOnlyCollection<string> args)
+        {
             // Handle vpk: protocol
-            if (args.Length > 1 && args[1].StartsWith("vpk:", StringComparison.InvariantCulture))
+            if (args.Count > 0 && args[0].StartsWith("vpk:", StringComparison.InvariantCulture))
             {
-                var file = string.Join(" ", args[1..])[4..]; // Strip executable path, and then strip vpk: prefix
+                var file = string.Join(" ", args)[4..]; // Strip executable path, and then strip vpk: prefix
                 file = System.Net.WebUtility.UrlDecode(file);
 
                 var innerFilePosition = file.LastIndexOf(".vpk:", StringComparison.InvariantCulture);
@@ -144,7 +146,7 @@ namespace GUI
                 return;
             }
 
-            for (var i = 1; i < args.Length; i++)
+            for (var i = 0; i < args.Count; i++)
             {
                 var file = args[i];
                 if (!File.Exists(file))

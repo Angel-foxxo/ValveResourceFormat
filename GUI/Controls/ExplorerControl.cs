@@ -313,7 +313,7 @@ namespace GUI.Controls
 
             if (File.Exists(path))
             {
-                Program.MainForm.OpenFile(path);
+                Program.Instance.OpenFile(path);
             }
             else if (Directory.Exists(path))
             {

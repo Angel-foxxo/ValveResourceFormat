@@ -93,7 +93,7 @@ namespace GUI.Controls
                 FullScreenForm = new Form
                 {
                     Text = "Source 2 Viewer Fullscreen",
-                    Icon = Program.MainForm.Icon,
+                    Icon = Program.Instance.Icon,
                     ControlBox = false,
                     FormBorderStyle = FormBorderStyle.None,
                     WindowState = FormWindowState.Maximized

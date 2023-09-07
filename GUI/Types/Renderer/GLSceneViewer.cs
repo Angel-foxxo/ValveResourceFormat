@@ -445,8 +445,8 @@ namespace GUI.Types.Renderer
 
         private void SetRenderMode(string renderMode)
         {
-            var title = Program.MainForm.Text;
-            Program.MainForm.Text = "Source 2 Viewer - Reloading shaders…";
+            var title = Program.Instance.Text;
+            Program.Instance.Text = "Source 2 Viewer - Reloading shaders…";
 
             try
             {
@@ -469,7 +469,7 @@ namespace GUI.Types.Renderer
             }
             finally
             {
-                Program.MainForm.Text = title;
+                Program.Instance.Text = title;
             }
         }
     }

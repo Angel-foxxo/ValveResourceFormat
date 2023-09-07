@@ -332,7 +332,7 @@ namespace GUI.Types.Renderer
 
             FullScreenForm?.Close();
 
-            Program.MainForm.OpenFile(foundFile.Context, foundFile.PackageEntry).ContinueWith(
+            Program.Instance.OpenFile(foundFile.Context, foundFile.PackageEntry).ContinueWith(
                 t =>
                 {
                     var glViewer = t.Result.Controls.OfType<TabControl>().FirstOrDefault()?

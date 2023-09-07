@@ -64,7 +64,7 @@ namespace GUI.Types.Viewers
                 resTabs.SelectedTab = textTab;
             }
 
-            Program.MainForm.Invoke((MethodInvoker)(() =>
+            Program.Instance.Invoke((MethodInvoker)(() =>
             {
                 bv.SetBytes(input);
             }));

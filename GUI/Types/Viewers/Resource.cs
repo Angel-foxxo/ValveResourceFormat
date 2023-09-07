@@ -208,7 +208,7 @@ namespace GUI.Types.Viewers
 
                         if (foundFile.Context != null)
                         {
-                            Program.MainForm.OpenFile(foundFile.Context, foundFile.PackageEntry);
+                            Program.Instance.OpenFile(foundFile.Context, foundFile.PackageEntry);
                         }
                     }
 
@@ -322,7 +322,7 @@ namespace GUI.Types.Viewers
             };
             tab2.Controls.Add(bv);
 
-            Program.MainForm.Invoke((MethodInvoker)(() =>
+            Program.Instance.Invoke((MethodInvoker)(() =>
             {
                 resource.Reader.BaseStream.Position = block.Offset;
                 bv.SetBytes(resource.Reader.ReadBytes((int)block.Size));

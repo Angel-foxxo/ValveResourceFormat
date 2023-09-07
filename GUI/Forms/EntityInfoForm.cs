@@ -8,7 +8,7 @@ namespace GUI.Forms
         {
             InitializeComponent();
 
-            Icon = Program.MainForm.Icon;
+            Icon = Program.Instance.Icon;
         }
 
         public void AddColumn(string name, string value)

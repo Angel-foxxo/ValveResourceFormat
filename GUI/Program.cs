@@ -1,41 +1,80 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.VisualBasic.ApplicationServices;
 
 namespace GUI
 {
-    static class Program
+    class Program : WindowsFormsApplicationBase
     {
-        public static MainForm MainForm { get; private set; }
+        public static MainForm Instance { get; private set; }
 
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        internal static void Main()
+        internal static void Main(string[] args)
         {
-            AppDomain.CurrentDomain.UnhandledException += UnhandledException;
-            Application.ThreadException += ThreadException;
+            var app = new Program();
+            app.Run(args);
+        }
+
+        public Program()
+        {
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+            Application.ThreadException += OnThreadException;
 
             // Set invariant culture so we have consistent localization (e.g. dots do not get encoded as commas)
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-            Application.EnableVisualStyles();
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-            MainForm = new MainForm();
-            Application.Run(MainForm);
+            IsSingleInstance = true;
+            EnableVisualStyles = true;
+            Instance = new MainForm();
+            MainForm = Instance;
         }
 
-        private static void ThreadException(object sender, ThreadExceptionEventArgs e)
+        protected override bool OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            Instance.HandleArgs(e.CommandLine);
+
+            return true;
+        }
+
+        protected override void OnStartupNextInstance(StartupNextInstanceEventArgs e)
+        {
+            //base.OnStartupNextInstance(e);
+
+            Instance.Invoke(() =>
+            {
+                if (e.BringToForeground)
+                {
+                    if (Instance.WindowState == FormWindowState.Minimized)
+                    {
+                        Instance.WindowState = FormWindowState.Normal;
+                    }
+
+                    Instance.Activate();
+                    Instance.BringToFront();
+                }
+
+                Instance.HandleArgs(e.CommandLine);
+            });
+        }
+
+        private static void OnThreadException(object sender, ThreadExceptionEventArgs e)
         {
             ShowError(e.Exception);
         }
 
-        private static void UnhandledException(object sender, UnhandledExceptionEventArgs ex)
+        private static void OnUnhandledException(object sender, System.UnhandledExceptionEventArgs ex)
         {
             ShowError((Exception)ex.ExceptionObject);
         }

@@ -381,7 +381,7 @@ namespace GUI.Types.Viewers
                         };
                         gpuSourceTab.Controls.Add(sourceBv);
 
-                        Program.MainForm.Invoke((MethodInvoker)(() =>
+                        Program.Instance.Invoke((MethodInvoker)(() =>
                         {
                             sourceBv.SetBytes(gpuSource.Sourcebytes);
                         }));
@@ -432,7 +432,7 @@ namespace GUI.Types.Viewers
                         resTabs.TabPages.Add(textTab);
                         resTabs.SelectedTab = textTab;
 
-                        Program.MainForm.Invoke((MethodInvoker)(() =>
+                        Program.Instance.Invoke((MethodInvoker)(() =>
                         {
                             sourceBv.SetBytes(vulkanSource.GetSpirvBytes());
                             metadataBv.SetBytes(vulkanSource.GetMetaDataBytes());

@@ -342,13 +342,13 @@ namespace GUI.Types.Viewers
             {
                 var file = node.PackageEntry;
                 var vrfGuiContext = new VrfGuiContext(file.GetFullPath(), VrfGuiContext);
-                Program.MainForm.OpenFile(vrfGuiContext, file);
+                Program.Instance.OpenFile(vrfGuiContext, file);
             }
         }
 
         private void VPK_OnContextMenu(object sender, TreeNodeMouseClickEventArgs e)
         {
-            Program.MainForm.VpkContextMenu.Show(e.Node.TreeView, e.Location);
+            Program.Instance.VpkContextMenu.Show(e.Node.TreeView, e.Location);
         }
 
         /// <summary>
@@ -367,7 +367,7 @@ namespace GUI.Types.Viewers
                     node.TreeView.SelectedNode = node;
                 }
 
-                Program.MainForm.VpkContextMenu.Show(listViewItem.ListView, e.Location);
+                Program.Instance.VpkContextMenu.Show(listViewItem.ListView, e.Location);
             }
         }
     }

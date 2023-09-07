@@ -326,7 +326,7 @@ namespace GUI.Types.Renderer
                     var foundFile = GuiContext.FileLoader.FindFileWithContext(refMesh.MeshName + "_c");
                     if (foundFile.Context != null)
                     {
-                        var task = Program.MainForm.OpenFile(foundFile.Context, foundFile.PackageEntry);
+                        var task = Program.Instance.OpenFile(foundFile.Context, foundFile.PackageEntry);
                         task.ContinueWith(
                             t =>
                             {
