@@ -10,7 +10,6 @@ using GUI.Utils;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Input;
 using static GUI.Types.Renderer.PickingTexture;
 using WinFormsMouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
@@ -41,6 +40,8 @@ namespace GUI.Controls
 
         Vector2 initialMousePosition;
 
+        Camera.TrackedKeys currentlyPressedKeys;
+
         public GLViewerControl()
         {
             InitializeComponent();
@@ -66,6 +67,7 @@ namespace GUI.Controls
             GLControl.MouseUp += OnMouseUp;
             GLControl.MouseDown += OnMouseDown;
             GLControl.MouseWheel += OnMouseWheel;
+            GLControl.KeyDown += OnKeyDown;
             GLControl.KeyUp += OnKeyUp;
             GLControl.GotFocus += OnGotFocus;
             GLControl.VisibleChanged += OnVisibleChanged;
@@ -75,8 +77,15 @@ namespace GUI.Controls
             glControlContainer.Controls.Add(GLControl);
         }
 
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            currentlyPressedKeys |= Camera.RemapKey(e.KeyCode);
+        }
+
         private void OnKeyUp(object sender, KeyEventArgs e)
         {
+            currentlyPressedKeys &= ~Camera.RemapKey(e.KeyCode);
+
             if ((e.KeyCode == Keys.Escape || e.KeyCode == Keys.F11) && FullScreenForm != null)
             {
                 FullScreenForm.Close();
@@ -218,6 +227,7 @@ namespace GUI.Controls
             GLControl.MouseUp -= OnMouseUp;
             GLControl.MouseDown -= OnMouseDown;
             GLControl.MouseWheel -= OnMouseWheel;
+            GLControl.KeyDown -= OnKeyDown;
             GLControl.KeyUp -= OnKeyUp;
             GLControl.GotFocus -= OnGotFocus;
             GLControl.VisibleChanged -= OnVisibleChanged;
@@ -360,8 +370,20 @@ namespace GUI.Controls
 
             var frameTime = elapsed * Program.TickFrequency / Program.TicksPerSecond;
 
-            Camera.HandleInput(Mouse.GetState(), Keyboard.GetState());
-            Camera.Tick(frameTime);
+            var pressedKeys = currentlyPressedKeys;
+            var modifierKeys = ModifierKeys;
+
+            if ((modifierKeys & Keys.Shift) > 0)
+            {
+                pressedKeys |= Camera.TrackedKeys.Shift;
+            }
+
+            if ((modifierKeys & Keys.Alt) > 0)
+            {
+                pressedKeys |= Camera.TrackedKeys.Alt;
+            }
+
+            Camera.Tick(frameTime, MousePosition, MouseButtons, pressedKeys);
 
             GL.ClearColor(Settings.BackgroundColor);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);

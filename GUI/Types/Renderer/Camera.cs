@@ -1,13 +1,28 @@
 using System;
+using System.Drawing;
 using System.Numerics;
+using System.Windows.Forms;
 using GUI.Utils;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Input;
 
 namespace GUI.Types.Renderer
 {
     class Camera
     {
+        [Flags]
+        public enum TrackedKeys
+        {
+            None = 0,
+            Shift = 1 << 0,
+            Alt = 1 << 1,
+            Forward = 1 << 2,
+            Left = 1 << 3,
+            Back = 1 << 4,
+            Right = 1 << 5,
+            Up = 1 << 6,
+            Down = 1 << 7,
+        }
+
         private const float MovementSpeed = 300f; // WASD movement, per second
         private const float AltMovementSpeed = 10f; // Holding shift or alt movement
 
@@ -41,10 +56,8 @@ namespace GUI.Types.Renderer
 
         private bool MouseDragging;
 
-        private Vector2 MouseDelta;
-        private Vector2 MousePreviousPosition;
-
-        private KeyboardState KeyboardState;
+        private Point MouseDelta;
+        private Point MousePreviousPosition;
 
         public Camera()
         {
@@ -160,14 +173,16 @@ namespace GUI.Types.Renderer
             RecalculateMatrices();
         }
 
-        public void Tick(float deltaTime)
+        public void Tick(float deltaTime, Point mouseState, MouseButtons mouseButtons, TrackedKeys keyboardState)
         {
+            HandleMouseInput(mouseState, mouseButtons);
+
             if (!MouseOverRenderArea)
             {
                 return;
             }
 
-            if (KeyboardState.IsKeyDown(Key.ShiftLeft))
+            if ((keyboardState & TrackedKeys.Shift) > 0)
             {
                 // Camera truck and pedestal movement (blender calls this pan)
                 var speed = AltMovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
@@ -175,7 +190,7 @@ namespace GUI.Types.Renderer
                 Location += GetUpVector() * speed * -MouseDelta.Y;
                 Location += GetRightVector() * speed * MouseDelta.X;
             }
-            else if (KeyboardState.IsKeyDown(Key.AltLeft))
+            else if ((keyboardState & TrackedKeys.Alt) > 0)
             {
                 // Move forward or backwards when holding alt
                 var totalDelta = MouseDelta.X + (MouseDelta.Y * -1);
@@ -186,7 +201,7 @@ namespace GUI.Types.Renderer
             else
             {
                 // Use the keyboard state to update position
-                HandleKeyboardInput(deltaTime);
+                HandleKeyboardInput(deltaTime, keyboardState);
 
                 // Full width of the screen is a 1 PI (180deg)
                 Yaw -= MathF.PI * MouseDelta.X / WindowSize.X;
@@ -222,63 +237,61 @@ namespace GUI.Types.Renderer
             return SpeedModifiers[CurrentSpeedModifier];
         }
 
-        public void HandleInput(MouseState mouseState, KeyboardState keyboardState)
-        {
-            KeyboardState = keyboardState;
+        private const int LeftAndRightMouseButtons = (int)(MouseButtons.Left | MouseButtons.Right);
 
-            if (MouseOverRenderArea && (mouseState.LeftButton == ButtonState.Pressed || mouseState.RightButton == ButtonState.Pressed))
+        private void HandleMouseInput(Point mouseState, MouseButtons mouseButtons)
+        {
+            if (MouseOverRenderArea && ((int)mouseButtons & LeftAndRightMouseButtons) > 0)
             {
                 if (!MouseDragging)
                 {
                     MouseDragging = true;
-                    MousePreviousPosition = new Vector2(mouseState.X, mouseState.Y);
+                    MousePreviousPosition = mouseState;
                 }
 
-                var mouseNewCoords = new Vector2(mouseState.X, mouseState.Y);
+                MouseDelta.X = mouseState.X - MousePreviousPosition.X;
+                MouseDelta.Y = mouseState.Y - MousePreviousPosition.Y;
 
-                MouseDelta.X = mouseNewCoords.X - MousePreviousPosition.X;
-                MouseDelta.Y = mouseNewCoords.Y - MousePreviousPosition.Y;
-
-                MousePreviousPosition = mouseNewCoords;
+                MousePreviousPosition = mouseState;
             }
 
-            if (!MouseOverRenderArea || !mouseState.IsConnected || (mouseState.LeftButton == ButtonState.Released && mouseState.RightButton == ButtonState.Released))
+            if (!MouseOverRenderArea || ((int)mouseButtons & LeftAndRightMouseButtons) == 0)
             {
                 MouseDragging = false;
                 MouseDelta = default;
             }
         }
 
-        private void HandleKeyboardInput(float deltaTime)
+        private void HandleKeyboardInput(float deltaTime, TrackedKeys keyboardState)
         {
             var speed = MovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
 
-            if (KeyboardState.IsKeyDown(Key.W))
+            if (keyboardState.HasFlag(TrackedKeys.Forward))
             {
                 Location += GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.S))
+            if (keyboardState.HasFlag(TrackedKeys.Back))
             {
                 Location -= GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.D))
+            if (keyboardState.HasFlag(TrackedKeys.Right))
             {
                 Location += GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.A))
+            if (keyboardState.HasFlag(TrackedKeys.Left))
             {
                 Location -= GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.Z))
+            if (keyboardState.HasFlag(TrackedKeys.Down))
             {
                 Location += new Vector3(0, 0, -speed);
             }
 
-            if (KeyboardState.IsKeyDown(Key.Q))
+            if (keyboardState.HasFlag(TrackedKeys.Up))
             {
                 Location += new Vector3(0, 0, speed);
             }
@@ -303,5 +316,18 @@ namespace GUI.Types.Renderer
         {
             return Settings.Config.FieldOfView * MathF.PI / 180f;
         }
+
+        public static TrackedKeys RemapKey(Keys key) => key switch
+        {
+            Keys.W => TrackedKeys.Forward,
+            Keys.A => TrackedKeys.Left,
+            Keys.S => TrackedKeys.Back,
+            Keys.D => TrackedKeys.Right,
+            Keys.Q => TrackedKeys.Up,
+            Keys.Z => TrackedKeys.Down,
+            Keys.LShiftKey => TrackedKeys.Shift,
+            Keys.LMenu => TrackedKeys.Alt,
+            _ => TrackedKeys.None,
+        };
     }
 }
