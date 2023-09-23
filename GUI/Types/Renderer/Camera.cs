@@ -266,32 +266,32 @@ namespace GUI.Types.Renderer
         {
             var speed = MovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
 
-            if (keyboardState.HasFlag(TrackedKeys.Forward))
+            if ((keyboardState & TrackedKeys.Forward) > 0)
             {
                 Location += GetForwardVector() * speed;
             }
 
-            if (keyboardState.HasFlag(TrackedKeys.Back))
+            if ((keyboardState & TrackedKeys.Back) > 0)
             {
                 Location -= GetForwardVector() * speed;
             }
 
-            if (keyboardState.HasFlag(TrackedKeys.Right))
+            if ((keyboardState & TrackedKeys.Right) > 0)
             {
                 Location += GetRightVector() * speed;
             }
 
-            if (keyboardState.HasFlag(TrackedKeys.Left))
+            if ((keyboardState & TrackedKeys.Left) > 0)
             {
                 Location -= GetRightVector() * speed;
             }
 
-            if (keyboardState.HasFlag(TrackedKeys.Down))
+            if ((keyboardState & TrackedKeys.Down) > 0)
             {
                 Location += new Vector3(0, 0, -speed);
             }
 
-            if (keyboardState.HasFlag(TrackedKeys.Up))
+            if ((keyboardState & TrackedKeys.Up) > 0)
             {
                 Location += new Vector3(0, 0, speed);
             }
