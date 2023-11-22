@@ -176,5 +176,7 @@ namespace ValveResourceFormat.Serialization.KeyValues
 
             return input;
         }
+
+        public override string ToString() => Value?.ToString() ?? "null";
     }
 }
