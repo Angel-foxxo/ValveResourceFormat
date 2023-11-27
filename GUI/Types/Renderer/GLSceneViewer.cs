@@ -241,6 +241,12 @@ namespace GUI.Types.Renderer
             GL.Enable(EnableCap.CullFace);
             GL.Enable(EnableCap.DepthTest);
 
+            if (this is GLMaterialViewer gLMaterialViewer && gLMaterialViewer.SpirvRenderer != null)
+            {
+                gLMaterialViewer.SpirvRenderer.Render();
+                return;
+            }
+
             void UpdateSceneBuffers(Scene scene, Camera camera)
             {
                 camera.SetViewConstants(viewBuffer.Data);

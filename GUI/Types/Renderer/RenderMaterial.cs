@@ -22,7 +22,7 @@ namespace GUI.Types.Renderer
 
     class RenderMaterial
     {
-        private const int TextureUnitStart = (int)ReservedTextureSlots.Last + 1;
+        public const int TextureUnitStart = (int)ReservedTextureSlots.Last + 1;
 
         public int SortId { get; }
         public Shader Shader { get; set; }

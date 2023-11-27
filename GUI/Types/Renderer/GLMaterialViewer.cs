@@ -18,6 +18,7 @@ namespace GUI.Types.Renderer
         private readonly ValveResourceFormat.Resource Resource;
         private readonly TabControl Tabs;
         private TableLayoutPanel ParamsTable;
+        public ValveCompositeMaterial SpirvRenderer { get; private set; }
 
         public GLMaterialViewer(VrfGuiContext guiContext, ValveResourceFormat.Resource resource, TabControl tabs) : base(guiContext)
         {
@@ -58,6 +59,16 @@ namespace GUI.Types.Renderer
             }
 
             Scene.Add(node, false);
+
+            var material = node.RenderableMeshes[0].DrawCallsOpaque[0];
+            if (material.Material.Material.ShaderName == "csgo_customweapon.vfx")
+            {
+                SpirvRenderer = new ValveCompositeMaterial(material.Material.Material, GuiContext);
+                if (!SpirvRenderer.IsValid())
+                {
+                    SpirvRenderer = null;
+                }
+            }
 
 #if DEBUG
             // Assume cubemap model only has one opaque draw call
