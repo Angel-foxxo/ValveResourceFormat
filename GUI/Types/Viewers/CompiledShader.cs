@@ -452,10 +452,7 @@ namespace GUI.Types.Viewers
 
                         // text
                         var textTab = new TabPage("DXBC");
-                        var textBox = new MonospaceTextBox()
-                        {
-                            Text = bytecodeContainer.ToString().ReplaceLineEndings(),
-                        };
+                        var textBox = new CodeTextBox(bytecodeContainer.ToString().ReplaceLineEndings());
                         textTab.Controls.Add(textBox);
                         resTabs.TabPages.Add(textTab);
                         resTabs.SelectedTab = textTab;
