@@ -9,6 +9,7 @@ using GUI.Types.Audio;
 using GUI.Types.Renderer;
 using GUI.Utils;
 using SkiaSharp;
+using Svg.Skia;
 using ValveResourceFormat;
 using ValveResourceFormat.Blocks;
 using ValveResourceFormat.IO;
@@ -67,6 +68,38 @@ namespace GUI.Types.Viewers
                     }
 
                     break;
+
+
+                case ResourceType.PanoramaVectorGraphic:
+                    {
+                        var control = new Forms.Texture
+                        {
+                            BackColor = Color.Black,
+                        };
+
+                        using var svg = new SKSvg();
+                        using var ms = new MemoryStream(((Panorama)resource.DataBlock).Data);
+                        svg.Load(ms);
+
+                        var skImage = SKImage.FromPicture(svg.Picture, new SKSizeI((int)svg.Picture.CullRect.Size.Width, (int)svg.Picture.CullRect.Size.Height));
+                        var bitmap = SKBitmap.FromImage(skImage);
+
+                        control.SetImage(
+                            bitmap,
+                            Path.GetFileNameWithoutExtension(vrfGuiContext.FileName),
+                            skImage.Width,
+                            skImage.Height
+                        );
+
+                        var tab2 = new TabPage("SVG")
+                        {
+                            AutoScroll = true,
+                        };
+                        tab2.Controls.Add(control);
+                        resTabs.TabPages.Add(tab2);
+
+                        break;
+                    }
 
                 case ResourceType.Panorama:
                     if (((Panorama)resource.DataBlock).Names.Count > 0)
