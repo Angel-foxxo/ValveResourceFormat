@@ -1,4 +1,3 @@
-﻿using System;
 using System.IO;
 using NUnit.Framework;
 using ValveResourceFormat;
@@ -18,11 +17,11 @@ namespace Tests
                 var shader = new ValveFont();
                 var decryptedFont = shader.Read(file);
 
-                using (var decryptedStream = new MemoryStream(decryptedFont))
-                using (var expected = new FileStream(Path.ChangeExtension(file, "ttf"), FileMode.Open, FileAccess.Read))
-                {
-                    FileAssert.AreEqual(expected, decryptedStream);
-                }
+                using var decryptedStream = new MemoryStream(decryptedFont);
+                using var expected = new FileStream(Path.ChangeExtension(file, "ttf"), FileMode.Open, FileAccess.Read);
+
+                // TODO: Do not use legacy
+                NUnit.Framework.Legacy.FileAssert.AreEqual(expected, decryptedStream);
             }
         }
     }

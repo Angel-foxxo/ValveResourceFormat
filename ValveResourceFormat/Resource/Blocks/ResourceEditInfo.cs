@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using ValveResourceFormat.Blocks.ResourceEditInfoStructs;
 
@@ -34,7 +33,7 @@ namespace ValveResourceFormat.Blocks
 
         public ResourceEditInfo()
         {
-            Structs = new Dictionary<REDIStruct, REDIBlock>();
+            Structs = [];
         }
 
         public override void Read(BinaryReader reader, Resource resource)

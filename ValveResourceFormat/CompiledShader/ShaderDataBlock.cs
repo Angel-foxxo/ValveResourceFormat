@@ -1,14 +1,28 @@
 
+using ValveResourceFormat.Utils;
+
 namespace ValveResourceFormat.CompiledShader
 {
     public abstract class ShaderDataBlock
     {
-        public ShaderDataReader datareader { get; }
-        protected long start { get; }
+        public ShaderDataReader DataReader { get; }
+        protected long Start { get; }
         protected ShaderDataBlock(ShaderDataReader datareader)
         {
-            this.start = datareader.BaseStream.Position;
-            this.datareader = datareader;
+            Start = datareader.BaseStream.Position;
+            DataReader = datareader;
+        }
+
+        protected static void ThrowIfNotSupported(int vcsFileVersion)
+        {
+            const int earliest = 62;
+            const int latest = 68;
+
+            if (vcsFileVersion < earliest || vcsFileVersion > latest)
+            {
+                throw new UnexpectedMagicException($"Only VCS file versions {earliest} through {latest} are supported",
+                    vcsFileVersion, nameof(vcsFileVersion));
+            }
         }
     }
 }

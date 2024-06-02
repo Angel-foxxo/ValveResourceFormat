@@ -1,60 +1,80 @@
-using System;
-using System.Numerics;
-using OpenTK.Graphics.OpenGL;
-using OpenTK.Input;
+using System.Drawing;
+using GUI.Utils;
 
 namespace GUI.Types.Renderer
 {
-    internal class Camera
+    class Camera
     {
-        private const float CAMERASPEED = 300f; // Per second
-        private const float FOV = OpenTK.MathHelper.PiOver4;
+        private const float MovementSpeed = 300f; // WASD movement, per second
+        private const float AltMovementSpeed = 10f; // Holding shift or alt movement
+
+        private readonly float[] SpeedModifiers =
+        [
+            0.1f,
+            0.5f,
+            1.0f,
+            2.0f,
+            5.0f,
+            10.0f,
+        ];
+        private int CurrentSpeedModifier = 2;
 
         public Vector3 Location { get; private set; }
         public float Pitch { get; private set; }
         public float Yaw { get; private set; }
-        public float Scale { get; private set; } = 1.0f;
 
         private Matrix4x4 ProjectionMatrix;
         public Matrix4x4 CameraViewMatrix { get; private set; }
         public Matrix4x4 ViewProjectionMatrix { get; private set; }
         public Frustum ViewFrustum { get; } = new Frustum();
 
-        // Set from outside this class by forms code
-        public bool MouseOverRenderArea { get; set; }
-
         private Vector2 WindowSize;
         private float AspectRatio;
 
-        private bool MouseDragging;
-
-        private Vector2 MouseDelta;
-        private Vector2 MousePreviousPosition;
-
-        private KeyboardState KeyboardState;
-
         public Camera()
         {
-            Location = new Vector3(1);
-            LookAt(new Vector3(0));
+            Location = Vector3.One;
+            LookAt(Vector3.Zero);
         }
 
         private void RecalculateMatrices()
         {
-            CameraViewMatrix = Matrix4x4.CreateScale(Scale) * Matrix4x4.CreateLookAt(Location, Location + GetForwardVector(), Vector3.UnitZ);
+            CameraViewMatrix = Matrix4x4.CreateLookAt(Location, Location + GetForwardVector(), Vector3.UnitZ);
             ViewProjectionMatrix = CameraViewMatrix * ProjectionMatrix;
             ViewFrustum.Update(ViewProjectionMatrix);
         }
 
         // Calculate forward vector from pitch and yaw
-        private Vector3 GetForwardVector()
+        public Vector3 GetForwardVector()
         {
-            return new Vector3((float)(Math.Cos(Yaw) * Math.Cos(Pitch)), (float)(Math.Sin(Yaw) * Math.Cos(Pitch)), (float)Math.Sin(Pitch));
+            var yawSin = MathF.Sin(Yaw);
+            var yawCos = MathF.Cos(Yaw);
+            var pitchSin = MathF.Sin(Pitch);
+            var pitchCos = MathF.Cos(Pitch);
+            return new Vector3(yawCos * pitchCos, yawSin * pitchCos, pitchSin);
+        }
+
+        private Vector3 GetUpVector()
+        {
+            var yawSin = MathF.Sin(Yaw);
+            var yawCos = MathF.Cos(Yaw);
+            var pitchSin = MathF.Sin(Pitch);
+            var pitchCos = MathF.Cos(Pitch);
+            return new Vector3(yawCos * pitchSin, yawSin * pitchSin, pitchCos);
         }
 
         private Vector3 GetRightVector()
         {
-            return new Vector3((float)Math.Cos(Yaw - OpenTK.MathHelper.PiOver2), (float)Math.Sin(Yaw - OpenTK.MathHelper.PiOver2), 0);
+            const float piOver2 = MathF.PI / 2f;
+            return new Vector3(MathF.Cos(Yaw - piOver2), MathF.Sin(Yaw - piOver2), 0);
+        }
+
+        public void SetViewConstants(UniformBuffers.ViewConstants viewConstants)
+        {
+            viewConstants.WorldToProjection = ProjectionMatrix;
+            viewConstants.WorldToView = CameraViewMatrix;
+            viewConstants.ViewToProjection = ViewProjectionMatrix;
+            viewConstants.CameraPosition = Location;
         }
 
         public void SetViewportSize(int viewportWidth, int viewportHeight)
@@ -64,12 +84,26 @@ namespace GUI.Types.Renderer
             WindowSize = new Vector2(viewportWidth, viewportHeight);
 
             // Calculate projection matrix
-            ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(FOV, AspectRatio, 1.0f, 40000.0f);
+            ProjectionMatrix = CreatePerspectiveFieldOfView_ReverseZ(GetFOV(), AspectRatio, 1.0f);
 
             RecalculateMatrices();
+        }
 
-            // setup viewport
-            GL.Viewport(0, 0, viewportWidth, viewportHeight);
+        /// <inheritdoc cref="Matrix4x4.CreatePerspectiveFieldOfView"/>
+        /// <remarks>Note: Reverse-Z. Far plane is swapped with near plane. Far plane is set to infinite.</remarks>
+        private static Matrix4x4 CreatePerspectiveFieldOfView_ReverseZ(float fieldOfView, float aspectRatio, float nearPlaneDistance)
+        {
+            var height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+            var width = height / aspectRatio;
+
+            return new Matrix4x4
+            {
+                M11 = width,
+                M22 = height,
+                M33 = 0.0f,
+                M34 = -1.0f,
+                M43 = nearPlaneDistance
+            };
         }
 
         public void CopyFrom(Camera fromOther)
@@ -102,8 +136,8 @@ namespace GUI.Types.Renderer
         public void LookAt(Vector3 target)
         {
             var dir = Vector3.Normalize(target - Location);
-            Yaw = (float)Math.Atan2(dir.Y, dir.X);
-            Pitch = (float)Math.Asin(dir.Z);
+            Yaw = MathF.Atan2(dir.Y, dir.X);
+            Pitch = MathF.Asin(dir.Z);
 
             ClampRotation();
             RecalculateMatrices();
@@ -115,104 +149,106 @@ namespace GUI.Types.Renderer
 
             // Extract view direction from view matrix and use it to calculate pitch and yaw
             var dir = new Vector3(matrix.M11, matrix.M12, matrix.M13);
-            Yaw = (float)Math.Atan2(dir.Y, dir.X);
-            Pitch = (float)Math.Asin(dir.Z);
+            Yaw = MathF.Atan2(dir.Y, dir.X);
+            Pitch = MathF.Asin(dir.Z);
 
             RecalculateMatrices();
         }
 
-        public void SetScale(float scale)
+        public void Tick(float deltaTime, TrackedKeys keyboardState, Point mouseDelta)
         {
-            Scale = scale;
-            RecalculateMatrices();
-        }
-
-        public void Tick(float deltaTime)
-        {
-            if (!MouseOverRenderArea)
+            if ((keyboardState & TrackedKeys.Shift) > 0)
             {
-                return;
+                // Camera truck and pedestal movement (blender calls this pan)
+                var speed = AltMovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
+
+                Location += GetUpVector() * speed * -mouseDelta.Y;
+                Location += GetRightVector() * speed * mouseDelta.X;
             }
+            else if ((keyboardState & TrackedKeys.Alt) > 0)
+            {
+                // Move forward or backwards when holding alt
+                var totalDelta = mouseDelta.X + (mouseDelta.Y * -1);
+                var speed = AltMovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
 
-            // Use the keyboard state to update position
-            HandleKeyboardInput(deltaTime);
+                Location += GetForwardVector() * totalDelta * speed;
+            }
+            else
+            {
+                // Use the keyboard state to update position
+                HandleKeyboardInput(deltaTime, keyboardState);
 
-            // Full width of the screen is a 1 PI (180deg)
-            Yaw -= (float)Math.PI * MouseDelta.X / WindowSize.X;
-            Pitch -= ((float)Math.PI / AspectRatio) * MouseDelta.Y / WindowSize.Y;
+                // Full width of the screen is a 1 PI (180deg)
+                Yaw -= MathF.PI * mouseDelta.X / WindowSize.X;
+                Pitch -= MathF.PI / AspectRatio * mouseDelta.Y / WindowSize.Y;
+            }
 
             ClampRotation();
 
             RecalculateMatrices();
         }
 
-        public void HandleInput(MouseState mouseState, KeyboardState keyboardState)
+        public float ModifySpeed(float subRange)
         {
-            KeyboardState = keyboardState;
-
-            if (MouseOverRenderArea && mouseState.LeftButton == ButtonState.Pressed)
-            {
-                if (!MouseDragging)
-                {
-                    MouseDragging = true;
-                    MousePreviousPosition = new Vector2(mouseState.X, mouseState.Y);
-                }
-
-                var mouseNewCoords = new Vector2(mouseState.X, mouseState.Y);
-
-                MouseDelta.X = mouseNewCoords.X - MousePreviousPosition.X;
-                MouseDelta.Y = mouseNewCoords.Y - MousePreviousPosition.Y;
-
-                MousePreviousPosition = mouseNewCoords;
-            }
-
-            if (!MouseOverRenderArea || mouseState.LeftButton == ButtonState.Released)
-            {
-                MouseDragging = false;
-                MouseDelta = default;
-            }
+            subRange = Math.Clamp(subRange, 0, 1.0f);
+            CurrentSpeedModifier = (int)Math.Round(subRange * (SpeedModifiers.Length - 1));
+            return SpeedModifiers[CurrentSpeedModifier];
         }
 
-        private void HandleKeyboardInput(float deltaTime)
+        public float ModifySpeed(bool increase)
         {
-            var speed = CAMERASPEED * deltaTime;
-
-            // Double speed if shift is pressed
-            if (KeyboardState.IsKeyDown(Key.ShiftLeft))
+            if (increase)
             {
-                speed *= 2;
+                CurrentSpeedModifier += 1;
+
+                if (CurrentSpeedModifier >= SpeedModifiers.Length)
+                {
+                    CurrentSpeedModifier = SpeedModifiers.Length - 1;
+                }
             }
-            else if (KeyboardState.IsKeyDown(Key.F))
+            else
             {
-                speed *= 10;
+                CurrentSpeedModifier -= 1;
+
+                if (CurrentSpeedModifier < 0)
+                {
+                    CurrentSpeedModifier = 0;
+                }
             }
 
-            if (KeyboardState.IsKeyDown(Key.W))
+            return SpeedModifiers[CurrentSpeedModifier];
+        }
+
+        private void HandleKeyboardInput(float deltaTime, TrackedKeys keyboardState)
+        {
+            var speed = MovementSpeed * deltaTime * SpeedModifiers[CurrentSpeedModifier];
+
+            if ((keyboardState & TrackedKeys.Forward) > 0)
             {
                 Location += GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.S))
+            if ((keyboardState & TrackedKeys.Back) > 0)
             {
                 Location -= GetForwardVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.D))
+            if ((keyboardState & TrackedKeys.Right) > 0)
             {
                 Location += GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.A))
+            if ((keyboardState & TrackedKeys.Left) > 0)
             {
                 Location -= GetRightVector() * speed;
             }
 
-            if (KeyboardState.IsKeyDown(Key.Z))
+            if ((keyboardState & TrackedKeys.Down) > 0)
             {
                 Location += new Vector3(0, 0, -speed);
             }
 
-            if (KeyboardState.IsKeyDown(Key.Q))
+            if ((keyboardState & TrackedKeys.Up) > 0)
             {
                 Location += new Vector3(0, 0, speed);
             }
@@ -221,14 +257,21 @@ namespace GUI.Types.Renderer
         // Prevent camera from going upside-down
         private void ClampRotation()
         {
-            if (Pitch >= OpenTK.MathHelper.PiOver2)
+            const float PITCH_LIMIT = 89.5f * MathF.PI / 180f;
+
+            if (Pitch >= PITCH_LIMIT)
             {
-                Pitch = OpenTK.MathHelper.PiOver2 - 0.001f;
+                Pitch = PITCH_LIMIT;
             }
-            else if (Pitch <= -OpenTK.MathHelper.PiOver2)
+            else if (Pitch <= -PITCH_LIMIT)
             {
-                Pitch = -OpenTK.MathHelper.PiOver2 + 0.001f;
+                Pitch = -PITCH_LIMIT;
             }
+        }
+
+        private static float GetFOV()
+        {
+            return Settings.Config.FieldOfView * MathF.PI / 180f;
         }
     }
 }

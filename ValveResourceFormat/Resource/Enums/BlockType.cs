@@ -1,5 +1,3 @@
-using System;
-
 namespace ValveResourceFormat
 {
     public enum BlockType
@@ -23,5 +21,10 @@ namespace ValveResourceFormat
         INSG,
         SrMa,
         LaCo,
+        STAT,
+        DXBC,
+        SPRV,
+        FLCI,
+        DSTF,
     }
 }

@@ -1,19 +1,23 @@
-using System;
 using OpenTK.Graphics.OpenGL;
 
 namespace GUI.Types.Renderer
 {
-    public class QuadIndexBuffer
+    class QuadIndexBuffer
     {
         public int GLHandle { get; }
 
         public QuadIndexBuffer(int size)
         {
-            GLHandle = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, GLHandle);
+            GL.CreateBuffers(1, out int handle);
+            GLHandle = handle;
+
+#if DEBUG
+            var bufferLabel = nameof(QuadIndexBuffer);
+            GL.ObjectLabel(ObjectLabelIdentifier.Buffer, handle, bufferLabel.Length, bufferLabel);
+#endif
 
             var indices = new ushort[size];
-            for (int i = 0; i < size / 6; ++i)
+            for (var i = 0; i < size / 6; ++i)
             {
                 indices[(i * 6) + 0] = (ushort)((i * 4) + 0);
                 indices[(i * 6) + 1] = (ushort)((i * 4) + 1);
@@ -23,7 +27,7 @@ namespace GUI.Types.Renderer
                 indices[(i * 6) + 5] = (ushort)((i * 4) + 3);
             }
 
-            GL.BufferData(BufferTarget.ElementArrayBuffer, size * sizeof(ushort), indices, BufferUsageHint.StaticDraw);
+            GL.NamedBufferData(handle, size * sizeof(ushort), indices, BufferUsageHint.StaticDraw);
         }
     }
 }

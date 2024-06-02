@@ -1,43 +1,148 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+//#define DEBUG_VALIDATE_GLTF
+
 using System.IO;
 using System.Linq;
-using System.Numerics;
-using SharpGLTF.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using SharpGLTF.Memory;
 using SharpGLTF.Schema2;
-using SkiaSharp;
-using ValveResourceFormat.Blocks;
+using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.ResourceTypes.ModelAnimation;
 using ValveResourceFormat.Serialization;
 using ValveResourceFormat.Utils;
+using Mesh = SharpGLTF.Schema2.Mesh;
+using VEntityLump = ValveResourceFormat.ResourceTypes.EntityLump;
+using VMesh = ValveResourceFormat.ResourceTypes.Mesh;
+using VModel = ValveResourceFormat.ResourceTypes.Model;
+using VWorld = ValveResourceFormat.ResourceTypes.World;
+using VWorldNode = ValveResourceFormat.ResourceTypes.WorldNode;
 
 namespace ValveResourceFormat.IO
 {
-    using static VBIB;
-    using VMaterial = ResourceTypes.Material;
-    using VMesh = ResourceTypes.Mesh;
-    using VModel = ResourceTypes.Model;
-    using VWorldNode = ResourceTypes.WorldNode;
-    using VWorld = ResourceTypes.World;
-    using VEntityLump = ResourceTypes.EntityLump;
-    using VAnimation = ResourceTypes.ModelAnimation.Animation;
-
-    public class GltfModelExporter
+    public partial class GltfModelExporter
     {
-        private const string GENERATOR = "VRF - https://vrf.steamdb.info/";
-
         // NOTE: Swaps Y and Z axes - gltf up axis is Y (source engine up is Z)
         // Also divides by 100, gltf units are in meters, source engine units are in inches
         // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#coordinate-system-and-units
-        private readonly Matrix4x4 TRANSFORMSOURCETOGLTF = Matrix4x4.CreateScale(0.0254f) * Matrix4x4.CreateFromYawPitchRoll(0, (float)Math.PI / -2f, (float)Math.PI / -2f);
+        private readonly Matrix4x4 TRANSFORMSOURCETOGLTF = Matrix4x4.CreateScale(0.0254f) * Matrix4x4.CreateFromYawPitchRoll(0, MathF.PI / -2f, MathF.PI / -2f);
 
         public IProgress<string> ProgressReporter { get; set; }
-        public IFileLoader FileLoader { get; set; }
+        public IFileLoader FileLoader { get; }
+        private readonly ShaderDataProvider shaderDataProvider;
+        private readonly BasicShaderDataProvider shaderDataProviderFallback = new();
         public bool ExportMaterials { get; set; } = true;
+        public bool AdaptTextures { get; set; } = true;
+        public bool SatelliteImages { get; set; } = true;
+        public bool ExportExtras { get; set; }
 
         private string DstDir;
-        private readonly IDictionary<string, Node> LoadedUnskinnedMeshDictionary = new Dictionary<string, Node>();
+        private CancellationToken CancellationToken;
+        private readonly Dictionary<string, Mesh> ExportedMeshes = [];
+        private readonly List<Task> MaterialGenerationTasks = [];
+        private readonly Dictionary<string, Task<SharpGLTF.Schema2.Texture>> ExportedTextures = [];
+        private readonly object TextureWriteSynchronizationLock = new(); // TODO: Use SemaphoreSlim?
+        private TextureSampler TextureSampler;
+        private int TexturesExportedSoFar;
+        private bool IsExporting;
+
+        // In SatelliteImages mode, SharpGLTF will still load and validate images.
+        // To save memory, we initiate MemoryImage with a a dummy image instead.
+        private readonly byte[] dummyPng = [137, 80, 78, 71, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        public GltfModelExporter(IFileLoader fileLoader)
+        {
+            ArgumentNullException.ThrowIfNull(fileLoader, nameof(fileLoader));
+            FileLoader = fileLoader;
+            shaderDataProvider = new ShaderDataProvider(fileLoader);
+        }
+
+        public static bool CanExport(Resource resource) => resource.ResourceType
+            is ResourceType.Mesh
+            or ResourceType.Model
+            or ResourceType.EntityLump
+            or ResourceType.WorldNode
+            or ResourceType.World
+            or ResourceType.Map;
+
+#if DEBUG_VALIDATE_GLTF
+#pragma warning disable CS0168 // Variable is declared but never used
+        private static ModelRoot debugCurrentExportedModel;
+        private static void DebugValidateGLTF()
+        {
+            try
+            {
+                debugCurrentExportedModel.WriteGLB(Stream.Null);
+            }
+            catch (Exception validationException)
+            {
+                System.Diagnostics.Debugger.Break();
+                throw;
+            }
+        }
+#else
+        private static void DebugValidateGLTF()
+        {
+            // noop
+        }
+#endif
+
+        /// <summary>
+        /// Export a Valve resource to Gltf.
+        /// </summary>
+        /// <param name="resource">The resource being exported.</param>
+        /// <param name="targetPath">Target file name.</param>
+        /// <param name="cancellationToken">Optional task cancellation token</param>
+        public void Export(Resource resource, string targetPath, CancellationToken cancellationToken = default)
+        {
+            if (IsExporting)
+            {
+                throw new InvalidOperationException($"{nameof(GltfModelExporter)} does not support multi threaded exporting, do not call Export while another export is in progress.");
+            }
+
+            IsExporting = true;
+            CancellationToken = cancellationToken;
+            DstDir = Path.GetDirectoryName(targetPath);
+
+            try
+            {
+                switch (resource.ResourceType)
+                {
+                    case ResourceType.Mesh:
+                        ExportToFile(resource.FileName, targetPath, (VMesh)resource.DataBlock);
+                        break;
+                    case ResourceType.Model:
+                        ExportToFile(resource.FileName, targetPath, (VModel)resource.DataBlock);
+                        break;
+                    case ResourceType.WorldNode:
+                        ExportToFile(resource.FileName, targetPath, (VWorldNode)resource.DataBlock);
+                        break;
+                    case ResourceType.World:
+                        ExportToFile(resource.FileName, targetPath, (VWorld)resource.DataBlock);
+                        break;
+                    case ResourceType.Map:
+                        {
+                            var lumpFolder = MapExtract.GetLumpFolderFromVmapRERL(resource.ExternalReferences);
+                            var worldFile = Path.Combine(lumpFolder, "world.vwrld");
+                            var mapResource = FileLoader.LoadFileCompiled(worldFile) ?? throw new FileNotFoundException($"Failed to load \"{worldFile}\"");
+                            ExportToFile(resource.FileName, targetPath, (VWorld)mapResource.DataBlock);
+                            break;
+                        }
+                    case ResourceType.EntityLump:
+                        ExportToFile(resource.FileName, targetPath, (VEntityLump)resource.DataBlock);
+                        break;
+                    default:
+                        throw new ArgumentException($"{resource.ResourceType} not supported for gltf export");
+                }
+            }
+            finally
+            {
+                ExportedMeshes.Clear();
+                MaterialGenerationTasks.Clear();
+                ExportedTextures.Clear();
+                TexturesExportedSoFar = 0;
+                IsExporting = false;
+            }
+        }
 
         /// <summary>
         /// Export a Valve VWRLD to GLTF.
@@ -45,14 +150,8 @@ namespace ValveResourceFormat.IO
         /// <param name="resourceName">The name of the resource being exported.</param>
         /// <param name="fileName">Target file name.</param>
         /// <param name="world">The world resource to export.</param>
-        public void ExportToFile(string resourceName, string fileName, VWorld world)
+        private void ExportToFile(string resourceName, string fileName, VWorld world)
         {
-            if (FileLoader == null)
-            {
-                throw new InvalidOperationException(nameof(FileLoader) + " must be set first.");
-            }
-
-            DstDir = Path.GetDirectoryName(fileName);
             var exportedModel = CreateModelRoot(resourceName, out var scene);
 
             // First the WorldNodes
@@ -62,6 +161,7 @@ namespace ValveResourceFormat.IO
                 {
                     continue;
                 }
+
                 var worldResource = FileLoader.LoadFile(worldNodeName + ".vwnod_c");
                 if (worldResource == null)
                 {
@@ -69,24 +169,7 @@ namespace ValveResourceFormat.IO
                 }
 
                 var worldNode = (VWorldNode)worldResource.DataBlock;
-                var worldNodeModels = LoadWorldNodeModels(worldNode);
-
-                foreach (var (Model, Name, Transform) in worldNodeModels)
-                {
-                    var meshes = LoadModelMeshes(Model, Name);
-                    for (var i = 0; i < meshes.Length; i++)
-                    {
-                        var node = AddMeshNode(exportedModel, scene, Model,
-                            meshes[i].Name, meshes[i].Mesh, Model.GetSkeleton(i));
-
-                        if (node == null)
-                        {
-                            continue;
-                        }
-                        // Swap Rotate upright, scale inches to meters.
-                        node.WorldMatrix = Transform * TRANSFORMSOURCETOGLTF;
-                    }
-                }
+                LoadWorldNodeModels(exportedModel, scene, worldNode);
             }
 
             // Then the Entities
@@ -96,7 +179,7 @@ namespace ValveResourceFormat.IO
                 {
                     continue;
                 }
-                var entityLumpResource = FileLoader.LoadFile(lumpName + "_c");
+                var entityLumpResource = FileLoader.LoadFileCompiled(lumpName);
                 if (entityLumpResource == null)
                 {
                     continue;
@@ -106,6 +189,21 @@ namespace ValveResourceFormat.IO
 
                 LoadEntityMeshes(exportedModel, scene, entityLump);
             }
+
+            WriteModelFile(exportedModel, fileName);
+        }
+
+        /// <summary>
+        /// Export a list of entities to GLTF.
+        /// </summary>
+        /// <param name="resourceName">The name of the resource being exported.</param>
+        /// <param name="fileName">Target file name.</param>
+        /// <param name="world">The entity lump resource to export.</param>
+        private void ExportToFile(string resourceName, string fileName, VEntityLump entityLump)
+        {
+            var exportedModel = CreateModelRoot(resourceName, out var scene);
+
+            LoadEntityMeshes(exportedModel, scene, entityLump);
 
             WriteModelFile(exportedModel, fileName);
         }
@@ -122,7 +220,7 @@ namespace ValveResourceFormat.IO
                     // TODO: Think about adding lights with KHR_lights_punctual
                 }
 
-                var modelResource = FileLoader.LoadFile(modelName + "_c");
+                var modelResource = FileLoader.LoadFileCompiled(modelName);
                 if (modelResource == null)
                 {
                     continue;
@@ -139,25 +237,8 @@ namespace ValveResourceFormat.IO
 
                 var transform = EntityTransformHelper.CalculateTransformationMatrix(entity);
                 // Add meshes and their skeletons
-                var meshes = LoadModelMeshes(model, Path.GetFileNameWithoutExtension(modelName));
-                for (var i = 0; i < meshes.Length; i++)
-                {
-                    var meshName = meshes[i].Name;
-                    if (skinName != null)
-                    {
-                        meshName += "." + skinName;
-                    }
-                    var node = AddMeshNode(exportedModel, scene, model,
-                        meshName, meshes[i].Mesh, model.GetSkeleton(i),
-                        skinName != null ? GetSkinPathFromModel(model, skinName) : null);
-
-                    if (node == null)
-                    {
-                        continue;
-                    }
-                    // Swap Rotate upright, scale inches to meters.
-                    node.WorldMatrix = transform * TRANSFORMSOURCETOGLTF;
-                }
+                LoadModel(exportedModel, scene, model, Path.GetFileNameWithoutExtension(modelName),
+                    transform, skinName, entity);
             }
 
             foreach (var childEntityName in entityLump.GetChildEntityNames())
@@ -166,7 +247,7 @@ namespace ValveResourceFormat.IO
                 {
                     continue;
                 }
-                var childEntityLumpResource = FileLoader.LoadFile(childEntityName + "_c");
+                var childEntityLumpResource = FileLoader.LoadFileCompiled(childEntityName);
                 if (childEntityLumpResource == null)
                 {
                     continue;
@@ -179,19 +260,13 @@ namespace ValveResourceFormat.IO
 
         private static string GetSkinPathFromModel(VModel model, string skinName)
         {
-            var materialGroupForSkin = model.Data.GetArray<IKeyValueCollection>("m_materialGroups")
-                .ToList()
-                .SingleOrDefault(m => m.GetProperty<string>("m_name") == skinName);
-
-            if (materialGroupForSkin == null)
-            {
-                return null;
-            }
+            var materialGroupForSkin = model.GetMaterialGroups()
+                .SingleOrDefault(group => group.Name == skinName);
 
             // Given these are at the model level, and otherwise pull materials from drawcalls
             // on the mesh, not sure how they correlate if there's more than one here
             // So just take the first one and hope for the best
-            return materialGroupForSkin.GetArray<string>("m_materials")[0];
+            return materialGroupForSkin.Materials?[0];
         }
 
         /// <summary>
@@ -200,42 +275,17 @@ namespace ValveResourceFormat.IO
         /// <param name="resourceName">The name of the resource being exported.</param>
         /// <param name="fileName">Target file name.</param>
         /// <param name="worldNode">The worldNode resource to export.</param>
-        public void ExportToFile(string resourceName, string fileName, VWorldNode worldNode)
+        private void ExportToFile(string resourceName, string fileName, VWorldNode worldNode)
         {
-            if (FileLoader == null)
-            {
-                throw new InvalidOperationException(nameof(FileLoader) + " must be set first.");
-            }
-
-            DstDir = Path.GetDirectoryName(fileName);
             var exportedModel = CreateModelRoot(resourceName, out var scene);
-            var worldNodeModels = LoadWorldNodeModels(worldNode);
-
-            foreach (var (Model, Name, Transform) in worldNodeModels)
-            {
-                var meshes = LoadModelMeshes(Model, Name);
-                for (var i = 0; i < meshes.Length; i++)
-                {
-                    var node = AddMeshNode(exportedModel, scene, Model,
-                        meshes[i].Name, meshes[i].Mesh, Model.GetSkeleton(i));
-
-                    if (node == null)
-                    {
-                        continue;
-                    }
-                    // Swap Rotate upright, scale inches to meters, after local transform.
-                    node.WorldMatrix = Transform * TRANSFORMSOURCETOGLTF;
-                }
-            }
+            LoadWorldNodeModels(exportedModel, scene, worldNode);
 
             WriteModelFile(exportedModel, fileName);
         }
 
-        private IList<(VModel Model, string ModelName, Matrix4x4 Transform)> LoadWorldNodeModels(VWorldNode worldNode)
+        private void LoadWorldNodeModels(ModelRoot exportedModel, Scene scene, VWorldNode worldNode)
         {
-            var sceneObjects = worldNode.Data.GetArray("m_sceneObjects");
-            var models = new List<(VModel, string, Matrix4x4)>();
-            foreach (var sceneObject in sceneObjects)
+            foreach (var sceneObject in worldNode.SceneObjects)
             {
                 var renderableModel = sceneObject.GetProperty<string>("m_renderableModel");
                 if (renderableModel == null)
@@ -243,19 +293,41 @@ namespace ValveResourceFormat.IO
                     continue;
                 }
 
-                var modelResource = FileLoader.LoadFile(renderableModel + "_c");
+                var modelResource = FileLoader.LoadFileCompiled(renderableModel);
                 if (modelResource == null)
                 {
                     continue;
                 }
 
+                var name = Path.GetFileNameWithoutExtension(renderableModel);
                 var model = (VModel)modelResource.DataBlock;
                 var matrix = sceneObject.GetArray("m_vTransform").ToMatrix4x4();
 
-                models.Add((model, Path.GetFileNameWithoutExtension(renderableModel), matrix));
+                LoadModel(exportedModel, scene, model, name, matrix);
             }
 
-            return models;
+            foreach (var sceneObject in worldNode.AggregateSceneObjects)
+            {
+                var renderableModel = sceneObject.GetProperty<string>("m_renderableModel");
+
+                if (renderableModel != null)
+                {
+                    var modelResource = FileLoader.LoadFileCompiled(renderableModel);
+
+                    if (modelResource == null)
+                    {
+                        continue;
+                    }
+
+                    var name = Path.GetFileNameWithoutExtension(renderableModel);
+                    var model = (VModel)modelResource.DataBlock;
+
+                    if (!AggregateCreateFragments(exportedModel, scene, model, sceneObject, name))
+                    {
+                        LoadModel(exportedModel, scene, model, name, Matrix4x4.Identity);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -264,33 +336,202 @@ namespace ValveResourceFormat.IO
         /// <param name="resourceName">The name of the resource being exported.</param>
         /// <param name="fileName">Target file name.</param>
         /// <param name="model">The model resource to export.</param>
-        public void ExportToFile(string resourceName, string fileName, VModel model)
+        private void ExportToFile(string resourceName, string fileName, VModel model)
         {
-            if (FileLoader == null)
-            {
-                throw new InvalidOperationException(nameof(FileLoader) + " must be set first.");
-            }
-
-            DstDir = Path.GetDirectoryName(fileName);
-
             var exportedModel = CreateModelRoot(resourceName, out var scene);
 
             // Add meshes and their skeletons
-            var meshes = LoadModelMeshes(model, resourceName);
-            for (var i = 0; i < meshes.Length; i++)
-            {
-                var node = AddMeshNode(exportedModel, scene, model,
-                    meshes[i].Name, meshes[i].Mesh, model.GetSkeleton(i));
-
-                if (node == null)
-                {
-                    continue;
-                }
-                // Swap Rotate upright, scale inches to meters.
-                node.WorldMatrix = TRANSFORMSOURCETOGLTF;
-            }
+            LoadModel(exportedModel, scene, model, resourceName, Matrix4x4.Identity);
 
             WriteModelFile(exportedModel, fileName);
+        }
+
+        private void LoadModel(ModelRoot exportedModel, Scene scene, VModel model, string name,
+            Matrix4x4 transform, string skinName = null, EntityLump.Entity entity = null)
+        {
+#if DEBUG
+            ProgressReporter?.Report($"Loading model {name}");
+#endif
+
+            CancellationToken.ThrowIfCancellationRequested();
+            var (skeletonNode, joints) = CreateGltfSkeleton(scene, model.Skeleton, name);
+
+            if (skeletonNode != null)
+            {
+                var animations = model.GetAllAnimations(FileLoader);
+                // Add animations
+                var frame = new Frame(model.Skeleton, model.FlexControllers);
+                var boneCount = model.Skeleton.Bones.Length;
+
+                var rotationDicts = Enumerable.Range(0, boneCount)
+                    .Select(_ => new Dictionary<float, Quaternion>()).ToArray();
+                var lastRotations = new Quaternion?[boneCount];
+                var rotationOmitted = new bool[boneCount];
+
+                var translationDicts = Enumerable.Range(0, boneCount)
+                    .Select(_ => new Dictionary<float, Vector3>()).ToArray();
+                var lastTranslations = new Vector3?[boneCount];
+                var translationOmitted = new bool[boneCount];
+
+                var scaleDicts = Enumerable.Range(0, boneCount)
+                    .Select(_ => new Dictionary<float, Vector3>()).ToArray();
+                var lastScales = new Vector3?[boneCount];
+                var scaleOmitted = new bool[boneCount];
+
+                foreach (var animation in animations)
+                {
+                    // Cleanup state
+                    frame.Clear(model.Skeleton);
+                    for (var i = 0; i < boneCount; i++)
+                    {
+                        rotationDicts[i].Clear();
+                        lastRotations[i] = null;
+                        rotationOmitted[i] = false;
+
+                        translationDicts[i].Clear();
+                        lastTranslations[i] = null;
+                        translationOmitted[i] = false;
+
+                        scaleDicts[i].Clear();
+                        lastScales[i] = null;
+                        scaleOmitted[i] = false;
+                    }
+
+                    var exportedAnimation = exportedModel.UseAnimation(animation.Name);
+
+                    var fps = animation.Fps;
+
+                    // Some models have fps of 0.000, which will make time a NaN
+                    if (fps == 0)
+                    {
+                        fps = 1f;
+                    }
+
+                    for (var frameIndex = 0; frameIndex < animation.FrameCount; frameIndex++)
+                    {
+                        frame.FrameIndex = frameIndex;
+                        animation.DecodeFrame(frame);
+                        var time = frameIndex / fps;
+                        var prevFrameTime = (frameIndex - 1) / fps;
+
+                        for (var boneID = 0; boneID < boneCount; boneID++)
+                        {
+                            var boneFrame = frame.Bones[boneID];
+
+                            var lastRotation = lastRotations[boneID];
+                            if (lastRotation != boneFrame.Angle)
+                            {
+                                if (lastRotation != null && rotationOmitted[boneID])
+                                {
+                                    rotationOmitted[boneID] = false;
+                                    // Restore keyframe before current frame, as otherwise interpolation will
+                                    // begin from the first instance of identical frame, and not from previous frame
+                                    rotationDicts[boneID].Add(prevFrameTime, lastRotation.Value);
+                                }
+                                rotationDicts[boneID].Add(time, boneFrame.Angle);
+                                lastRotations[boneID] = boneFrame.Angle;
+                            }
+                            else
+                            {
+                                rotationOmitted[boneID] = true;
+                            }
+
+                            var lastTranslation = lastTranslations[boneID];
+                            if (lastTranslation != boneFrame.Position)
+                            {
+                                if (lastTranslation != null && translationOmitted[boneID])
+                                {
+                                    translationOmitted[boneID] = false;
+                                    // Restore keyframe before current frame, as otherwise interpolation will
+                                    // begin from the first instance of identical frame, and not from previous frame
+                                    translationDicts[boneID].Add(prevFrameTime, lastTranslation.Value);
+                                }
+                                translationDicts[boneID].Add(time, boneFrame.Position);
+                                lastTranslations[boneID] = boneFrame.Position;
+                            }
+                            else
+                            {
+                                translationOmitted[boneID] = true;
+                            }
+
+                            var lastScale = lastScales[boneID];
+                            var boneFrameScale = boneFrame.Scale;
+
+                            if (float.IsNaN(boneFrameScale) || float.IsInfinity(boneFrameScale))
+                            {
+                                // See https://github.com/ValveResourceFormat/ValveResourceFormat/issues/527 (NaN)
+                                // and https://github.com/ValveResourceFormat/ValveResourceFormat/issues/570 (inf)
+                                boneFrameScale = 0.0f;
+                            }
+
+                            var scaleVec = boneFrameScale * Vector3.One;
+
+                            if (lastScale != scaleVec)
+                            {
+                                if (lastScale != null && scaleOmitted[boneID])
+                                {
+                                    scaleOmitted[boneID] = false;
+                                    // Restore keyframe before current frame, as otherwise interpolation will
+                                    // begin from the first instance of identical frame, and not from previous frame
+                                    scaleDicts[boneID].Add(prevFrameTime, lastScale.Value);
+                                }
+                                scaleDicts[boneID].Add(time, scaleVec);
+                                lastScales[boneID] = scaleVec;
+                            }
+                            else
+                            {
+                                scaleOmitted[boneID] = true;
+                            }
+                        }
+                    }
+
+                    for (var boneID = 0; boneID < boneCount; boneID++)
+                    {
+                        if (animation.FrameCount == 0)
+                        {
+                            rotationDicts[boneID].Add(0f, model.Skeleton.Bones[boneID].Angle);
+                            translationDicts[boneID].Add(0f, model.Skeleton.Bones[boneID].Position);
+                            scaleDicts[boneID].Add(0f, Vector3.One);
+                        }
+
+                        var jointNode = joints[boneID];
+                        exportedAnimation.CreateRotationChannel(jointNode, rotationDicts[boneID], true);
+                        exportedAnimation.CreateTranslationChannel(jointNode, translationDicts[boneID], true);
+                        exportedAnimation.CreateScaleChannel(jointNode, scaleDicts[boneID], true);
+                    }
+                }
+            }
+
+            // Swap Rotate upright, scale inches to meters.
+            transform *= TRANSFORMSOURCETOGLTF;
+
+            var skinMaterialPath = skinName != null ? GetSkinPathFromModel(model, skinName) : null;
+
+            foreach (var m in LoadModelMeshes(model, name))
+            {
+                var meshName = m.Name;
+                if (skinName != null)
+                {
+                    meshName = string.Concat(meshName, ".", skinName);
+                }
+
+                var vbib = model.RemapBoneIndices(m.Mesh.VBIB, m.MeshIndex);
+                var node = AddMeshNode(exportedModel, scene, meshName,
+                    m.Mesh, vbib, joints, skinMaterialPath, entity);
+                if (node != null)
+                {
+                    node.WorldMatrix = transform;
+
+                    DebugValidateGLTF();
+                }
+            }
+
+            // Even though that's not documented, order matters.
+            // WorldMatrix should only be set after everything else.
+            if (skeletonNode != null)
+            {
+                skeletonNode.WorldMatrix = transform;
+            }
         }
 
         /// <summary>
@@ -299,38 +540,30 @@ namespace ValveResourceFormat.IO
         /// </summary>
         /// <param name="model">The model to get the meshes from.</param>
         /// <returns>A tuple of meshes and their names.</returns>
-        private (VMesh Mesh, string Name)[] LoadModelMeshes(VModel model, string modelName)
+        private IEnumerable<(VMesh Mesh, int MeshIndex, string Name)> LoadModelMeshes(VModel model, string name)
         {
-            var refMeshes = model.GetRefMeshes().ToArray();
-            var meshes = new (VMesh, string)[refMeshes.Length];
+            var embeddedMeshes = model.GetEmbeddedMeshesAndLoD()
+                .Where(m => (m.LoDMask & 1) != 0)
+                .Select(m => (m.Mesh, m.MeshIndex, string.Concat(name, ".", m.Name)));
 
-            var embeddedMeshIndex = 0;
-            var embeddedMeshes = model.GetEmbeddedMeshes().ToArray();
-
-            for (var i = 0; i < meshes.Length; i++)
-            {
-                var meshReference = refMeshes[i];
-                if (string.IsNullOrEmpty(meshReference))
-                {
-                    // If refmesh is null, take an embedded mesh
-                    meshes[i] = (embeddedMeshes[embeddedMeshIndex++], $"{modelName}.Embedded.{embeddedMeshIndex}");
-                }
-                else
+            var refMeshes = model.GetReferenceMeshNamesAndLoD()
+                .Where(m => (m.LoDMask & 1) != 0)
+                .Select(m =>
                 {
                     // Load mesh from file
-                    var meshResource = FileLoader.LoadFile(meshReference + "_c");
+                    var meshResource = FileLoader.LoadFileCompiled(m.MeshName);
+                    var nodeName = Path.GetFileNameWithoutExtension(m.MeshName);
                     if (meshResource == null)
                     {
-                        continue;
+                        return (null, 0, nodeName);
                     }
 
-                    var nodeName = Path.GetFileNameWithoutExtension(meshReference);
-                    var mesh = new VMesh(meshResource);
-                    meshes[i] = (mesh, nodeName);
-                }
-            }
+                    var mesh = (VMesh)meshResource.DataBlock;
+                    return (mesh, m.MeshIndex, nodeName);
+                })
+                .Where(m => m.mesh != null);
 
-            return meshes;
+            return embeddedMeshes.Concat(refMeshes);
         }
 
         /// <summary>
@@ -339,13 +572,11 @@ namespace ValveResourceFormat.IO
         /// <param name="resourceName">The name of the resource being exported.</param>
         /// <param name="fileName">Target file name.</param>
         /// <param name="mesh">The mesh resource to export.</param>
-        public void ExportToFile(string resourceName, string fileName, VMesh mesh)
+        private void ExportToFile(string resourceName, string fileName, VMesh mesh)
         {
-            DstDir = Path.GetDirectoryName(fileName);
-
             var exportedModel = CreateModelRoot(resourceName, out var scene);
             var name = Path.GetFileName(resourceName);
-            var node = AddMeshNode(exportedModel, scene, null, name, mesh, null);
+            var node = AddMeshNode(exportedModel, scene, name, mesh, mesh.VBIB, joints: null);
 
             if (node != null)
             {
@@ -356,735 +587,135 @@ namespace ValveResourceFormat.IO
             WriteModelFile(exportedModel, fileName);
         }
 
-        private Node AddMeshNode(ModelRoot exportedModel, Scene scene, VModel model, string name,
-            VMesh mesh, Skeleton skeleton, string skinMaterialPath = null)
+        private Node AddMeshNode(ModelRoot exportedModel, Scene scene, string name,
+            VMesh mesh, Blocks.VBIB vbib, Node[] joints,
+            string skinMaterialPath = null, EntityLump.Entity entity = null)
         {
-            if (mesh.GetData().GetArray("m_sceneObjects").Length == 0)
+            if (mesh.Data.GetArray("m_sceneObjects").Length == 0)
             {
                 return null;
             }
 
-            if (LoadedUnskinnedMeshDictionary.TryGetValue(name, out var existingNode))
+            var newNode = scene.CreateNode(name);
+            if (ExportedMeshes.TryGetValue(name, out var exportedMesh))
             {
                 // Make a new node that uses the existing mesh
-                var newNode = scene.CreateNode(name);
-                newNode.Mesh = existingNode.Mesh;
+                newNode.Mesh = exportedMesh;
                 return newNode;
             }
 
-            var hasJoints = skeleton != null && skeleton.AnimationTextureSize > 0;
-            var exportedMesh = CreateGltfMesh(name, mesh, exportedModel, hasJoints, skinMaterialPath);
+            var hasJoints = joints != null;
+            exportedMesh = CreateGltfMesh(name, mesh, vbib, exportedModel, hasJoints, skinMaterialPath);
+            ExportedMeshes.Add(name, exportedMesh);
+
+            if (entity != null && ExportExtras)
+            {
+                foreach (var (hash, property) in entity.Properties)
+                {
+                    exportedMesh.Extras[property.Name] = property.Data as string;
+                }
+            }
+
             var hasVertexJoints = exportedMesh.Primitives.All(primitive => primitive.GetVertexAccessor("JOINTS_0") != null);
 
-            if (hasJoints && hasVertexJoints && model != null)
+            if (!hasJoints || !hasVertexJoints)
             {
-                var skeletonNode = scene.CreateNode(name);
-                var joints = CreateGltfSkeleton(skeleton, skeletonNode);
-
-                scene.CreateNode(name)
-                    .WithSkinnedMesh(exportedMesh, Matrix4x4.Identity, joints);
-
-                // Add animations
-                var animations = GetAllAnimations(model);
-                foreach (var animation in animations)
-                {
-                    var exportedAnimation = exportedModel.CreateAnimation(animation.Name);
-                    var rotationDict = new Dictionary<string, Dictionary<float, Quaternion>>();
-                    var translationDict = new Dictionary<string, Dictionary<float, Vector3>>();
-
-                    var time = 0f;
-                    foreach (var frame in animation.Frames)
-                    {
-                        foreach (var boneFrame in frame.Bones)
-                        {
-                            var bone = boneFrame.Key;
-                            if (!rotationDict.ContainsKey(bone))
-                            {
-                                rotationDict[bone] = new Dictionary<float, Quaternion>();
-                                translationDict[bone] = new Dictionary<float, Vector3>();
-                            }
-                            rotationDict[bone].Add(time, boneFrame.Value.Angle);
-                            translationDict[bone].Add(time, boneFrame.Value.Position);
-                        }
-                        time += 1 / animation.Fps;
-                    }
-
-                    foreach (var bone in rotationDict.Keys)
-                    {
-                        var jointNode = joints.FirstOrDefault(n => n.Name == bone);
-                        if (jointNode != null)
-                        {
-                            exportedAnimation.CreateRotationChannel(jointNode, rotationDict[bone], true);
-                            exportedAnimation.CreateTranslationChannel(jointNode, translationDict[bone], true);
-                        }
-                    }
-                }
-                return skeletonNode;
+                return newNode.WithMesh(exportedMesh);
             }
-            var node = scene.CreateNode(name).WithMesh(exportedMesh);
-            LoadedUnskinnedMeshDictionary.Add(name, node);
-            return node;
+
+            newNode.WithSkinnedMesh(exportedMesh, Matrix4x4.Identity, joints);
+            // WorldMatrix is set only once on skeletonNode
+            return null;
         }
 
-        private static ModelRoot CreateModelRoot(string resourceName, out Scene scene)
+        private ModelRoot CreateModelRoot(string resourceName, out Scene scene)
         {
             var exportedModel = ModelRoot.CreateModel();
-            exportedModel.Asset.Generator = GENERATOR;
+            exportedModel.Asset.Generator = StringToken.VRF_GENERATOR;
             scene = exportedModel.UseScene(Path.GetFileName(resourceName));
+
+#if DEBUG_VALIDATE_GLTF
+            debugCurrentExportedModel = exportedModel;
+#endif
+
+            TextureSampler = exportedModel.UseTextureSampler(TextureWrapMode.REPEAT, TextureWrapMode.REPEAT, TextureMipMapFilter.LINEAR_MIPMAP_LINEAR, TextureInterpolationFilter.LINEAR);
 
             return exportedModel;
         }
 
-        private static void WriteModelFile(ModelRoot exportedModel, string filePath)
+        private void WriteModelFile(ModelRoot exportedModel, string filePath)
         {
-            var settings = new WriteSettings();
-            settings.ImageWriting = ResourceWriteMode.SatelliteFile;
-            settings.ImageWriteCallback = ImageWriteCallback;
-            settings.JsonIndented = true;
+            if (MaterialGenerationTasks.Count > 0)
+            {
+                ProgressReporter?.Report("Waiting for materials to finish exporting...");
+                Task.WaitAll([.. MaterialGenerationTasks], CancellationToken);
+            }
+
+            ProgressReporter?.Report($"Writing model to file '{Path.GetFileName(filePath)}'...");
+
+            var settings = new WriteSettings
+            {
+                ImageWriting = SatelliteImages ? ResourceWriteMode.SatelliteFile : ResourceWriteMode.BufferView,
+                ImageWriteCallback = ImageWriteCallback,
+                JsonIndented = false,
+                MergeBuffers = true,
+                BuffersMaxSize = 1_074_000_000,
+            };
+
+            // If no file path is provided, validate the schema without writing a file
+            if (filePath == null)
+            {
+                exportedModel.WriteGLB(Stream.Null, settings);
+                return;
+            }
 
             // See https://github.com/KhronosGroup/glTF/blob/0bc36d536946b13c4807098f9cf62ddff738e7a5/specification/2.0/README.md#buffers-and-buffer-views
-            // Disable merging buffers if the buffer size is over 1GiB, otherwise this will
+            // Disable merging buffers if the buffer size is >=2GiB, otherwise this will
             // cause SharpGLTF to run past the int32 limitation and crash.
             var totalSize = exportedModel.LogicalBuffers.Sum(buffer => (long)buffer.Content.Length);
-            settings.MergeBuffers = totalSize <= 1_074_000_000;
-
-            if (!settings.MergeBuffers)
+            if (totalSize >= int.MaxValue && filePath.EndsWith(".glb", StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new NotSupportedException("VRF does not properly support big model (>1GiB) exports yet due to glTF limitations. See https://github.com/SteamDatabase/ValveResourceFormat/issues/379");
+                throw new NotSupportedException("VRF does not properly support big model (>=2GiB) exports yet due to glTF limitations. Try exporting as .gltf, not .glb.");
             }
 
             exportedModel.Save(filePath, settings);
         }
 
-        private static string ImageWriteCallback(WriteContext ctx, string uri, SharpGLTF.Memory.MemoryImage image)
+        private static (Node skeletonNode, Node[] joints) CreateGltfSkeleton(Scene scene, Skeleton skeleton, string modelName)
         {
-            if (File.Exists(image.SourcePath))
+            if (skeleton.Bones.Length == 0)
             {
-                // image.SourcePath is an absolute path, we must make it relative to ctx.CurrentDirectory
-                var currDir = ctx.CurrentDirectory.FullName;
-
-                // if the shared texture can be reached by the model in its directory, reuse the texture.
-                if (image.SourcePath.StartsWith(currDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    // we've found the shared texture!, return the uri relative to the model:
-                    return Path.GetFileName(image.SourcePath);
-                }
+                return (null, null);
             }
 
-            // we were unable to reuse the shared texture,
-            // default to write our own texture.
-            image.SaveToFile(Path.Combine(ctx.CurrentDirectory.FullName, uri));
-
-            return uri;
-        }
-
-        private Mesh CreateGltfMesh(string meshName, VMesh vmesh, ModelRoot model, bool includeJoints, string skinMaterialPath = null)
-        {
-            ProgressReporter?.Report($"Creating mesh: {meshName}");
-
-            var data = vmesh.GetData();
-            var vbib = vmesh.VBIB;
-
-            var mesh = model.CreateMesh(meshName);
-            mesh.Name = meshName;
-
-            foreach (var sceneObject in data.GetArray("m_sceneObjects"))
-            {
-                foreach (var drawCall in sceneObject.GetArray("m_drawCalls"))
-                {
-                    var vertexBufferInfo = drawCall.GetArray("m_vertexBuffers")[0]; // In what situation can we have more than 1 vertex buffer per draw call?
-                    var vertexBufferIndex = (int)vertexBufferInfo.GetIntegerProperty("m_hBuffer");
-                    var vertexBuffer = vbib.VertexBuffers[vertexBufferIndex];
-
-                    var indexBufferInfo = drawCall.GetSubCollection("m_indexBuffer");
-                    var indexBufferIndex = (int)indexBufferInfo.GetIntegerProperty("m_hBuffer");
-                    var indexBuffer = vbib.IndexBuffers[indexBufferIndex];
-
-                    // Create one primitive per draw call
-                    var primitive = mesh.CreatePrimitive();
-
-                    // Avoid duplicate attribute names
-                    var attributeCounters = new Dictionary<string, int>();
-
-                    // Set vertex attributes
-                    foreach (var attribute in vertexBuffer.InputLayoutFields)
-                    {
-                        attributeCounters.TryGetValue(attribute.SemanticName, out var attributeCounter);
-                        attributeCounters[attribute.SemanticName] = attributeCounter + 1;
-                        var accessorName = GetAccessorName(attribute.SemanticName, attributeCounter);
-
-                        var buffer = ReadAttributeBuffer(vertexBuffer, attribute);
-                        var numComponents = buffer.Length / vertexBuffer.ElementCount;
-
-                        if (attribute.SemanticName == "BLENDINDICES")
-                        {
-                            if (!includeJoints)
-                            {
-                                continue;
-                            }
-
-                            var byteBuffer = buffer.Select(f => (byte)f).ToArray();
-                            var rawBufferData = new byte[buffer.Length];
-                            System.Buffer.BlockCopy(byteBuffer, 0, rawBufferData, 0, rawBufferData.Length);
-
-                            var bufferView = mesh.LogicalParent.UseBufferView(rawBufferData);
-                            var accessor = mesh.LogicalParent.CreateAccessor();
-                            accessor.SetVertexData(bufferView, 0, buffer.Length / 4, DimensionType.VEC4, EncodingType.UNSIGNED_BYTE);
-
-                            primitive.SetVertexAccessor(accessorName, accessor);
-
-                            continue;
-                        }
-
-                        if (attribute.SemanticName == "NORMAL" && VMesh.IsCompressedNormalTangent(drawCall))
-                        {
-                            var vectors = ToVector4Array(buffer);
-                            var (normals, tangents) = DecompressNormalTangents(vectors);
-                            primitive.WithVertexAccessor("NORMAL", normals);
-                            primitive.WithVertexAccessor("TANGENT", tangents);
-
-                            continue;
-                        }
-
-                        if (attribute.SemanticName == "TEXCOORD" && numComponents != 2)
-                        {
-                            // We are ignoring some data, but non-2-component UVs cause failures in gltf consumers
-                            continue;
-                        }
-
-                        if (attribute.SemanticName == "BLENDWEIGHT" && numComponents != 4)
-                        {
-                            Console.Error.WriteLine($"This model has {attribute.SemanticName} with {numComponents} components, which in unsupported.");
-                            continue;
-                        }
-
-                        switch (numComponents)
-                        {
-                            case 4:
-                                {
-                                    var vectors = ToVector4Array(buffer);
-
-                                    // dropship.vmdl in HL:A has a tanget with value of <0, -0, 0>
-                                    if (attribute.SemanticName == "NORMAL" || attribute.SemanticName == "TANGENT")
-                                    {
-                                        vectors = FixZeroLengthVectors(vectors);
-                                    }
-
-                                    primitive.WithVertexAccessor(accessorName, vectors);
-                                    break;
-                                }
-
-                            case 3:
-                                {
-                                    var vectors = ToVector3Array(buffer);
-
-                                    // dropship.vmdl in HL:A has a normal with value of <0, 0, 0>
-                                    if (attribute.SemanticName == "NORMAL" || attribute.SemanticName == "TANGENT")
-                                    {
-                                        vectors = FixZeroLengthVectors(vectors);
-                                    }
-
-                                    primitive.WithVertexAccessor(accessorName, vectors);
-                                    break;
-                                }
-
-                            case 2:
-                                {
-                                    var vectors = ToVector2Array(buffer);
-                                    primitive.WithVertexAccessor(accessorName, vectors);
-                                    break;
-                                }
-
-                            case 1:
-                                {
-                                    primitive.WithVertexAccessor(accessorName, buffer);
-                                    break;
-                                }
-
-                            default:
-                                throw new NotImplementedException($"Attribute \"{attribute.SemanticName}\" has {numComponents} components");
-                        }
-                    }
-
-                    // For some reason soruce models can have joints but no weights, check if that is the case
-                    var jointAccessor = primitive.GetVertexAccessor("JOINTS_0");
-                    if (jointAccessor != null && primitive.GetVertexAccessor("WEIGHTS_0") == null)
-                    {
-                        // If this occurs, give default weights
-                        var defaultWeights = Enumerable.Repeat(Vector4.UnitX, jointAccessor.Count).ToList();
-                        primitive.WithVertexAccessor("WEIGHTS_0", defaultWeights);
-                    }
-
-                    // Set index buffer
-                    var startIndex = (int)drawCall.GetIntegerProperty("m_nStartIndex");
-                    var indexCount = (int)drawCall.GetIntegerProperty("m_nIndexCount");
-                    var indices = ReadIndices(indexBuffer, startIndex, indexCount);
-
-                    string primitiveType = drawCall.GetProperty<object>("m_nPrimitiveType") switch
-                    {
-                        string primitiveTypeString => primitiveTypeString,
-                        byte primitiveTypeByte =>
-                        (primitiveTypeByte == 5) ? "RENDER_PRIM_TRIANGLES" : ("UNKNOWN_" + primitiveTypeByte),
-                        _ => throw new NotImplementedException("Unknown PrimitiveType in drawCall!")
-                    };
-
-                    switch (primitiveType)
-                    {
-                        case "RENDER_PRIM_TRIANGLES":
-                            primitive.WithIndicesAccessor(PrimitiveType.TRIANGLES, indices);
-                            break;
-                        default:
-                            throw new NotImplementedException("Unknown PrimitiveType in drawCall! (" + primitiveType + ")");
-                    }
-
-                    // Add material
-                    if (!ExportMaterials)
-                    {
-                        continue;
-                    }
-
-                    var materialPath = skinMaterialPath ?? drawCall.GetProperty<string>("m_material") ?? drawCall.GetProperty<string>("m_pMaterial");
-
-                    var materialNameTrimmed = Path.GetFileNameWithoutExtension(materialPath);
-
-                    // Check if material already exists - makes an assumption that if material has the same name it is a duplicate
-                    var existingMaterial = model.LogicalMaterials.Where(m => m.Name == materialNameTrimmed).SingleOrDefault();
-                    if (existingMaterial != null)
-                    {
-                        ProgressReporter?.Report($"Found existing material: {materialNameTrimmed}");
-                        primitive.Material = existingMaterial;
-                        continue;
-                    }
-
-                    ProgressReporter?.Report($"Loading material: {materialPath}");
-
-                    var materialResource = FileLoader.LoadFile(materialPath + "_c");
-
-                    if (materialResource == null)
-                    {
-                        continue;
-                    }
-
-                    var renderMaterial = (VMaterial)materialResource.DataBlock;
-                    var bestMaterial = GenerateGLTFMaterialFromRenderMaterial(renderMaterial, model, materialNameTrimmed);
-                    primitive.WithMaterial(bestMaterial);
-                }
-            }
-
-            return mesh;
-        }
-
-        private Node[] CreateGltfSkeleton(Skeleton skeleton, Node skeletonNode)
-        {
-            var joints = new List<(Node Node, List<int> Indices)>();
-
+            var skeletonNode = scene.CreateNode(modelName);
+            var boneNodes = new Dictionary<string, Node>();
+            var joints = new Node[skeleton.Bones.Length];
             foreach (var root in skeleton.Roots)
             {
-                joints.AddRange(CreateBonesRecursive(root, skeletonNode));
+                CreateBonesRecursive(root, skeletonNode, ref joints);
             }
-
-            var animationJoints = joints.Where(j => j.Indices.Any()).ToList();
-            var numJoints = animationJoints.Any()
-                ? animationJoints.Where(j => j.Indices.Any()).Max(j => j.Indices.Max())
-                : 0;
-            var result = new Node[numJoints + 1];
-
-            foreach (var joint in animationJoints)
-            {
-                foreach (var index in joint.Indices)
-                {
-                    result[index] = joint.Node;
-                }
-            }
-
-            // Fill null indices with some dummy node
-            for (var i = 0; i < numJoints + 1; i++)
-            {
-                result[i] ??= skeletonNode.CreateNode();
-            }
-
-            return result;
+            return (skeletonNode, joints);
         }
 
-        private IEnumerable<(Node Node, List<int> Indices)> CreateBonesRecursive(Bone bone, Node parent)
+        private static void CreateBonesRecursive(Bone bone, Node parent, ref Node[] joints)
         {
             var node = parent.CreateNode(bone.Name)
-                .WithLocalTransform(bone.BindPose);
+                .WithLocalTranslation(bone.Position)
+                .WithLocalRotation(bone.Angle);
+            joints[bone.Index] = node;
 
             // Recurse into children
-            return bone.Children
-                .SelectMany(child => CreateBonesRecursive(child, node))
-                .Append((node, bone.SkinIndices));
+            foreach (var child in bone.Children)
+            {
+                CreateBonesRecursive(child, node, ref joints);
+            }
         }
 
-        private Material GenerateGLTFMaterialFromRenderMaterial(VMaterial renderMaterial, ModelRoot model, string materialName)
+        private static string ImageWriteCallback(WriteContext ctx, string uri, MemoryImage memoryImage)
         {
-            var material = model
-                    .CreateMaterial(materialName)
-                    .WithDefault();
-
-            renderMaterial.IntParams.TryGetValue("F_TRANSLUCENT", out var isTranslucent);
-            renderMaterial.IntParams.TryGetValue("F_ALPHA_TEST", out var isAlphaTest);
-            if (renderMaterial.ShaderName == "vr_glass.vfx")
-                isTranslucent = 1;
-            material.Alpha = isTranslucent > 0 ? AlphaMode.BLEND : (isAlphaTest > 0 ? AlphaMode.MASK : AlphaMode.OPAQUE);
-            if (isAlphaTest > 0 && renderMaterial.FloatParams.ContainsKey("g_flAlphaTestReference"))
-            {
-                material.AlphaCutoff = renderMaterial.FloatParams["g_flAlphaTestReference"];
-            }
-
-            if (renderMaterial.IntParams.TryGetValue("F_RENDER_BACKFACES", out var doubleSided)
-                && doubleSided > 0)
-            {
-                material.DoubleSided = true;
-            }
-
-            // assume non-metallic unless prompted
-            float metalValue = 0;
-
-            if (renderMaterial.FloatParams.TryGetValue("g_flMetalness", out var flMetalness))
-            {
-                metalValue = flMetalness;
-            }
-
-            Vector4 baseColor = Vector4.One;
-
-            if (renderMaterial.VectorParams.TryGetValue("g_vColorTint", out var vColorTint))
-            {
-                baseColor = vColorTint;
-                baseColor.W = 1; //Tint only affects color
-            }
-
-            material.WithPBRMetallicRoughness(baseColor, null, metallicFactor: metalValue);
-
-            //share sampler for all textures
-            var sampler = model.UseTextureSampler(TextureWrapMode.REPEAT, TextureWrapMode.REPEAT, TextureMipMapFilter.LINEAR_MIPMAP_LINEAR, TextureInterpolationFilter.LINEAR);
-
-            foreach (var renderTexture in renderMaterial.TextureParams)
-            {
-                var texturePath = renderTexture.Value;
-
-                var fileName = Path.GetFileNameWithoutExtension(texturePath);
-
-                ProgressReporter?.Report($"Exporting texture: {texturePath}");
-
-                var textureResource = FileLoader.LoadFile(texturePath + "_c");
-
-                if (textureResource == null)
-                {
-                    continue;
-                }
-
-                var exportedTexturePath = Path.Join(DstDir, fileName);
-                exportedTexturePath = Path.ChangeExtension(exportedTexturePath, "png");
-
-                using (var bitmap = ((ResourceTypes.Texture)textureResource.DataBlock).GenerateBitmap())
-                {
-                    if (renderTexture.Key.StartsWith("g_tColor", StringComparison.Ordinal) && material.Alpha == AlphaMode.OPAQUE)
-                    {
-                        var bitmapSpan = bitmap.PeekPixels().GetPixelSpan<SKColor>();
-
-                        // expensive transparency workaround for color maps
-                        for (var i = 0; i < bitmapSpan.Length; i++)
-                        {
-                            bitmapSpan[i] = bitmapSpan[i].WithAlpha(255);
-                        }
-                    }
-
-                    using var fs = File.Open(exportedTexturePath, FileMode.Create);
-                    bitmap.PeekPixels().Encode(fs, SKEncodedImageFormat.Png, 100);
-                }
-
-                var image = model.UseImage(exportedTexturePath);
-                image.Name = fileName + $"_{model.LogicalImages.Count - 1}";
-
-                var tex = model.UseTexture(image);
-                tex.Name = fileName + $"_{model.LogicalTextures.Count - 1}";
-                tex.Sampler = sampler;
-
-                switch (renderTexture.Key)
-                {
-                    case "g_tColor":
-                    case "g_tColor1":
-                    case "g_tColor2":
-                    case "g_tColorA":
-                    case "g_tColorB":
-                    case "g_tColorC":
-                        var channel = material.FindChannel("BaseColor");
-                        if (channel?.Texture != null && renderTexture.Key != "g_tColor")
-                        {
-                            break;
-                        }
-
-                        channel?.SetTexture(0, tex);
-
-                        material.Extras = JsonContent.CreateFrom(new Dictionary<string, object>
-                        {
-                            ["baseColorTexture"] = new Dictionary<string, object>
-                            {
-                                { "index", image.LogicalIndex },
-                            },
-                        });
-
-                        break;
-                    case "g_tNormal":
-                        material.FindChannel("Normal")?.SetTexture(0, tex);
-                        break;
-                    case "g_tAmbientOcclusion":
-                        material.FindChannel("Occlusion")?.SetTexture(0, tex);
-                        break;
-                    case "g_tEmissive":
-                        material.FindChannel("Emissive")?.SetTexture(0, tex);
-                        break;
-                    case "g_tShadowFalloff":
-                    // example: tongue_gman, materials/default/default_skin_shadowwarp_tga_f2855b6e.vtex
-                    case "g_tCombinedMasks":
-                    // example: models/characters/gman/materials/gman_head_mouth_mask_tga_bb35dc38.vtex
-                    case "g_tDiffuseFalloff":
-                    // example: materials/default/default_skin_diffusewarp_tga_e58a9ed.vtex
-                    case "g_tIris":
-                    // example:
-                    case "g_tIrisMask":
-                    // example: models/characters/gman/materials/gman_eye_iris_mask_tga_a5bb4a1e.vtex
-                    case "g_tTintColor":
-                    // example: models/characters/lazlo/eyemeniscus_vmat_g_ttintcolor_a00ef19e.vtex
-                    case "g_tAnisoGloss":
-                    // example: gordon_beard, models/characters/gordon/materials/gordon_hair_normal_tga_272a44e9.vtex
-                    case "g_tBentNormal":
-                    // example: gman_teeth, materials/default/default_skin_shadowwarp_tga_f2855b6e.vtex
-                    case "g_tFresnelWarp":
-                    // example: brewmaster_color, materials/default/default_fresnelwarprim_tga_d9279d65.vtex
-                    case "g_tMasks1":
-                    // example: brewmaster_color, materials/models/heroes/brewmaster/brewmaster_base_metalnessmask_psd_58eaa40f.vtex
-                    case "g_tMasks2":
-                    // example: brewmaster_color,materials/models/heroes/brewmaster/brewmaster_base_specmask_psd_63e9fb90.vtex
-                    default:
-                        Console.Error.WriteLine($"Warning: Unsupported Texture Type {renderTexture.Key}");
-                        break;
-                }
-            }
-
-            return material;
-        }
-
-        private List<VAnimation> GetAllAnimations(VModel model)
-        {
-            var animGroupPaths = model.GetReferencedAnimationGroupNames();
-            var animations = model.GetEmbeddedAnimations().ToList();
-
-            // Load animations from referenced animation groups
-            foreach (var animGroupPath in animGroupPaths)
-            {
-                var animGroup = FileLoader.LoadFile(animGroupPath + "_c");
-                if (animGroup != default)
-                {
-                    var data = animGroup.DataBlock.AsKeyValueCollection();
-
-                    // Get the list of animation files
-                    var animArray = data.GetArray<string>("m_localHAnimArray").Where(a => a != null);
-                    // Get the key to decode the animations
-                    var decodeKey = data.GetSubCollection("m_decodeKey");
-
-                    // Load animation files
-                    foreach (var animationFile in animArray)
-                    {
-                        var animResource = FileLoader.LoadFile(animationFile + "_c");
-
-                        // Build animation classes
-                        animations.AddRange(VAnimation.FromResource(animResource, decodeKey));
-                    }
-                }
-            }
-
-            return animations.ToList();
-        }
-
-        public static string GetAccessorName(string name, int index)
-        {
-            switch (name)
-            {
-                case "BLENDINDICES":
-                    return $"JOINTS_{index}";
-                case "BLENDWEIGHT":
-                    return $"WEIGHTS_{index}";
-                case "TEXCOORD":
-                    return $"TEXCOORD_{index}";
-                case "COLOR":
-                    return $"COLOR_{index}";
-            }
-
-            if (index > 0)
-            {
-                throw new InvalidDataException($"Got attribute \"{name}\" more than once, but that is not supported");
-            }
-
-            return name;
-        }
-
-        private static float[] ReadAttributeBuffer(OnDiskBufferData buffer, RenderInputLayoutField attribute)
-            => Enumerable.Range(0, (int)buffer.ElementCount)
-                .SelectMany(i => VBIB.ReadVertexAttribute(i, buffer, attribute))
-                .ToArray();
-
-        private static int[] ReadIndices(OnDiskBufferData indexBuffer, int start, int count)
-        {
-            var indices = new int[count];
-
-            var byteCount = count * (int)indexBuffer.ElementSizeInBytes;
-            var byteStart = start * (int)indexBuffer.ElementSizeInBytes;
-
-            if (indexBuffer.ElementSizeInBytes == 4)
-            {
-                System.Buffer.BlockCopy(indexBuffer.Data, byteStart, indices, 0, byteCount);
-            }
-            else if (indexBuffer.ElementSizeInBytes == 2)
-            {
-                var shortIndices = new ushort[count];
-                System.Buffer.BlockCopy(indexBuffer.Data, byteStart, shortIndices, 0, byteCount);
-                indices = Array.ConvertAll(shortIndices, i => (int)i);
-            }
-
-            return indices;
-        }
-
-        private static (Vector3[] Normals, Vector4[] Tangents) DecompressNormalTangents(Vector4[] compressedNormalsTangents)
-        {
-            var normals = new Vector3[compressedNormalsTangents.Length];
-            var tangents = new Vector4[compressedNormalsTangents.Length];
-
-            for (var i = 0; i < normals.Length; i++)
-            {
-                // Undo-normalization
-                var compressedNormal = compressedNormalsTangents[i] * 255f;
-                var decompressedNormal = DecompressNormal(new Vector2(compressedNormal.X, compressedNormal.Y));
-                var decompressedTangent = DecompressTangent(new Vector2(compressedNormal.Z, compressedNormal.W));
-
-                // Swap Y and Z axes
-                normals[i] = new Vector3(decompressedNormal.X, decompressedNormal.Z, decompressedNormal.Y);
-                tangents[i] = new Vector4(decompressedTangent.X, decompressedTangent.Z, decompressedTangent.Y, decompressedTangent.W);
-            }
-
-            return (normals, tangents);
-        }
-
-        private static Vector3 DecompressNormal(Vector2 compressedNormal)
-        {
-            var inputNormal = compressedNormal;
-            var outputNormal = Vector3.Zero;
-
-            float x = inputNormal.X - 128.0f;
-            float y = inputNormal.Y - 128.0f;
-            float z;
-
-            float zSignBit = x < 0 ? 1.0f : 0.0f;           // z and t negative bits (like slt asm instruction)
-            float tSignBit = y < 0 ? 1.0f : 0.0f;
-            float zSign = -((2 * zSignBit) - 1);          // z and t signs
-            float tSign = -((2 * tSignBit) - 1);
-
-            x = (x * zSign) - zSignBit;                           // 0..127
-            y = (y * tSign) - tSignBit;
-            x -= 64;                                     // -64..63
-            y -= 64;
-
-            float xSignBit = x < 0 ? 1.0f : 0.0f;   // x and y negative bits (like slt asm instruction)
-            float ySignBit = y < 0 ? 1.0f : 0.0f;
-            float xSign = -((2 * xSignBit) - 1);          // x and y signs
-            float ySign = -((2 * ySignBit) - 1);
-
-            x = ((x * xSign) - xSignBit) / 63.0f;             // 0..1 range
-            y = ((y * ySign) - ySignBit) / 63.0f;
-            z = 1.0f - x - y;
-
-            float oolen = 1.0f / (float)Math.Sqrt((x * x) + (y * y) + (z * z));   // Normalize and
-            x *= oolen * xSign;                 // Recover signs
-            y *= oolen * ySign;
-            z *= oolen * zSign;
-
-            outputNormal.X = x;
-            outputNormal.Y = y;
-            outputNormal.Z = z;
-
-            return outputNormal;
-        }
-
-        private static Vector4 DecompressTangent(Vector2 compressedTangent)
-        {
-            var outputNormal = DecompressNormal(compressedTangent);
-            var tSign = compressedTangent.Y - 128.0f < 0 ? -1.0f : 1.0f;
-
-            return new Vector4(outputNormal.X, outputNormal.Y, outputNormal.Z, tSign);
-        }
-
-        private static Vector3[] ToVector3Array(float[] buffer)
-        {
-            var vectorArray = new Vector3[buffer.Length / 3];
-
-            for (var i = 0; i < vectorArray.Length; i++)
-            {
-                vectorArray[i] = new Vector3(buffer[i * 3], buffer[(i * 3) + 1], buffer[(i * 3) + 2]);
-            }
-
-            return vectorArray;
-        }
-
-        private static Vector2[] ToVector2Array(float[] buffer)
-        {
-            var vectorArray = new Vector2[buffer.Length / 2];
-
-            for (var i = 0; i < vectorArray.Length; i++)
-            {
-                vectorArray[i] = new Vector2(buffer[i * 2], buffer[(i * 2) + 1]);
-            }
-
-            return vectorArray;
-        }
-
-        private static Vector4[] ToVector4Array(float[] buffer)
-        {
-            var vectorArray = new Vector4[buffer.Length / 4];
-
-            for (var i = 0; i < vectorArray.Length; i++)
-            {
-                vectorArray[i] = new Vector4(buffer[i * 4], buffer[(i * 4) + 1], buffer[(i * 4) + 2], buffer[(i * 4) + 3]);
-            }
-
-            return vectorArray;
-        }
-
-        // https://github.com/KhronosGroup/glTF-Validator/blob/master/lib/src/errors.dart
-        private const float UnitLengthThresholdVec3 = 0.00674f;
-
-        private static Vector4[] FixZeroLengthVectors(Vector4[] vectorArray)
-        {
-            for (var i = 0; i < vectorArray.Length; i++)
-            {
-                var vec = vectorArray[i];
-
-                if (Math.Abs(new Vector3(vec.X, vec.Y, vec.Z).Length() - 1.0f) > UnitLengthThresholdVec3)
-                {
-                    vectorArray[i] = -Vector4.UnitZ;
-                    vectorArray[i].W = vec.W;
-
-                    Console.Error.WriteLine($"The exported model contains a non-zero unit vector which was replaced with {vectorArray[i]} for exporting purposes.");
-                }
-            }
-
-            return vectorArray;
-        }
-
-        private static Vector3[] FixZeroLengthVectors(Vector3[] vectorArray)
-        {
-            for (var i = 0; i < vectorArray.Length; i++)
-            {
-                if (Math.Abs(vectorArray[i].Length() - 1.0f) > UnitLengthThresholdVec3)
-                {
-                    vectorArray[i] = -Vector3.UnitZ;
-
-                    Console.Error.WriteLine($"The exported model contains a non-zero unit vector which was replaced with {vectorArray[i]} for exporting purposes.");
-                }
-            }
-
-            return vectorArray;
+            // Since we've already dumped images to disk, skip glTF image write.
+            return uri;
         }
     }
 }

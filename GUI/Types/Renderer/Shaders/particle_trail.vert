@@ -1,13 +1,13 @@
-#version 400
+#version 460
 
-in vec3 aVertexPosition;
+layout (location = 0) in vec3 aVertexPosition;
 
-uniform mat4 uProjectionViewMatrix;
+#include "common/ViewConstants.glsl"
 uniform mat4 uModelMatrix;
 
 out vec2 uv;
 
 void main(void) {
     uv = aVertexPosition.xy * 0.5 + 0.5;
-    gl_Position = uProjectionViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position = g_matViewToProjection * uModelMatrix * vec4(aVertexPosition, 1.0);
 }

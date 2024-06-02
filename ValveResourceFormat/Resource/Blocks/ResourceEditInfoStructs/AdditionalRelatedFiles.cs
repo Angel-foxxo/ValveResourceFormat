@@ -1,4 +1,3 @@
-﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -27,7 +26,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
         public AdditionalRelatedFiles()
         {
-            List = new List<AdditionalRelatedFile>();
+            List = new((int)Size);
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -36,10 +35,11 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             for (var i = 0; i < Size; i++)
             {
-                var dep = new AdditionalRelatedFile();
-
-                dep.ContentRelativeFilename = reader.ReadOffsetString(Encoding.UTF8);
-                dep.ContentSearchPath = reader.ReadOffsetString(Encoding.UTF8);
+                var dep = new AdditionalRelatedFile
+                {
+                    ContentRelativeFilename = reader.ReadOffsetString(Encoding.UTF8),
+                    ContentSearchPath = reader.ReadOffsetString(Encoding.UTF8)
+                };
 
                 List.Add(dep);
             }

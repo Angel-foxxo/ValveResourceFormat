@@ -1,32 +1,44 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using GUI.Types.Renderer;
+using GUI.Utils;
+using ValveResourceFormat.Utils;
 
 namespace GUI.Forms
 {
-    public partial class AboutForm : Form
+    partial class AboutForm : Form
     {
         public AboutForm()
         {
             InitializeComponent();
 
-            this.labelVersion.Text = $"Version: {Application.ProductVersion}";
-            this.labelRuntime.Text = $"Runtime: {RuntimeInformation.FrameworkDescription}";
+            // Start the decoder thread so that it fetches the opengl version and is ready for the version copy
+            if (Settings.GpuRendererAndDriver == null && HardwareAcceleratedTextureDecoder.Decoder is GLTextureDecoder decoder)
+            {
+                decoder.StartThread();
+            }
+
+            labelVersion.Text = $"Version: {Application.ProductVersion[..16]}";
         }
 
-        private void website_Click(object sender, System.EventArgs e)
+        private void OnWebsiteClick(object sender, EventArgs e)
         {
-            OpenUrl("https://vrf.steamdb.info");
+            OpenUrl("https://valveresourceformat.github.io/");
         }
 
-        private void github_Click(object sender, System.EventArgs e)
+        private void OnGithubClick(object sender, EventArgs e)
         {
-            OpenUrl("https://github.com/SteamDatabase/ValveResourceFormat");
+            OpenUrl("https://github.com/ValveResourceFormat/ValveResourceFormat");
         }
 
-        private void releases_Click(object sender, System.EventArgs e)
+        private void OnReleasesClick(object sender, EventArgs e)
         {
-            OpenUrl("https://github.com/SteamDatabase/ValveResourceFormat/releases");
+            OpenUrl("https://github.com/ValveResourceFormat/ValveResourceFormat/releases");
+        }
+
+        private void OnKeybindsClick(object sender, EventArgs e)
+        {
+            OpenUrl("https://github.com/ValveResourceFormat/ValveResourceFormat/wiki/Source-2-Viewer-Keybinds");
         }
 
         private static void OpenUrl(string url)
@@ -35,6 +47,18 @@ namespace GUI.Forms
             {
                 CreateNoWindow = true,
             });
+        }
+
+        private void OnCopyVersionClick(object sender, EventArgs e)
+        {
+            var version = $"{Application.ProductVersion.Replace('+', ' ')} on {Environment.OSVersion}";
+
+            if (Utils.Settings.GpuRendererAndDriver != null)
+            {
+                version += $" ({Utils.Settings.GpuRendererAndDriver})";
+            }
+
+            Clipboard.SetText(version);
         }
     }
 }

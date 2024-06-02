@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 
 namespace ValveResourceFormat.Blocks
@@ -13,13 +12,11 @@ namespace ValveResourceFormat.Blocks
         public override void Read(BinaryReader reader, Resource resource)
         {
             reader.BaseStream.Position = Offset;
-
-            throw new NotImplementedException();
         }
 
         public override void WriteText(IndentedTextWriter writer)
         {
-            writer.WriteLine("{0:X8}", Offset);
+            writer.WriteLine("Parsing world visiblity is not implemented. If you're up to the task, try to reverse engineer it!");
         }
     }
 }

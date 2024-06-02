@@ -1,16 +1,16 @@
-#version 400
+#version 460
 
-in vec3 aVertexPosition;
-in vec4 aVertexColor;
-in vec2 aTexCoords;
+layout (location = 0) in vec3 aVertexPosition;
+layout (location = 3) in vec2 aTexCoords;
+layout (location = 4) in vec4 aVertexColor;
 
-uniform mat4 uProjectionViewMatrix;
+#include "common/ViewConstants.glsl"
 
-out vec2 vTexCoords;
+out vec2 vTexCoordOut;
 out vec4 vColor;
 
 void main(void) {
     vColor = aVertexColor;
-    vTexCoords = aTexCoords;
-    gl_Position = uProjectionViewMatrix * vec4(aVertexPosition, 1.0);
+    vTexCoordOut = aTexCoords;
+    gl_Position = g_matViewToProjection * vec4(aVertexPosition, 1.0);
 }

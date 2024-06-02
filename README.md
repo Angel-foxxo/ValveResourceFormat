@@ -1,26 +1,28 @@
-<h1 align="center">VRF / Valve Resource Format</h1>
+<h1 align="center"><img src="./Misc/Icons/source2viewer.png" width="64" align="center"> Source 2 Viewer</h1>
 
 <p align="center">
-    <a href="https://github.com/SteamDatabase/ValveResourceFormat/actions">
-        <img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/SteamDatabase/ValveResourceFormat/CI?logo=github&style=for-the-badge&logoColor=fff">
+    <a href="https://github.com/ValveResourceFormat/ValveResourceFormat/actions">
+        <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/ValveResourceFormat/ValveResourceFormat/build.yml?logo=github&style=for-the-badge&branch=master">
     </a>
     <a href="https://www.nuget.org/packages/ValveResourceFormat/">
-        <img src="https://img.shields.io/nuget/v/ValveResourceFormat.svg?label=NuGet&logo=nuget&style=for-the-badge&logoColor=fff&colorB=4c1">
+        <img src="https://img.shields.io/nuget/v/ValveResourceFormat.svg?logo=nuget&style=for-the-badge">
     </a>
-    <a href="https://coveralls.io/github/SteamDatabase/ValveResourceFormat">
-        <img src="https://img.shields.io/coveralls/SteamDatabase/ValveResourceFormat.svg?label=Tests&logo=coveralls&style=for-the-badge&logoColor=fff">
+    <a href="https://app.codecov.io/gh/ValveResourceFormat/ValveResourceFormat">
+        <img src="https://img.shields.io/codecov/c/github/ValveResourceFormat/ValveResourceFormat/master?logo=codecov&logoColor=ffffff&style=for-the-badge">
     </a>
 </p>
 
+*\* The library component of Source 2 Viewer is called ValveResourceFormat (VRF).*
+
 Valve's Source 2 resource file format parser, decompiler, and exporter.
-Source 2 files usually files end with `_c`, for example `.vmdl_c`.
+Source 2 files usually end with `_c`, for example `.vmdl_c`.
 
 This repository is split into three components:
 - **CLI Decompiler** - File data viewer, decompiler and a playground for testing new formats and features.
 - **GUI Viewer** - A vpk archive viewer and extractor. Also supports viewing resources such as sounds, textures, models, maps, and much more.
 - **Library** - Provides public API to parse resource files and some helpers.
 
-⚒ [View the official website for downloads](https://vrf.steamdb.info/).
+⚒ [View the official website for downloads](https://valveresourceformat.github.io/).
 
 ## Join our Discord
 
@@ -29,93 +31,159 @@ This repository is split into three components:
 ## Eye catchy screenshots
 <table>
 	<tr>
-		<td><img src="https://raw.githubusercontent.com/SteamDatabase/ValveResourceFormat/gh-pages/static/screen_map.png"></td>
-		<td><img src="https://raw.githubusercontent.com/SteamDatabase/ValveResourceFormat/gh-pages/static/screen_texture.png"></td>
+		<td><img src="https://valveresourceformat.github.io/static/screen_map.png"></td>
+		<td><img src="https://valveresourceformat.github.io/static/screen_texture.png"></td>
 	</tr>
 	<tr>
-		<td><img src="https://raw.githubusercontent.com/SteamDatabase/ValveResourceFormat/gh-pages/static/screen_package.png"></td>
-		<td><img src="https://raw.githubusercontent.com/SteamDatabase/ValveResourceFormat/gh-pages/static/screen_cli.png"></td>
+		<td><img src="https://valveresourceformat.github.io/static/screen_package.png"></td>
+		<td><img src="https://valveresourceformat.github.io/static/screen_cli.png"></td>
 	</tr>
 </table>
 
 ## What's supported?
-- Model viewer
-- Map viewer
-- Sound player
 - VPK viewer which supports opening and exporting files
-- Read only VPK API
+- Creating new vpk archives
+- Model viewer and decompiler to glTF and modeldoc
+- Map viewer and decompiler to glTF and vmap
+- Material decompiler to vmat
+- Sound player
 - Binary KeyValues3 parser
 - NTRO support
 
-## Why does VRF suck?
+## Limitations
 
 This tool is based entirely on a reverse engineered effort because Valve does not provide any documentation or Source 2 code (SDK or engine code), while the Source 1 SDK and leaked engine code are helpful, a lot of systems and formats have changed.
 
 The code contained in this repository is based on countless hours of reverse engineering Source 2 games and not all intricate details have been figured out.
 
-If you are interested in helping, take a look at the open issues.
+If you are interested in helping, take a look at the open issues and join our Discord.
+
+Not all formats are 100% supported, some parameters are still unknown and not fully understood.
 
 ## Supported resource types
 Ext      | Name                    | Support
 -------- | ----------------------- | -------
-vanim    | Animation               | 👍
 vagrp    | Animation Group         | 👍
+vanim    | Animation               | 👍
 vanmgrph | Animation Graph         | No
-vseq     | Sequence Group          | No
-vpcf     | Particle System         | 👍 NTRO, KV3
-vmat     | Material                | 👍 NTRO
-vmks     | Sheet                   | No
-vmesh    | Mesh                    | 👍
-vtex     | Compiled Texture        | 👍 DXT1, DXT5, I8, RGBA8888, R16, RG1616, RGBA16161616, R16F, RG1616F, RGBA16161616F, R32F, RG3232F, RGB323232F, RGBA32323232F, BC6H, BC7, IA88, PNG, JPG, ETC2, ETC2_EAC, BGRA8888, ATI1N, ATI2N
-vmdl     | Model                   | 👍
-vphys    | Physics Collision Mesh  | No
-vsnd     | Sound                   | 👍
-vmorf    | MorphSet                | No
-vrman    | ResourceManifest        | Yes
-vwrld    | World                   | 👍
-vwnod    | WorldNode               | 👍
-vvis     | WorldVisibility         | No
+vcompmat | Composite Material      | No
+vcss     | Panorama Style          | 👍
+vdata    | Data                    | 👍
 vents    | EntityLump              | 👍
-vsurf    | Surface Properties      | No
+vjs      | Panorama Script         | 👍
+vmap     | Map                     | 👍
+vmat     | Material                | 👍
+vmdl     | Model                   | 👍
+vmesh    | Mesh                    | 👍
+vmorf    | MorphSet                | 👍
+vpcf     | Particle System         | 👍
+vpdi     | Panorama Dynamic Images | No
+vphys    | Physics Collision Mesh  | 👍
+vpost    | Postprocessing Settings | 👍
+vpsf     | Particle Snapshot       | No
+vpulse   | Pulse Graph Definition  | No
+vrman    | ResourceManifest        | 👍
+vrmap    | Resource Remap Table    | No
+vrr      | Response rules          | 👍
+vseq     | Sequence Group          | No
+vsmart   | Smart Prop              | Partially
+vsnap    | Particle Snapshot       | 👍
+vsnd     | Sound                   | 👍
 vsndevts | Sound Event Script      | 👍
 vsndstck | Sound Stack Script      | 👍
-vpost    | Postprocessing Settings | No
-vrmap    | Resource Remap Table    | No
-vcss     | Panorama Style          | 👍
-vxml     | Panorama Layout         | 👍
-vpdi     | Panorama Dynamic Images | No
-vjs      | Panorama Script         | 👍
+vsurf    | Surface Properties      | No
 vsvg     | Panorama Vector Graphic | 👍
-vsnap    | Particle Snapshot       | 👍
-~~vpsf~~ | ~~Particle Snapshot~~   | No
-vmap     | Map                     | 👍
+vtex     | Compiled Texture        | 👍
+vts      | Panorama TypeScript     | 👍
+vvis     | WorldVisibility         | No
+vwnod    | WorldNode               | 👍
+vwrld    | World                   | 👍
+vxml     | Panorama Layout         | 👍
 &nbsp;   | &nbsp;                  | &nbsp;
-vpk      | Pak (package)           | 👍 Handled by [ValvePak](https://github.com/SteamDatabase/ValvePak)
-vcs      | Compiled Shader         | ❓ Started work in `CompiledShader`, see #151
-vfont    | Bitmap Font             | 👍 Decrypts `VFONT1`, supported in Source 1 (CS:GO) and Source 2 (Dota 2).
+vpk      | Pak (package)           | 👍 Handled by [ValvePak](https://github.com/ValveResourceFormat/ValvePak)
+vcs      | Compiled Shader         | 👍 Handled by `CompiledShader`
+vfont    | Bitmap Font             | 👍 Decrypts `VFONT1`, supported in Source 1 and Source 2.
 dat      | Closed Captions         | 👍 Handled by `ClosedCaptions`
-bin      | Tools Asset Info        | 👍 Partially handled by `ToolsAssetInfo`, see #226
+bin      | Tools Asset Info        | 👍 Handled by `ToolsAssetInfo`
 vdpn     | Dota Patch Notes        | 👍
 vdacdefs | DAC Game Defs Data      | No
-vfe      | Face poser              | No, see #142
+vfe      | Flex Scene File         | 👍 Handled by `FlexSceneFile`
 vcd      | VCD                     | No
-vcdlist  | VCD list                | No, see #160
+vcdlist  | VCD list                | 👍
 
-List of supported magics:
-Magic      | Description
----------- | ------------
+## List of supported magics
+Magic        | Description
+------------ | ------------
 `0x03564B56` | VKV\x03 - First binary keyvalues 3 encoding with custom block compression
-`0x4B563301` | KV3\x01 - LZ4 compressed
-`0x4B563302` | KV3\x02 - LZ4 compressed and binary blobs are compressed separately
+`0x4B563301` | KV3\x01 - Binary keyvalues 3 (version 1)
+`0x4B563302` | KV3\x02 - Binary keyvalues 3 (version 2)
+`0x4B563303` | KV3\x03 - Binary keyvalues 3 (version 3)
+`0x4B563304` | KV3\x04 - Binary keyvalues 3 (version 4)
 `0x564B4256` | VBKV - binary keyvalues 1 (handled by ValveKeyvalue)
 `0x55AA1234` | VPK - valve package (handled by ValvePak)
 `0x44434356` | VCCD - closed captions
 `0xC4CCACE8` | tools asset info
+`0xC4CCACE9` | tools asset info (newer version)
 `0x32736376` | vcs2 - compiled shader
 `0x31415926` | murmurhash2 seed used in various places (like entity keys)
 `VFONT1`     | "encrypted" font file
+`0x00564645` | VFE - flex scene file
 
-Not all formats are 100% supported, some parameters are still unknown and not fully understood.
+## Command-line options
+
+Option                        | Description
+----------------------------- | -----------
+| **Input**                   | |
+`--input` (or `-i`)           | Input file to be processed. With no additional arguments, a summary of the input(s) will be displayed.
+`--recursive`                 | If specified and given input is a folder, all sub directories will be scanned too.
+`--recursive_vpk`             | If specified along with `--recursive`, will also recurse into VPK archives.
+`--vpk_extensions` (or `-e`)  | File extension(s) filter, example: "vcss_c,vjs_c,vxml_c".
+`--vpk_filepath` (or `-f`)    | File path filter, example: "panorama\\" or "scripts/items/items_game.txt".
+`--vpk_cache`                 | Use cached VPK manifest to keep track of updates. Only changed files will be written to disk.
+`--vpk_verify`                | Verify checksums and signatures.
+| **Output**                  | |
+`--output` (or `-o`)          | Output path to write to. If input is a folder (or a VPK), this should be a folder.
+`--all` (or `-a`)             | Print the content of each resource block in the file.
+`--block` (or `-b`)           | Print the content of a specific block, example: DATA, RERL, REDI, NTRO.
+`--vpk_decompile` (or `-d`)   | Decompile supported resource files.
+`--vpk_list` (or `-l`)        | Lists all resources in given VPK. File extension and path filters apply.
+`--vpk_dir`                   | Print a list of files in given VPK and information about them.
+| **Type specific export**    | |
+`--gltf_export_format`        | Exports meshes/models in given glTF format. Must be either 'gltf' (default) or 'glb'.
+`--gltf_export_materials`     | Whether to export materials during glTF exports.
+`--gltf_textures_adapt`       | Whether to perform any glTF spec adaptations on textures (e.g. split metallic map).
+`--gltf_export_extras`        | Export additional Mesh properties into glTF extras
+`--tools_asset_info_short`    | Whether to print only file paths for tools_asset_info files.
+| **Other**                   | |
+`--threads`                   | If higher than 1, files will be processed concurrently.
+`--version`                   | Show version information.
+`--help`                      | Show help information.
+
+There are also `--stats` related options, but they are not listed here as they are not relevant to most users.
+
+### Examples:
+
+```powershell
+# List all files in the vpk
+# Use `--vpk_dir` to also print file metadata
+.\Decompiler.exe -i "core/pak01_dir.vpk" --vpk_list
+
+# Export the entire vpk as is
+.\Decompiler.exe -i "core/pak01_dir.vpk" --output "pak01_exported"
+
+# Export only the "panorama/layout" folder
+.\Decompiler.exe -i "core/pak01_dir.vpk" --output "pak01_exported" --vpk_filepath "panorama/layout"
+
+# Decompile and export all Panorama files to a folder named "exported"
+.\Decompiler.exe -i "core/pak01_dir.vpk" -e "vjs_c,vxml_c,vcss_c" -o "exported" -d
+
+# Print resource blocks for a specific file similar to resourceinfo.exe in Source 2
+# Use `--block DATA` to only print a specific block
+.\Decompiler.exe -i "file.vtex_c" --all
+
+# Decompile a specific file on disk
+.\Decompiler.exe -i "file.vtex_c" -o exported.png
+```
 
 ## License
 

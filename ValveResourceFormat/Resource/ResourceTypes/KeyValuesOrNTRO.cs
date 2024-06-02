@@ -1,18 +1,17 @@
-using System;
 using System.IO;
 using ValveResourceFormat.Blocks;
-using ValveResourceFormat.Serialization;
+using ValveResourceFormat.Serialization.KeyValues;
 
 namespace ValveResourceFormat.ResourceTypes
 {
     public class KeyValuesOrNTRO : ResourceData
     {
-        private string IntrospectionStructName;
-        private BlockType KVBlockType;
+        private readonly string IntrospectionStructName;
+        private readonly BlockType KVBlockType;
         public override BlockType Type => KVBlockType;
 
         protected Resource Resource { get; private set; }
-        public IKeyValueCollection Data { get; private set; }
+        public KVObject Data { get; private set; }
 
         private ResourceData BackingData;
 
@@ -31,7 +30,8 @@ namespace ValveResourceFormat.ResourceTypes
         {
             Resource = resource;
 
-            if (!resource.ContainsBlockType(BlockType.NTRO))
+            // It is possible to have MDAT block with NTRO in a file, but it will be KV3 anyway.
+            if (!resource.ContainsBlockType(BlockType.NTRO) || KVBlockType == BlockType.MDAT)
             {
                 var kv3 = new BinaryKV3(KVBlockType)
                 {

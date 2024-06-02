@@ -1,30 +1,23 @@
-using System;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Emitters
 {
-    public class InstantaneousEmitter : IParticleEmitter
+    class InstantaneousEmitter : ParticleFunctionEmitter
     {
-        public bool IsFinished { get; private set; }
-
-        private readonly IKeyValueCollection baseProperties;
+        public override bool IsFinished { get; protected set; }
 
         private Action particleEmitCallback;
 
-        private INumberProvider emitCount;
-        private INumberProvider startTime;
+        private readonly INumberProvider emitCount = new LiteralNumberProvider(1);
+        private readonly INumberProvider startTime = new LiteralNumberProvider(0);
 
         private float time;
 
-        public InstantaneousEmitter(IKeyValueCollection baseProperties, IKeyValueCollection keyValues)
+        public InstantaneousEmitter(ParticleDefinitionParser parse) : base(parse)
         {
-            this.baseProperties = baseProperties;
-
-            emitCount = keyValues.GetNumberProvider("m_nParticlesToEmit");
-            startTime = keyValues.GetNumberProvider("m_flStartTime");
+            emitCount = parse.NumberProvider("m_nParticlesToEmit", emitCount);
+            startTime = parse.NumberProvider("m_flStartTime", startTime);
         }
 
-        public void Start(Action particleEmitCallback)
+        public override void Start(Action particleEmitCallback)
         {
             this.particleEmitCallback = particleEmitCallback;
 
@@ -33,17 +26,23 @@ namespace GUI.Types.ParticleRenderer.Emitters
             time = 0;
         }
 
-        public void Stop()
+        public override void Stop()
         {
+            IsFinished = true;
         }
 
-        public void Update(float frameTime)
+        public override void Emit(float frameTime)
         {
+            if (IsFinished)
+            {
+                return;
+            }
+
             time += frameTime;
 
-            if (!IsFinished && time >= startTime.NextNumber())
+            if (time >= startTime.NextNumber())
             {
-                var numToEmit = emitCount.NextInt(); // Get value from number provider
+                var numToEmit = (int)emitCount.NextNumber(); // Get value from number provider
                 for (var i = 0; i < numToEmit; i++)
                 {
                     particleEmitCallback();

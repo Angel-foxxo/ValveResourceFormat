@@ -1,29 +1,41 @@
 <Project>
   <PropertyGroup>
-    <ProjectBaseVersion>0.2.1</ProjectBaseVersion>
+    <ProjectBaseVersion>10.0</ProjectBaseVersion>
     <ProjectVersion Condition="'$(GITHUB_RUN_NUMBER)' != ''">$(ProjectBaseVersion).$(GITHUB_RUN_NUMBER)</ProjectVersion>
     <ProjectVersion Condition="'$(GITHUB_RUN_NUMBER)' == ''">$(ProjectBaseVersion).0</ProjectVersion>
+    <DefineConstants Condition="'$(GITHUB_REF_TYPE)' == 'tag'">$(DefineConstants);CI_RELEASE_BUILD</DefineConstants>
 
     <AssemblyVersion>$(ProjectBaseVersion)</AssemblyVersion>
     <FileVersion>$(ProjectVersion)</FileVersion>
     <Version>$(ProjectVersion)</Version>
   </PropertyGroup>
+
   <PropertyGroup>
     <Deterministic>true</Deterministic>
-    <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <NeutralLanguage>en</NeutralLanguage>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
+
   <PropertyGroup>
-    <Authors>SteamDB</Authors>
-    <Copyright>Copyright © SteamDB</Copyright>
-    <RepositoryUrl>https://github.com/SteamDatabase/ValveResourceFormat</RepositoryUrl>
+    <Authors>ValveResourceFormat Contributors</Authors>
+    <Copyright>Copyright © ValveResourceFormat Contributors</Copyright>
+    <RepositoryUrl>https://github.com/ValveResourceFormat/ValveResourceFormat</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://vrf.steamdb.info/</PackageProjectUrl>
+    <PackageProjectUrl>https://valveresourceformat.github.io/</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.Numerics" />
+    <Using Include="System.Collections.Generic" />
+  </ItemGroup>
 </Project>

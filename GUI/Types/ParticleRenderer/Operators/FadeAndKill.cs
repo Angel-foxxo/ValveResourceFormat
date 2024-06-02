@@ -1,9 +1,9 @@
-using System;
-using ValveResourceFormat.Serialization;
+using GUI.Utils;
+using ValveResourceFormat;
 
 namespace GUI.Types.ParticleRenderer.Operators
 {
-    public class FadeAndKill : IParticleOperator
+    class FadeAndKill : ParticleFunctionOperator
     {
         private readonly float startFadeInTime;
         private readonly float endFadeInTime = 0.5f;
@@ -13,64 +13,44 @@ namespace GUI.Types.ParticleRenderer.Operators
         private readonly float startAlpha = 1f;
         private readonly float endAlpha;
 
-        public FadeAndKill(IKeyValueCollection keyValues)
+        public FadeAndKill(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_flStartFadeInTime"))
-            {
-                startFadeInTime = keyValues.GetFloatProperty("m_flStartFadeInTime");
-            }
-
-            if (keyValues.ContainsKey("m_flEndFadeInTime"))
-            {
-                endFadeInTime = keyValues.GetFloatProperty("m_flEndFadeInTime");
-            }
-
-            if (keyValues.ContainsKey("m_flStartFadeOutTime"))
-            {
-                startFadeOutTime = keyValues.GetFloatProperty("m_flStartFadeOutTime");
-            }
-
-            if (keyValues.ContainsKey("m_flEndFadeOutTime"))
-            {
-                endFadeOutTime = keyValues.GetFloatProperty("m_flEndFadeOutTime");
-            }
-
-            if (keyValues.ContainsKey("m_flStartAlpha"))
-            {
-                startAlpha = keyValues.GetFloatProperty("m_flStartAlpha");
-            }
-
-            if (keyValues.ContainsKey("m_flEndAlpha"))
-            {
-                endAlpha = keyValues.GetFloatProperty("m_flEndAlpha");
-            }
+            startFadeInTime = parse.Float("m_flStartFadeInTime", startFadeInTime);
+            endFadeInTime = parse.Float("m_flEndFadeInTime", endFadeInTime);
+            startFadeOutTime = parse.Float("m_flStartFadeOutTime", startFadeOutTime);
+            endFadeOutTime = parse.Float("m_flEndFadeOutTime", endFadeOutTime);
+            startAlpha = parse.Float("m_flStartAlpha", startAlpha);
+            endAlpha = parse.Float("m_flEndAlpha", endAlpha);
         }
 
-        public void Update(Span<Particle> particles, float frameTime, ParticleSystemRenderState particleSystemState)
+        public override void Operate(ParticleCollection particles, float frameTime, ParticleSystemRenderState particleSystemState)
         {
-            for (int i = 0; i < particles.Length; ++i)
+            foreach (ref var particle in particles.Current)
             {
-                var time = 1 - (particles[i].Lifetime / particles[i].ConstantLifetime);
+                var time = particle.NormalizedAge;
 
                 // If fading in
                 if (time >= startFadeInTime && time <= endFadeInTime)
                 {
-                    var t = (time - startFadeInTime) / (endFadeInTime - startFadeInTime);
+                    var blend = MathUtils.Remap(time, startFadeInTime, endFadeInTime);
 
                     // Interpolate from startAlpha to constantAlpha
-                    particles[i].Alpha = ((1 - t) * startAlpha) + (t * particles[i].ConstantAlpha);
+                    particle.Alpha = MathUtils.Lerp(blend, startAlpha, particle.GetInitialScalar(particles, ParticleField.Alpha));
                 }
 
                 // If fading out
                 if (time >= startFadeOutTime && time <= endFadeOutTime)
                 {
-                    var t = (time - startFadeOutTime) / (endFadeOutTime - startFadeOutTime);
+                    var blend = MathUtils.Remap(time, startFadeOutTime, endFadeOutTime);
 
                     // Interpolate from constantAlpha to end alpha
-                    particles[i].Alpha = ((1 - t) * particles[i].ConstantAlpha) + (t * endAlpha);
+                    particle.Alpha = MathUtils.Lerp(blend, particle.GetInitialScalar(particles, ParticleField.Alpha), endAlpha);
                 }
 
-                particles[i].Lifetime -= frameTime;
+                if (time >= endFadeOutTime)
+                {
+                    particle.Kill();
+                }
             }
         }
     }

@@ -1,31 +1,36 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using ValveResourceFormat.Serialization;
+using ValveResourceFormat.Serialization.KeyValues;
 
 namespace ValveResourceFormat.ResourceTypes
 {
     public class ParticleSystem : KeyValuesOrNTRO
     {
-        public IEnumerable<IKeyValueCollection> GetRenderers()
-            => Data.GetArray("m_Renderers") ?? Enumerable.Empty<IKeyValueCollection>();
+        public IEnumerable<KVObject> GetRenderers()
+            => Data.GetArray("m_Renderers") ?? Enumerable.Empty<KVObject>();
 
-        public IEnumerable<IKeyValueCollection> GetOperators()
-            => Data.GetArray("m_Operators") ?? Enumerable.Empty<IKeyValueCollection>();
+        public IEnumerable<KVObject> GetOperators()
+            => Data.GetArray("m_Operators") ?? Enumerable.Empty<KVObject>();
 
-        public IEnumerable<IKeyValueCollection> GetInitializers()
-            => Data.GetArray("m_Initializers") ?? Enumerable.Empty<IKeyValueCollection>();
+        public IEnumerable<KVObject> GetForceGenerators()
+            => Data.GetArray("m_ForceGenerators") ?? Enumerable.Empty<KVObject>();
 
-        public IEnumerable<IKeyValueCollection> GetEmitters()
-            => Data.GetArray("m_Emitters") ?? Enumerable.Empty<IKeyValueCollection>();
+        public IEnumerable<KVObject> GetInitializers()
+            => Data.GetArray("m_Initializers") ?? Enumerable.Empty<KVObject>();
+
+        public IEnumerable<KVObject> GetEmitters()
+            => Data.GetArray("m_Emitters") ?? Enumerable.Empty<KVObject>();
+
+        public IEnumerable<KVObject> GetPreEmissionOperators()
+            => Data.GetArray("m_PreEmissionOperators") ?? Enumerable.Empty<KVObject>();
 
         public IEnumerable<string> GetChildParticleNames(bool enabledOnly = false)
         {
-            IEnumerable<IKeyValueCollection> children = Data.GetArray("m_Children");
+            IEnumerable<KVObject> children = Data.GetArray("m_Children");
 
             if (children == null)
             {
-                return Enumerable.Empty<string>();
+                return [];
             }
 
             if (enabledOnly)

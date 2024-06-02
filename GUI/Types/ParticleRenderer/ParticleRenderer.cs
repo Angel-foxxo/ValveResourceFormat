@@ -1,77 +1,113 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using GUI.Types.ParticleRenderer.Emitters;
 using GUI.Types.ParticleRenderer.Initializers;
 using GUI.Types.ParticleRenderer.Operators;
+using GUI.Types.ParticleRenderer.PreEmissionOperators;
 using GUI.Types.ParticleRenderer.Renderers;
 using GUI.Types.Renderer;
 using GUI.Utils;
 using ValveResourceFormat.ResourceTypes;
-using ValveResourceFormat.Serialization;
+using ValveResourceFormat.Serialization.KeyValues;
 
 namespace GUI.Types.ParticleRenderer
 {
-    internal class ParticleRenderer : IRenderer
+    internal class ParticleRenderer
     {
-        public IEnumerable<IParticleEmitter> Emitters { get; private set; } = new List<IParticleEmitter>();
+        private readonly List<ParticleFunctionPreEmissionOperator> PreEmissionOperators = [];
+        private readonly List<ParticleFunctionEmitter> Emitters = [];
 
-        public IEnumerable<IParticleInitializer> Initializers { get; private set; } = new List<IParticleInitializer>();
+        private readonly List<ParticleFunctionInitializer> Initializers = [];
 
-        public IEnumerable<IParticleOperator> Operators { get; private set; } = new List<IParticleOperator>();
+        private readonly List<ParticleFunctionOperator> Operators = [];
 
-        public IEnumerable<IParticleRenderer> Renderers { get; private set; } = new List<IParticleRenderer>();
+        private readonly List<ParticleFunctionRenderer> Renderers = [];
 
-        public AABB BoundingBox { get; private set; }
+        public AABB LocalBoundingBox { get; private set; } = new AABB(new Vector3(float.MinValue), new Vector3(float.MaxValue));
 
-        public Vector3 Position
+        public int BehaviorVersion { get; }
+
+        private readonly int InitialParticles;
+        private readonly int MaxParticles;
+
+        /// <summary>
+        /// The particle bounds to use when calculating the bounding box of the particle system.
+        /// This is added over the particle's radius value.
+        /// </summary>
+        private readonly AABB ParticleBoundingBox;
+
+        /// <summary>
+        /// Set to true to never cull this particle system.
+        /// </summary>
+        private readonly bool InfiniteBounds;
+
+        /// <summary>
+        /// Cache a reference to <see cref="EmitParticle"/> as to not allocate one for every emitted particle.
+        /// </summary>
+        private readonly Action emitParticleAction;
+
+        public ControlPoint MainControlPoint
         {
             get => systemRenderState.GetControlPoint(0);
-            set
-            {
-                systemRenderState.SetControlPoint(0, value);
-                foreach (var child in childParticleRenderers)
-                {
-                    child.Position = value;
-                }
-            }
+            set => systemRenderState.SetControlPoint(0, value);
         }
 
         private readonly List<ParticleRenderer> childParticleRenderers;
         private readonly VrfGuiContext vrfGuiContext;
         private bool hasStarted;
 
-        private ParticleBag particleBag;
+        private readonly ParticleCollection particleCollection;
         private int particlesEmitted;
         private ParticleSystemRenderState systemRenderState;
 
-        // TODO: Passing in position here was for testing, do it properly
-        public ParticleRenderer(ParticleSystem particleSystem, VrfGuiContext vrfGuiContext, Vector3 pos = default)
+        public ParticleRenderer(ParticleSystem particleSystem, VrfGuiContext vrfGuiContext)
         {
-            childParticleRenderers = new List<ParticleRenderer>();
+            emitParticleAction = EmitParticle;
+
+            childParticleRenderers = [];
             this.vrfGuiContext = vrfGuiContext;
 
-            particleBag = new ParticleBag(100, true);
-            systemRenderState = new ParticleSystemRenderState();
+            var parse = new ParticleDefinitionParser(particleSystem.Data);
+            BehaviorVersion = parse.Int32("m_nBehaviorVersion", 13);
+            InitialParticles = parse.Int32("m_nInitialParticles", 0);
+            MaxParticles = parse.Int32("m_nMaxParticles", 1000);
 
-            systemRenderState.SetControlPoint(0, pos);
+            InfiniteBounds = parse.Boolean("m_bInfiniteBounds", false);
+            ParticleBoundingBox = new AABB(
+                parse.Vector3("m_BoundingBoxMin", new Vector3(-10)),
+                parse.Vector3("m_BoundingBoxMax", new Vector3(10))
+            );
 
-            BoundingBox = new AABB(pos + new Vector3(-32, -32, -32), pos + new Vector3(32, 32, 32));
+            var constantAttributes = new Particle(parse);
+            particleCollection = new ParticleCollection(constantAttributes, MaxParticles);
 
-            SetupEmitters(particleSystem.Data, particleSystem.GetEmitters());
+            systemRenderState = new ParticleSystemRenderState()
+            {
+                Data = this,
+                EndEarly = false
+            };
+
+            SetupEmitters(particleSystem.GetEmitters());
             SetupInitializers(particleSystem.GetInitializers());
             SetupOperators(particleSystem.GetOperators());
+            SetupForceGenerators(particleSystem.GetForceGenerators());
             SetupRenderers(particleSystem.GetRenderers());
+            SetupPreEmissionOperators(particleSystem.GetPreEmissionOperators());
 
             SetupChildParticles(particleSystem.GetChildParticleNames(true));
+
+            CalculateBounds();
         }
 
         public void Start()
         {
+            for (var i = 0; i < InitialParticles; ++i)
+            {
+                EmitParticle();
+            }
+
             foreach (var emitter in Emitters)
             {
-                emitter.Start(EmitParticle);
+                emitter.Start(emitParticleAction);
             }
 
             foreach (var childParticleRenderer in childParticleRenderers)
@@ -82,25 +118,29 @@ namespace GUI.Types.ParticleRenderer
 
         private void EmitParticle()
         {
-            int index = particleBag.Add();
+            var index = particleCollection.Add();
             if (index < 0)
             {
-                Console.WriteLine("Out of space in particle bag");
                 return;
             }
 
-            particleBag.LiveParticles[index].ParticleCount = particlesEmitted++;
-            InitializeParticle(ref particleBag.LiveParticles[index]);
-        }
+            if (systemRenderState.ParticleCount >= MaxParticles)
+            {
+                return;
+            }
 
-        private void InitializeParticle(ref Particle p)
-        {
-            p.Position = systemRenderState.GetControlPoint(0);
+            systemRenderState.ParticleCount += 1;
+
+            // TODO: Make particle positions and control points local space
+            particleCollection.Initial[index].Position = MainControlPoint.Position;
 
             foreach (var initializer in Initializers)
             {
-                initializer.Initialize(ref p, systemRenderState);
+                initializer.Initialize(ref particleCollection.Initial[index], systemRenderState);
             }
+
+            particleCollection.Current[index] = particleCollection.Initial[index];
+            particleCollection.Current[index].ParticleID = particlesEmitted++;
         }
 
         public void Stop()
@@ -119,8 +159,8 @@ namespace GUI.Types.ParticleRenderer
         public void Restart()
         {
             Stop();
-            systemRenderState.Lifetime = 0;
-            particleBag.Clear();
+            systemRenderState.Age = 0;
+            particleCollection.Clear();
             Start();
 
             foreach (var childParticleRenderer in childParticleRenderers)
@@ -137,170 +177,329 @@ namespace GUI.Types.ParticleRenderer
                 hasStarted = true;
             }
 
-            systemRenderState.Lifetime += frameTime;
+            systemRenderState.Age += frameTime;
+
+            foreach (var preEmissionOperator in PreEmissionOperators)
+            {
+                preEmissionOperator.Operate(ref systemRenderState, frameTime);
+            }
 
             foreach (var emitter in Emitters)
             {
-                emitter.Update(frameTime);
+                var strength = emitter.GetOperatorRunStrength(systemRenderState);
+
+                if (strength <= 0.0f)
+                {
+                    continue;
+                }
+
+                // TODO: Pass in strength
+                emitter.Emit(frameTime);
             }
 
             foreach (var particleOperator in Operators)
             {
-                particleOperator.Update(particleBag.LiveParticles, frameTime, systemRenderState);
+                var strength = particleOperator.GetOperatorRunStrength(systemRenderState);
+
+                if (strength <= 0.0f)
+                {
+                    continue;
+                }
+
+                // TODO: Pass in strength
+                particleOperator.Operate(particleCollection, frameTime, systemRenderState);
+            }
+
+            // Increase age of all particles
+            for (var i = 0; i < particleCollection.Count; ++i)
+            {
+                particleCollection.Current[i].Age += frameTime;
             }
 
             // Remove all dead particles
-            particleBag.PruneExpired();
-
-            var center = systemRenderState.GetControlPoint(0);
-            if (particleBag.Count == 0)
-            {
-                BoundingBox = new AABB(center, center);
-            }
-            else
-            {
-                var minParticlePos = center;
-                var maxParticlePos = center;
-
-                var liveParticles = particleBag.LiveParticles;
-                for (int i = 0; i < liveParticles.Length; ++i)
-                {
-                    var pos = liveParticles[i].Position;
-                    var radius = liveParticles[i].Radius;
-                    minParticlePos = Vector3.Min(minParticlePos, pos - new Vector3(radius));
-                    maxParticlePos = Vector3.Max(maxParticlePos, pos + new Vector3(radius));
-                }
-
-                BoundingBox = new AABB(minParticlePos, maxParticlePos);
-            }
+            particleCollection.PruneExpired();
 
             foreach (var childParticleRenderer in childParticleRenderers)
             {
                 childParticleRenderer.Update(frameTime);
-                BoundingBox = BoundingBox.Union(childParticleRenderer.BoundingBox);
             }
 
-            // Restart if all emitters are done and all particles expired
-            if (IsFinished())
+            CalculateBounds();
+
+            // TODO: Is this the correct place for this because child particle renderers also check this
+            if (systemRenderState.EndEarly && systemRenderState.Age > systemRenderState.Duration)
             {
-                Restart();
+                if (systemRenderState.DestroyInstantlyOnEnd)
+                {
+                    Restart();
+                }
+                else
+                {
+                    Stop();
+                }
             }
+
+            systemRenderState.ParticleCount = particleCollection.Count;
         }
 
         public bool IsFinished()
-            => Emitters.All(e => e.IsFinished)
-            && particleBag.Count == 0
-            && childParticleRenderers.All(r => r.IsFinished());
-
-        public void Render(Camera camera, RenderPass renderPass)
         {
-            if (particleBag.Count == 0)
+            if (particleCollection.Count > 0)
             {
-                return;
+                return false;
             }
 
-            if (renderPass == RenderPass.Translucent || renderPass == RenderPass.Both)
+            foreach (var emitter in Emitters)
+            {
+                if (!emitter.IsFinished)
+                {
+                    return false;
+                }
+            }
+
+            foreach (var childRenderer in childParticleRenderers)
+            {
+                if (!childRenderer.IsFinished())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public void Render(Camera camera)
+        {
+            foreach (var childParticleRenderer in childParticleRenderers)
+            {
+                childParticleRenderer.Render(camera);
+            }
+
+            if (particleCollection.Count > 0)
             {
                 foreach (var renderer in Renderers)
                 {
-                    renderer.Render(particleBag, camera.ViewProjectionMatrix, camera.CameraViewMatrix);
+                    if (renderer.GetOperatorRunStrength(systemRenderState) <= 0.0f)
+                    {
+                        continue;
+                    }
+
+                    renderer.Render(particleCollection, systemRenderState, camera.CameraViewMatrix);
                 }
+            }
+        }
+
+        public IEnumerable<string> GetSupportedRenderModes()
+            => Renderers
+                .SelectMany(renderer => renderer.GetSupportedRenderModes())
+                .Concat(childParticleRenderers.SelectMany(child => child.GetSupportedRenderModes()))
+                .Distinct();
+
+        public void SetRenderMode(string renderMode)
+        {
+            foreach (var renderer in Renderers)
+            {
+                renderer.SetRenderMode(renderMode);
             }
 
             foreach (var childParticleRenderer in childParticleRenderers)
             {
-                childParticleRenderer.Render(camera, RenderPass.Both);
+                childParticleRenderer.SetRenderMode(renderMode);
             }
         }
 
-        private void SetupEmitters(IKeyValueCollection baseProperties, IEnumerable<IKeyValueCollection> emitterData)
+        private void CalculateBounds()
         {
-            var emitters = new List<IParticleEmitter>();
+            if (InfiniteBounds)
+            {
+                return;
+            }
 
+            var newBounds = new AABB();
+            var worldCenter = MainControlPoint.Position;
+            var additionalBounds = ParticleBoundingBox;
+
+            foreach (ref var particle in particleCollection.Current)
+            {
+                var pos = particle.Position - worldCenter;
+                var radius = new Vector3(particle.Radius);
+
+                newBounds = newBounds.Union(new AABB(pos - radius - additionalBounds.Min, pos + radius + additionalBounds.Max));
+            }
+
+            foreach (var childParticleRenderer in childParticleRenderers)
+            {
+                newBounds = newBounds.Union(childParticleRenderer.LocalBoundingBox);
+            }
+
+            LocalBoundingBox = newBounds;
+        }
+
+        private void SetupEmitters(IEnumerable<KVObject> emitterData)
+        {
             foreach (var emitterInfo in emitterData)
             {
-                var emitterClass = emitterInfo.GetProperty<string>("_class");
-                if (ParticleControllerFactory.TryCreateEmitter(emitterClass, baseProperties, emitterInfo, out var emitter))
+                if (IsOperatorDisabled(emitterInfo))
                 {
-                    emitters.Add(emitter);
+                    continue;
+                }
+
+                var emitterClass = emitterInfo.GetProperty<string>("_class");
+                if (ParticleControllerFactory.TryCreateEmitter(emitterClass, emitterInfo, out var emitter))
+                {
+                    Emitters.Add(emitter);
                 }
                 else
                 {
-                    Console.WriteLine($"Unsupported emitter class '{emitterClass}'.");
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported emitter class '{emitterClass}'.");
                 }
             }
-
-            Emitters = emitters;
         }
 
-        private void SetupInitializers(IEnumerable<IKeyValueCollection> initializerData)
+        private void SetupInitializers(IEnumerable<KVObject> initializerData)
         {
-            var initializers = new List<IParticleInitializer>();
-
             foreach (var initializerInfo in initializerData)
             {
+                if (IsOperatorDisabled(initializerInfo))
+                {
+                    continue;
+                }
+
                 var initializerClass = initializerInfo.GetProperty<string>("_class");
                 if (ParticleControllerFactory.TryCreateInitializer(initializerClass, initializerInfo, out var initializer))
                 {
-                    initializers.Add(initializer);
+                    Initializers.Add(initializer);
                 }
                 else
                 {
-                    Console.WriteLine($"Unsupported initializer class '{initializerClass}'.");
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported initializer class '{initializerClass}'.");
                 }
             }
-
-            Initializers = initializers;
         }
 
-        private void SetupOperators(IEnumerable<IKeyValueCollection> operatorData)
+        private void SetupOperators(IEnumerable<KVObject> operatorData)
         {
-            var operators = new List<IParticleOperator>();
-
             foreach (var operatorInfo in operatorData)
             {
+                if (IsOperatorDisabled(operatorInfo))
+                {
+                    continue;
+                }
+
                 var operatorClass = operatorInfo.GetProperty<string>("_class");
                 if (ParticleControllerFactory.TryCreateOperator(operatorClass, operatorInfo, out var @operator))
                 {
-                    operators.Add(@operator);
+                    Operators.Add(@operator);
                 }
                 else
                 {
-                    Console.WriteLine($"Unsupported operator class '{operatorClass}'.");
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported operator class '{operatorClass}'.");
                 }
             }
-
-            Operators = operators;
         }
 
-        private void SetupRenderers(IEnumerable<IKeyValueCollection> rendererData)
+        private void SetupForceGenerators(IEnumerable<KVObject> forceGeneratorData)
         {
-            var renderers = new List<IParticleRenderer>();
+            foreach (var forceGenerator in forceGeneratorData)
+            {
+                if (IsOperatorDisabled(forceGenerator))
+                {
+                    continue;
+                }
 
+                var operatorClass = forceGenerator.GetProperty<string>("_class");
+                if (ParticleControllerFactory.TryCreateForceGenerator(operatorClass, forceGenerator, out var @operator))
+                {
+                    Operators.Add(@operator);
+                }
+                else
+                {
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported force generator class '{operatorClass}'.");
+                }
+            }
+        }
+
+        private void SetupRenderers(IEnumerable<KVObject> rendererData)
+        {
             foreach (var rendererInfo in rendererData)
             {
+                if (IsOperatorDisabled(rendererInfo))
+                {
+                    continue;
+                }
+
                 var rendererClass = rendererInfo.GetProperty<string>("_class");
                 if (ParticleControllerFactory.TryCreateRender(rendererClass, rendererInfo, vrfGuiContext, out var renderer))
                 {
-                    renderers.Add(renderer);
+                    Renderers.Add(renderer);
                 }
                 else
                 {
-                    Console.WriteLine($"Unsupported renderer class '{rendererClass}'.");
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported renderer class '{rendererClass}'.");
                 }
             }
+        }
+        private void SetupPreEmissionOperators(IEnumerable<KVObject> preEmissionOperatorData)
+        {
+            foreach (var preEmissionOperatorInfo in preEmissionOperatorData)
+            {
+                if (IsOperatorDisabled(preEmissionOperatorInfo))
+                {
+                    continue;
+                }
 
-            Renderers = renderers;
+                var preEmissionOperatorClass = preEmissionOperatorInfo.GetProperty<string>("_class");
+                if (ParticleControllerFactory.TryCreatePreEmissionOperator(preEmissionOperatorClass, preEmissionOperatorInfo, out var preEmissionOperator))
+                {
+                    PreEmissionOperators.Add(preEmissionOperator);
+                }
+                else
+                {
+                    Log.Warn(nameof(ParticleRenderer), $"Unsupported pre-emission operator class '{preEmissionOperatorClass}'.");
+                }
+            }
         }
 
         private void SetupChildParticles(IEnumerable<string> childNames)
         {
             foreach (var childName in childNames)
             {
-                var childResource = vrfGuiContext.LoadFileByAnyMeansNecessary(childName + "_c");
-                var childSystem = (ParticleSystem)childResource.DataBlock;
+                var childResource = vrfGuiContext.LoadFileCompiled(childName);
 
-                childParticleRenderers.Add(new ParticleRenderer(childSystem, vrfGuiContext, systemRenderState.GetControlPoint(0)));
+                if (childResource == null)
+                {
+                    continue;
+                }
+
+                var childSystemDefinition = (ParticleSystem)childResource.DataBlock;
+                var childSystem = new ParticleRenderer(childSystemDefinition, vrfGuiContext)
+                {
+                    MainControlPoint = MainControlPoint
+                };
+
+                childParticleRenderers.Add(childSystem);
+            }
+        }
+
+        private static bool IsOperatorDisabled(KVObject op)
+        {
+            var parse = new ParticleDefinitionParser(op);
+
+            // Also skip ops that only run during endcap (currently unsupported)
+            return parse.Boolean("m_bDisableOperator", default)
+                || parse.Enum<ParticleEndCapMode>("m_nOpEndCapState", default) == ParticleEndCapMode.PARTICLE_ENDCAP_ENDCAP_ON;
+        }
+
+        // todo: set this when viewer checkbox is toggled
+        public void SetWireframe(bool isWireframe)
+        {
+            foreach (var renderer in Renderers)
+            {
+                renderer.SetWireframe(isWireframe);
+            }
+            foreach (var childRenderer in childParticleRenderers)
+            {
+                childRenderer.SetWireframe(isWireframe);
             }
         }
     }

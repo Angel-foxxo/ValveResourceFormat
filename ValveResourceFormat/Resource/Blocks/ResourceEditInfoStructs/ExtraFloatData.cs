@@ -1,4 +1,3 @@
-﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -27,7 +26,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
         public ExtraFloatData()
         {
-            List = new List<EditFloatData>();
+            List = new((int)Size);
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -36,10 +35,11 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             for (var i = 0; i < Size; i++)
             {
-                var dep = new EditFloatData();
-
-                dep.Name = reader.ReadOffsetString(Encoding.UTF8);
-                dep.Value = reader.ReadSingle();
+                var dep = new EditFloatData
+                {
+                    Name = reader.ReadOffsetString(Encoding.UTF8),
+                    Value = reader.ReadSingle()
+                };
 
                 List.Add(dep);
             }

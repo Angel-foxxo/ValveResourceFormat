@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using static ValveResourceFormat.CompiledShader.ShaderDataReader;
 using static ValveResourceFormat.CompiledShader.ShaderUtilHelpers;
-using static ValveResourceFormat.CompiledShader.ZFrameFile;
 
 namespace ValveResourceFormat.CompiledShader
 {
     public class PrintZFrameSummary
     {
         public HandleOutputWrite OutputWriter { get; set; }
-        private ShaderFile shaderFile;
-        private ZFrameFile zframeFile;
-        private bool showRichTextBoxLinks;
+        private readonly ShaderFile shaderFile;
+        private readonly ZFrameFile zframeFile;
+        private readonly bool showRichTextBoxLinks;
 
         // If OutputWriter is left as null; output will be written to Console.
         // Otherwise output is directed to the passed HandleOutputWrite object (defined by the calling application, for example GUI element or file)
@@ -21,13 +19,13 @@ namespace ValveResourceFormat.CompiledShader
         {
             this.shaderFile = shaderFile;
             this.zframeFile = zframeFile;
-            this.OutputWriter = outputWriter ?? ((x) => { Console.Write(x); });
+            OutputWriter = outputWriter ?? ((x) => { Console.Write(x); });
 
-            if (zframeFile.vcsProgramType == VcsProgramType.Features)
+            if (zframeFile.VcsProgramType == VcsProgramType.Features)
             {
                 OutputWriteLine("Zframe byte data (encoding for features files has not been determined)");
-                zframeFile.datareader.BaseStream.Position = 0;
-                string zframeBytes = zframeFile.datareader.ReadBytesAsString((int)zframeFile.datareader.BaseStream.Length);
+                zframeFile.DataReader.BaseStream.Position = 0;
+                var zframeBytes = zframeFile.DataReader.ReadBytesAsString((int)zframeFile.DataReader.BaseStream.Length);
                 OutputWriteLine(zframeBytes);
                 return;
             }
@@ -35,39 +33,30 @@ namespace ValveResourceFormat.CompiledShader
             this.showRichTextBoxLinks = showRichTextBoxLinks;
             if (showRichTextBoxLinks)
             {
-                OutputWriteLine($"View byte detail \\\\{Path.GetFileName(shaderFile.filenamepath)}-ZFRAME{zframeFile.zframeId:x08}-databytes");
+                OutputWriteLine($"View byte detail \\\\{Path.GetFileName(shaderFile.FilenamePath)}-ZFRAME{zframeFile.ZframeId:x08}-databytes");
                 OutputWriteLine("");
             }
             PrintConfigurationState();
-            PrintFrameLeadingArgs();
-            SortedDictionary<int, int> writeSequences = GetWriteSequences();
+            PrintAttributes();
+            var writeSequences = GetBlockToUniqueSequenceMap();
             PrintWriteSequences(writeSequences);
-            PrintDataBlocks(writeSequences);
-
-            if (zframeFile.vcsProgramType == VcsProgramType.VertexShader)
-            {
-                OutputWriteLine($"// configuration states ({zframeFile.leadingSummary.Length}), leading summary\n");
-                OutputWriteLine(SummarizeBytes(zframeFile.leadingSummary) + "\n");
-            }
-            OutputWriteLine($"// configuration states ({zframeFile.trailingSummary.Length}), trailing summary\n");
-            OutputWriteLine(SummarizeBytes(zframeFile.trailingSummary) + "\n");
+            PrintDynamicConfigurations(writeSequences);
             OutputWrite("\n");
-
             PrintSourceSummary();
             PrintEndBlocks();
         }
 
         private void PrintConfigurationState()
         {
-            string configHeader = "Configuration";
+            var configHeader = "Configuration";
             OutputWriteLine(configHeader);
             OutputWriteLine(new string('-', configHeader.Length));
             OutputWriteLine("The static configuration this zframe belongs to (zero or more static parameters)\n");
             ConfigMappingSParams configGen = new(shaderFile);
-            int[] configState = configGen.GetConfigState(zframeFile.zframeId);
-            for (int i = 0; i < configState.Length; i++)
+            var configState = configGen.GetConfigState(zframeFile.ZframeId);
+            for (var i = 0; i < configState.Length; i++)
             {
-                OutputWriteLine($"{shaderFile.sfBlocks[i].name0,-30} {configState[i]}");
+                OutputWriteLine($"{shaderFile.SfBlocks[i].Name,-30} {configState[i]}");
             }
             if (configState.Length == 0)
             {
@@ -77,363 +66,324 @@ namespace ValveResourceFormat.CompiledShader
             OutputWriteLine("");
         }
 
-        private void PrintFrameLeadingArgs()
+        private void PrintAttributes()
         {
-            string headerText = "ZFrame Headers";
+            var headerText = "Attributes";
             OutputWriteLine(headerText);
             OutputWriteLine(new string('-', headerText.Length));
-            OutputWrite(zframeFile.ZFrameHeaderStringDescription());
-            if (zframeFile.zframeParams.Count == 0)
+            OutputWrite(zframeFile.AttributesStringDescription());
+            if (zframeFile.Attributes.Count == 0)
             {
-                OutputWriteLine("[empty frameheader]");
+                OutputWriteLine("[no attributes]");
             }
             OutputWriteLine("");
             OutputWriteLine("");
         }
 
         /*
-         * Occasionally leadingData.h0 (leadingData is the first datablock, always present) is 0 we create the empty
-         * write sequence WRITESEQ[0] (configurations may refer to it) otherwise sequences assigned -1 mean the write
-         * sequence doesn't contain any data and not needed.
-         *
+         * Because the write sequences are often repeated, we only print the unique ones.
          */
-        private SortedDictionary<int, int> GetWriteSequences()
+        public Dictionary<string, int> GetUniqueWriteSequences()
         {
-            Dictionary<string, int> writeSequences = new();
-            SortedDictionary<int, int> sequencesMap = new();
-            int seqCount = 0;
-            // IMP the first entry is always set 0 regardless of whether the leading datablock carries any data
-            sequencesMap.Add(zframeFile.leadingData.blockId, 0);
-            if (zframeFile.leadingData.h0 == 0)
+            Dictionary<string, int> writeSequences = [];
+            var seqCount = 0;
+            writeSequences.Add(BytesToString(zframeFile.LeadingData.Dataload, -1), seqCount++);
+            foreach (var zBlock in zframeFile.DataBlocks)
             {
-                writeSequences.Add("", seqCount++);
-            }
-            else
-            {
-                writeSequences.Add(BytesToString(zframeFile.leadingData.dataload, -1), seqCount++);
-            }
-
-            foreach (ZDataBlock zBlock in zframeFile.dataBlocks)
-            {
-                if (zBlock.dataload == null)
+                if (zBlock.Fields.Length == 0)
                 {
-                    sequencesMap.Add(zBlock.blockId, -1);
                     continue;
                 }
-                string dataloadStr = BytesToString(zBlock.dataload, -1);
-                int seq = writeSequences.GetValueOrDefault(dataloadStr, -1);
-                if (seq == -1)
+
+                var dataloadStr = BytesToString(zBlock.Dataload, -1);
+                if (!writeSequences.ContainsKey(dataloadStr))
                 {
-                    writeSequences.Add(dataloadStr, seqCount);
-                    sequencesMap.Add(zBlock.blockId, seqCount);
-                    seqCount++;
-                }
-                else
-                {
-                    sequencesMap.Add(zBlock.blockId, seq);
+                    writeSequences.Add(dataloadStr, seqCount++);
                 }
             }
+
+            return writeSequences;
+        }
+
+        /*
+         * Occasionally leadingData field count (leadingData is the first datablock, always present) is 0 we create the empty
+         * write sequence WRITESEQ[0] (configurations may refer to it) otherwise sequences assigned -1 mean the write
+         * sequence doesn't contain any data and not needed.
+         */
+        public SortedDictionary<int, int> GetBlockToUniqueSequenceMap()
+        {
+            SortedDictionary<int, int> sequencesMap = new()
+            {
+                // IMP the first entry is always set 0 regardless of whether the leading datablock carries any data
+                { zframeFile.LeadingData.BlockId, 0 }
+            };
+
+            var uniqueSequences = GetUniqueWriteSequences();
+
+            foreach (var zBlock in zframeFile.DataBlocks)
+            {
+                if (zBlock.Fields.Length == 0)
+                {
+                    sequencesMap.Add(zBlock.BlockId, -1);
+                    continue;
+                }
+
+                var dataloadStr = BytesToString(zBlock.Dataload, -1);
+                sequencesMap.Add(zBlock.BlockId, uniqueSequences[dataloadStr]);
+            }
+
             return sequencesMap;
         }
 
         private void PrintWriteSequences(SortedDictionary<int, int> writeSequences)
         {
-            string headerText = "Parameter write sequences";
+            var headerText = "Parameter write sequences";
             OutputWriteLine(headerText);
             OutputWriteLine(new string('-', headerText.Length));
             OutputWriteLine(
                 "This data (thought to be buffer write sequences) appear to be linked to the dynamic (D-param) configurations;\n" +
-                "each configuration points to exactly one sequence. WRITESEQ[0] is always defined and considered 'default'.\n");
+                "each configuration points to exactly one sequence. WRITESEQ[0] is always defined.");
 
-            int lastseq = writeSequences[-1];
-            if (zframeFile.leadingData.h0 > 0)
+            OutputFormatterTabulatedData tabulatedData = new(OutputWriter);
+            var emptyRow = new string[] { "", "", "", "", "" };
+            tabulatedData.DefineHeaders(zframeFile.LeadingData.H0 > 0 ?
+                ["segment", "", nameof(WriteSeqField.Dest), nameof(WriteSeqField.Control), nameof(WriteSeqField.UnknFlags)] :
+                emptyRow);
+            if (zframeFile.LeadingData.H0 > 0)
             {
-                OutputWriteLine("");
+                tabulatedData.AddTabulatedRow(emptyRow);
             }
-            string seqName = $"WRITESEQ[{lastseq}] (default)";
-            ZDataBlock leadData = zframeFile.leadingData;
-            PrintParamWriteSequence(shaderFile, leadData.dataload, leadData.h0, leadData.h1, leadData.h2, seqName: seqName);
-            OutputWriteLine("");
+            tabulatedData.AddTabulatedRow(["WRITESEQ[0]", "", "", "", ""]);
+            var dataBlock0 = zframeFile.LeadingData;
+            PrintParamWriteSequence(dataBlock0, tabulatedData);
+            tabulatedData.AddTabulatedRow(emptyRow);
+
+            var lastSeq = writeSequences[-1];
             foreach (var item in writeSequences)
             {
-                if (item.Value > lastseq)
+                if (item.Value > lastSeq)
                 {
-                    lastseq = item.Value;
-                    ZDataBlock zBlock = zframeFile.dataBlocks[item.Key];
-                    seqName = $"WRITESEQ[{lastseq}]";
-                    PrintParamWriteSequence(shaderFile, zBlock.dataload, zBlock.h0, zBlock.h1, zBlock.h2, seqName: seqName);
-                    OutputWriteLine("");
+                    lastSeq = item.Value;
+                    var dataBlock = zframeFile.DataBlocks[item.Key];
+                    tabulatedData.AddTabulatedRow([$"WRITESEQ[{lastSeq}]", "", "", "", ""]);
+                    PrintParamWriteSequence(dataBlock, tabulatedData);
+                    tabulatedData.AddTabulatedRow(emptyRow);
                 }
             }
+            tabulatedData.PrintTabulatedValues(spacing: 2);
             OutputWriteLine("");
         }
 
-        private void PrintParamWriteSequence(ShaderFile shaderFile, byte[] dataload, int h0, int h1, int h2, string seqName = "")
+        private void PrintParamWriteSequence(ZDataBlock dataBlock, OutputFormatterTabulatedData tabulatedData)
         {
-            string b2Desc = "dest";
-            string b3Desc = "control";
-            string dataBlockHeader = $"{seqName,-35} {b2Desc,-11} {b3Desc}";
-            OutputWriteLine(dataBlockHeader);
-            if (h0 == 0)
-            {
-                OutputWriteLine("[empty writesequence]");
-                return;
-            }
-            for (int i = 0; i < h0; i++)
-            {
-                int paramId = dataload[i * 4];
-                int b2 = dataload[i * 4 + 2];
-                int b3 = dataload[i * 4 + 3];
-                string b2Text = $"{b2,3} ({b2:X02})";
-                if (b2 == 0xff)
-                {
-                    b2Text = $"  _ ({b2:X02})";
-                }
-                string b3Text = $"{b3,3} ({b3:X02})";
-                if (b3 == 0xff)
-                {
-                    b3Text = $"  _ ({b2:X02})";
-                }
-                OutputWrite($"[{paramId,3}] {shaderFile.paramBlocks[paramId].name0,-30} {b2Text,-14} {b3Text}");
-                if (i + 1 == h0 && h0 != h2)
-                {
-                    OutputWrite($"   // {h0}");
-                }
-                if (i + 1 == h1)
-                {
-                    OutputWrite($"   // {h1}");
-                }
-                if (i + 1 == h2)
-                {
-                    OutputWrite($"   // {h2}");
-                }
-                OutputWriteLine("");
-            }
+            PrintParamWriteSequenceSegment(dataBlock.Evaluated, 0, tabulatedData);
+            PrintParamWriteSequenceSegment(dataBlock.Segment1, 1, tabulatedData);
+            PrintParamWriteSequenceSegment(dataBlock.Globals, 2, tabulatedData);
         }
 
-        private void PrintDataBlocks(SortedDictionary<int, int> writeSequences)
+        private void PrintParamWriteSequenceSegment(IReadOnlyList<WriteSeqField> segment, int segId, OutputFormatterTabulatedData tabulatedData)
         {
-            Dictionary<int, GpuSource> blockIdToSource = GetBlockIdToSource(zframeFile);
-            string configHeader = $"Dynamic (D-Param) configurations ({blockIdToSource.Count} defined)";
-            OutputWriteLine(configHeader);
-            OutputWriteLine(new string('-', configHeader.Length));
-            OutputWriteLine(
-                "Each dynamic parameters has 1 or more defined states. The disabled state (0) is shown as '_'\n" +
-                "All permitted configurations are listed with their matching write sequence and GPU source (there is exactly\n" +
-                "one of these for each configuration). To save space, the parameter names (original names starting with D_)\n" +
-                "are shortened to 3-5 length strings (shown in parenthesis).\n");
-            PrintAbbreviations();
-            List<int> activeBlockIds = GetActiveBlockIds();
-            List<string> dParamNames = new();
-            foreach (DBlock dBlock in shaderFile.dBlocks)
+            var segmentDesc = segId switch
             {
-                dParamNames.Add(ShortenShaderParam(dBlock.name0).ToLower());
-            }
-            string configNames = CombineStringsSpaceSep(dParamNames.ToArray(), 6);
-            configNames = $"{new string(' ', 5)}{configNames}";
-            int dBlockCount = 0;
-            foreach (int blockId in activeBlockIds)
-            {
-                if (dBlockCount % 100 == 0)
-                {
-                    OutputWriteLine($"{configNames}");
-                }
-                dBlockCount++;
-                int[] dBlockConfig = shaderFile.GetDBlockConfig(blockId);
-                string configStr = CombineIntsSpaceSep(dBlockConfig, 6);
-                string writeSeqText = $"WRITESEQ[{writeSequences[blockId]}]";
-                if (writeSequences[blockId] == -1)
-                {
-                    writeSeqText = "[empty]";
-                }
-                OutputWrite($"[{blockId:X02}] {configStr}   {writeSeqText,-12}");
-                GpuSource blockSource = blockIdToSource[blockId];
+                0 => "Evaluated",
+                2 => "_Globals_",
+                _ => "seg_" + segId
+            };
 
-                if (showRichTextBoxLinks)
+            if (segment.Count > 0)
+            {
+                for (var i = 0; i < segment.Count; i++)
                 {
-                    OutputWriteLine($"{blockSource.GetBlockName()}[{blockSource.sourceId}] \\\\source\\{blockSource.sourceId}");
-                }
-                else
-                {
-                    string sourceDesc = $"{blockSource.GetBlockName()}[{blockSource.GetEditorRefIdAsString()}]";
-                    OutputWriteLine(sourceDesc);
-                }
-            }
-            OutputWriteLine("\n");
-        }
-
-        private void PrintAbbreviations()
-        {
-            List<string> abbreviations = new();
-            foreach (var dBlock in shaderFile.dBlocks)
-            {
-                string abbreviation = $"{dBlock.name0}({ShortenShaderParam(dBlock.name0).ToLower()})";
-                abbreviations.Add(abbreviation);
-            }
-            if (abbreviations.Count == 0)
-            {
-                return;
-            }
-
-            string[] breakabbreviations = CombineValuesBreakString(abbreviations.ToArray(), 120);
-            if (breakabbreviations.Length == 1 && breakabbreviations[0].Length == 0)
-            {
-                return;
-            }
-            foreach (string abbr in breakabbreviations)
-            {
-                OutputWriteLine(abbr);
-            }
-            OutputWriteLine("");
-        }
-
-        private List<int> GetActiveBlockIds()
-        {
-            List<int> blockIds = new();
-            if (zframeFile.vcsProgramType == VcsProgramType.VertexShader || zframeFile.vcsProgramType == VcsProgramType.GeometryShader ||
-                zframeFile.vcsProgramType == VcsProgramType.ComputeShader || zframeFile.vcsProgramType == VcsProgramType.DomainShader ||
-                zframeFile.vcsProgramType == VcsProgramType.HullShader)
-            {
-                foreach (VsEndBlock vsEndBlock in zframeFile.vsEndBlocks)
-                {
-                    blockIds.Add(vsEndBlock.blockIdRef);
+                    var field = segment[i];
+                    var paramDesc = $"[{field.ParamId}] {shaderFile.ParamBlocks[field.ParamId].Name}";
+                    var buffDesc = field.UnknFlags == WriteSeqFieldFlags.None ? $"{"_",7}" : $"{field.UnknFlags,7}";
+                    var arg1Desc = field.Dest == 0xff ? $"{"_",7}" : $"{field.Dest,7}";
+                    var arg2Desc = field.Control == 0xff ? $"{"_",10}" : $"{field.Control,10}";
+                    tabulatedData.AddTabulatedRow([i == 0 ? segmentDesc : string.Empty, paramDesc, arg1Desc, arg2Desc, buffDesc]);
                 }
             }
             else
             {
-                foreach (PsEndBlock psEndBlock in zframeFile.psEndBlocks)
-                {
-                    blockIds.Add(psEndBlock.blockIdRef);
-                }
+                tabulatedData.AddTabulatedRow([segmentDesc, "[empty]", "", "", ""]);
             }
-            return blockIds;
+        }
+
+        private void PrintDynamicConfigurations(SortedDictionary<int, int> writeSequences)
+        {
+            var blockIdToSource = GetBlockIdToSource(zframeFile);
+            var abbreviations = DConfigsAbbreviations();
+            var hasOnlyDefaultConfiguration = blockIdToSource.Count == 1;
+            var hasNoDConfigsDefined = abbreviations.Count == 0;
+            var isVertexShader = zframeFile.VcsProgramType == VcsProgramType.VertexShader;
+
+            var configsDefined = hasOnlyDefaultConfiguration ? "" : $" ({blockIdToSource.Count} defined)";
+            var configHeader = $"Dynamic (D-Param) configurations{configsDefined}";
+            OutputWriteLine(configHeader);
+            OutputWriteLine(new string('-', configHeader.Length));
+
+            OutputFormatterTabulatedData tabulatedConfigNames = new(OutputWriter);
+            tabulatedConfigNames.DefineHeaders(["", "abbrev."]);
+
+            List<string> shortenedNames = [];
+            foreach (var abbrev in abbreviations)
+            {
+                tabulatedConfigNames.AddTabulatedRow([$"{abbrev.Item1}", $"{abbrev.Item2}"]);
+                shortenedNames.Add(abbrev.Item2);
+            }
+
+            OutputFormatterTabulatedData tabulatedConfigCombinations = new(OutputWriter);
+            tabulatedConfigCombinations.DefineHeaders([.. shortenedNames]);
+
+            var activeBlockIds = zframeFile.EndBlocks.Select(endBlock => endBlock.BlockIdRef).ToList();
+            foreach (var blockId in activeBlockIds)
+            {
+                var dBlockConfig = shaderFile.GetDBlockConfig(blockId);
+                tabulatedConfigCombinations.AddTabulatedRow(IntArrayToStrings(dBlockConfig, nulledValue: 0));
+            }
+            var tabbedConfigs = new Stack<string>(tabulatedConfigCombinations.BuildTabulatedRows(reverse: true));
+            if (tabbedConfigs.Count == 0)
+            {
+                OutputWriteLine("No dynamic parameters defined");
+            }
+            else
+            {
+                tabulatedConfigNames.PrintTabulatedValues();
+            }
+            OutputWriteLine("");
+            var dNamesHeader = hasNoDConfigsDefined ? "" : tabbedConfigs.Pop();
+            var gpuSourceName = zframeFile.GpuSources[0].BlockName.ToLowerInvariant();
+            var sourceHeader = $"{gpuSourceName}-source";
+            string[] dConfigHeaders = isVertexShader ?
+                    ["config-id", dNamesHeader, "write-seq.", sourceHeader, "gpu-inputs", nameof(ZFrameFile.UnknownArg), nameof(ZFrameFile.UnknownArg2), nameof(GpuSource.HashMD5)] :
+                    ["config-id", dNamesHeader, "write-seq.", sourceHeader, nameof(ZFrameFile.UnknownArg), nameof(ZFrameFile.UnknownArg2), nameof(GpuSource.HashMD5)];
+            OutputFormatterTabulatedData tabulatedConfigFull = new(OutputWriter);
+            tabulatedConfigFull.DefineHeaders(dConfigHeaders);
+
+            var dBlockCount = 0;
+            foreach (var blockId in activeBlockIds)
+            {
+                dBlockCount++;
+                if (dBlockCount % 100 == 0)
+                {
+                    tabulatedConfigFull.AddTabulatedRow(isVertexShader ?
+                        ["", dNamesHeader, "", "", "", "", "", ""] :
+                        ["", dNamesHeader, "", "", "", "", ""]);
+                }
+                var configIdText = $"0x{blockId:x}";
+                var configCombText = hasNoDConfigsDefined ? $"{"(default)",-14}" : tabbedConfigs.Pop();
+                var writeSeqText = writeSequences[blockId] == -1 ? "[empty]" : $"seq[{writeSequences[blockId]}]";
+                var blockSource = blockIdToSource[blockId];
+                var sourceLink = showRichTextBoxLinks ?
+                    @$"\\source\{blockSource.SourceId}" :
+                    $"{gpuSourceName}[{blockSource.HashMD5}]";
+                var vsInputs = isVertexShader ?
+                    zframeFile.VShaderInputs[blockId] : -1;
+                var gpuInputText = vsInputs >= 0 ? $"VS-symbols[{zframeFile.VShaderInputs[blockId]}]" : "[none]";
+                var arg1Text = $"{zframeFile.UnknownArg[blockId]}";
+                var arg2Text = $"{zframeFile.UnknownArg2[blockId]}";
+                var hash = blockSource.HashMD5.ToString();
+                tabulatedConfigFull.AddTabulatedRow(
+                    isVertexShader ?
+                    [configIdText, configCombText, writeSeqText, sourceLink, gpuInputText, arg1Text, arg2Text, hash] :
+                    [configIdText, configCombText, writeSeqText, sourceLink, arg1Text, arg2Text, hash]);
+            }
+
+            tabulatedConfigFull.PrintTabulatedValues();
+            if (!hasNoDConfigsDefined)
+            {
+                OutputWriteLine("");
+            }
+        }
+
+        private List<(string, string)> DConfigsAbbreviations()
+        {
+            List<(string, string)> abbreviations = [];
+            foreach (var dBlock in shaderFile.DBlocks)
+            {
+                var abbreviation = ShortenShaderParam(dBlock.Name).ToLowerInvariant();
+                abbreviations.Add((dBlock.Name, abbreviation));
+            }
+            return abbreviations;
         }
 
         static Dictionary<int, GpuSource> GetBlockIdToSource(ZFrameFile zframeFile)
         {
-            Dictionary<int, GpuSource> blockIdToSource = new();
-            if (zframeFile.vcsProgramType == VcsProgramType.VertexShader || zframeFile.vcsProgramType == VcsProgramType.GeometryShader ||
-                zframeFile.vcsProgramType == VcsProgramType.ComputeShader || zframeFile.vcsProgramType == VcsProgramType.DomainShader ||
-                zframeFile.vcsProgramType == VcsProgramType.HullShader)
+            Dictionary<int, GpuSource> blockIdToSource = [];
+            foreach (var endBlock in zframeFile.EndBlocks)
             {
-                foreach (VsEndBlock vsEndBlock in zframeFile.vsEndBlocks)
-                {
-                    blockIdToSource.Add(vsEndBlock.blockIdRef, zframeFile.gpuSources[vsEndBlock.sourceRef]);
-                }
-            }
-            else
-            {
-                foreach (PsEndBlock psEndBlock in zframeFile.psEndBlocks)
-                {
-                    blockIdToSource.Add(psEndBlock.blockIdRef, zframeFile.gpuSources[psEndBlock.sourceRef]);
-                }
+                blockIdToSource.Add(endBlock.BlockIdRef, zframeFile.GpuSources[endBlock.SourceRef]);
             }
             return blockIdToSource;
         }
 
-
-        public static string SummarizeBytes(int[] bytes)
-        {
-            string summaryDesc = "";
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                if (i > 0 && i % 16 == 0)
-                {
-                    summaryDesc += "\n";
-                }
-                summaryDesc += bytes[i] > -1 ? $"{bytes[i],-8}" : "_  ".PadRight(8);
-            }
-            return summaryDesc.Trim();
-        }
-
-
         private void PrintSourceSummary()
         {
-            string headerText = "source bytes/flags";
+            var headerText = "source bytes/flags";
             OutputWriteLine(headerText);
             OutputWriteLine(new string('-', headerText.Length));
-            int b0 = zframeFile.flags0[0];
-            int b1 = zframeFile.flags0[1];
-            int b2 = zframeFile.flags0[2];
-            int b3 = zframeFile.flags0[3];
+            int b0 = zframeFile.Flags0[0];
+            int b1 = zframeFile.Flags0[1];
+            int b2 = zframeFile.Flags0[2];
+            int b3 = zframeFile.Flags0[3];
             OutputWriteLine($"{b0:X02}      // possible control byte ({b0}) or flags ({Convert.ToString(b0, 2).PadLeft(8, '0')})");
             OutputWriteLine($"{b1:X02}      // values seen (0,1,2)");
             OutputWriteLine($"{b2:X02}      // always 0");
             OutputWriteLine($"{b3:X02}      // always 0");
-            OutputWriteLine($"{zframeFile.flagbyte0}       // values seen 0,1");
-            OutputWriteLine($"{zframeFile.gpuSourceCount,-6}  // nr of source files");
-            OutputWriteLine($"{zframeFile.flagbyte1}       // values seen 0,1");
+            OutputWriteLine($"{zframeFile.Flagbyte0}       // values seen 0,1");
+            OutputWriteLine($"{zframeFile.Flagbyte1}       // added with v66");
+            OutputWriteLine($"{zframeFile.GpuSourceCount,-6}  // nr of source files");
+            OutputWriteLine($"{zframeFile.Flagbyte2}       // values seen 0,1");
             OutputWriteLine("");
             OutputWriteLine("");
-        }
-
-        private static string ByteToBinary(int b0)
-        {
-            string byteString = "";
-            byteString += $"{Convert.ToString(b0 >> 4, 2).PadLeft(4, '0')}";
-            byteString += " ";
-            byteString += $"{Convert.ToString(b0 & 0xf, 2).PadLeft(4, '0')}";
-            return byteString;
         }
 
         private void PrintEndBlocks()
         {
-            string headerText = "End blocks";
-            OutputWriteLine($"{headerText}");
+            var headerText = $"End blocks";
+            OutputWriteLine(headerText);
             OutputWriteLine(new string('-', headerText.Length));
 
-            VcsProgramType vcsFiletype = shaderFile.vcsProgramType;
-            if (vcsFiletype == VcsProgramType.VertexShader || vcsFiletype == VcsProgramType.GeometryShader ||
-                vcsFiletype == VcsProgramType.ComputeShader || vcsFiletype == VcsProgramType.DomainShader ||
-                vcsFiletype == VcsProgramType.HullShader)
+            var vcsFiletype = shaderFile.VcsProgramType;
+
+            OutputWriteLine($"{zframeFile.EndBlocks.Count:X02} 00 00 00   // end blocks ({zframeFile.EndBlocks.Count})");
+            OutputWriteLine("");
+
+            foreach (var endBlock in zframeFile.EndBlocks)
             {
-                OutputWriteLine($"{zframeFile.vsEndBlocks.Count:X02} 00 00 00   // end blocks ({zframeFile.vsEndBlocks.Count})");
-                OutputWriteLine("");
-                foreach (VsEndBlock vsEndBlock in zframeFile.vsEndBlocks)
+                OutputWriteLine($"block-ref         {endBlock.BlockIdRef}");
+                OutputWriteLine($"arg0              {endBlock.Arg0}");
+                OutputWriteLine($"source-ref        {endBlock.SourceRef}");
+                OutputWriteLine($"source-pointer    {endBlock.SourcePointer}");
+
+                if (endBlock is ZFrameFile.HsEndBlock hsEndBlock)
                 {
-                    OutputWriteLine($"block-ref         {vsEndBlock.blockIdRef}");
-                    OutputWriteLine($"arg0              {vsEndBlock.arg0}");
-                    OutputWriteLine($"source-ref        {vsEndBlock.sourceRef}");
-                    OutputWriteLine($"source-pointer    {vsEndBlock.sourcePointer}");
-                    if (vcsFiletype == VcsProgramType.HullShader)
-                    {
-                        OutputWriteLine($"hs-arg            {vsEndBlock.hullShaderArg}");
-                    }
-                    OutputWriteLine($"{BytesToString(vsEndBlock.databytes)}");
-                    OutputWriteLine("");
+                    OutputWriteLine($"hs-arg            {hsEndBlock.HullShaderArg}");
                 }
-            }
-            else
-            {
-                OutputWriteLine($"{zframeFile.psEndBlocks.Count:X02} 00 00 00   // end blocks ({zframeFile.psEndBlocks.Count})");
-                OutputWriteLine("");
-                foreach (PsEndBlock psEndBlock in zframeFile.psEndBlocks)
+                else if (endBlock is ZFrameFile.PsEndBlock psEndBlock)
                 {
-                    OutputWriteLine($"block-ref         {psEndBlock.blockIdRef}");
-                    OutputWriteLine($"arg0              {psEndBlock.arg0}");
-                    OutputWriteLine($"source-ref        {psEndBlock.sourceRef}");
-                    OutputWriteLine($"source-pointer    {psEndBlock.sourcePointer}");
-                    OutputWriteLine($"has data ({psEndBlock.hasData0},{psEndBlock.hasData1},{psEndBlock.hasData2})");
-                    if (psEndBlock.hasData0)
+                    OutputWriteLine($"has data ({psEndBlock.HasData0},{psEndBlock.HasData1},{psEndBlock.HasData2})");
+                    if (psEndBlock.HasData0)
                     {
                         OutputWriteLine("// data-section 0");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data0)}");
+                        OutputWriteLine($"{BytesToString(psEndBlock.Data0)}");
                     }
-                    if (psEndBlock.hasData1)
+                    if (psEndBlock.HasData1)
                     {
                         OutputWriteLine("// data-section 1");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data1)}");
+                        OutputWriteLine($"{BytesToString(psEndBlock.Data1)}");
                     }
-                    if (psEndBlock.hasData2)
+                    if (psEndBlock.HasData2)
                     {
                         OutputWriteLine("// data-section 2");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data2[0..3])}");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data2[3..27])}");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data2[27..51])}");
-                        OutputWriteLine($"{BytesToString(psEndBlock.data2[51..75])}");
+                        var data2 = psEndBlock.Data2.AsSpan();
+                        OutputWriteLine($"{BytesToString(data2[0..3])}");
+                        OutputWriteLine($"{BytesToString(data2[3..27])}");
+                        OutputWriteLine($"{BytesToString(data2[27..51])}");
+                        OutputWriteLine($"{BytesToString(data2[51..75])}");
                     }
-                    OutputWriteLine("");
                 }
+
+                OutputWriteLine("");
             }
         }
 

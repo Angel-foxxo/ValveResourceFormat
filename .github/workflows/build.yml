@@ -1,8 +1,18 @@
 name: CI
 
+permissions:
+  actions: write
+  contents: write
+
 on:
   push:
+    paths-ignore:
+    - '.github/*_TEMPLATE/**'
+    - '*.md'
   pull_request:
+    paths-ignore:
+    - '.github/*_TEMPLATE/**'
+    - '*.md'
   workflow_dispatch:
   schedule:
   - cron: "0 10 1 * *"
@@ -12,136 +22,144 @@ jobs:
     name: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
 
-    - name: Build CLI
-      run: dotnet build -c Release ./Decompiler/Decompiler.csproj
+    - name: Cache NuGet
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          nuget-${{ runner.os }}-
+          nuget-
 
     - name: Build Library
       run: dotnet build -c Release ./ValveResourceFormat/ValveResourceFormat.csproj
+
+    - name: Build CLI
+      run: dotnet build -c Release ./Decompiler/Decompiler.csproj
 
     - name: Build GUI
       if: matrix.os == 'windows-latest'
       run: dotnet build -c Release ./ValveResourceFormat/ValveResourceFormat.csproj
 
     - name: Run tests
-      run: dotnet test -v normal ./Tests/Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput='./lcov.info' /p:Include="[ValveResourceFormat*]*"
+      run: dotnet test ./Tests/Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput='./lcov.info' /p:Include="[ValveResourceFormat*]*"
+
+#    - name: Check formatting
+#      if: matrix.os == 'ubuntu-latest'
+#      run: dotnet format --verify-no-changes
 
     - name: Pack nupkg
       run: dotnet pack --configuration Release ValveResourceFormat/ValveResourceFormat.csproj
 
     - name: Publish GUI
       if: matrix.os == 'windows-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime win-x64 GUI/GUI.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime win-x64 GUI/GUI.csproj
 
     - name: Publish Decompiler (Windows x64)
       if: matrix.os == 'windows-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime win-x64 Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime win-x64 Decompiler/Decompiler.csproj
 
     - name: Publish Decompiler (Linux x64)
       if: matrix.os == 'ubuntu-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime linux-x64 Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime linux-x64 Decompiler/Decompiler.csproj
 
     - name: Publish Decompiler (Linux arm)
       if: matrix.os == 'ubuntu-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime linux-arm Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime linux-arm Decompiler/Decompiler.csproj
 
     - name: Publish Decompiler (Linux arm64)
       if: matrix.os == 'ubuntu-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime linux-arm64 Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime linux-arm64 Decompiler/Decompiler.csproj
 
     - name: Publish Decompiler (macOS x64)
       if: matrix.os == 'macos-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime osx-x64 Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime osx-x64 Decompiler/Decompiler.csproj
 
     - name: Publish Decompiler (macOS arm64)
       if: matrix.os == 'macos-latest'
-      run: dotnet publish --configuration Release -p:PublishSingleFile=true --self-contained --runtime osx-arm64 Decompiler/Decompiler.csproj
+      run: dotnet publish --configuration Release --self-contained --runtime osx-arm64 Decompiler/Decompiler.csproj
 
     - name: Upload GUI
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'windows-latest'
       with:
-        name: VRF-GUI
+        name: Source2Viewer
         path: GUI/bin/Release/win-x64/publish
 
     - name: Upload nupkg
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'windows-latest'
       with:
         name: nupkg
         path: 'ValveResourceFormat/bin/Release/*.nupkg'
 
     - name: Upload Decompiler (Windows x64)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'windows-latest'
       with:
         name: Decompiler-windows-x64
         path: Decompiler/bin/Release/win-x64/publish
 
     - name: Upload Decompiler (Linux x64)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'ubuntu-latest'
       with:
         name: Decompiler-linux-x64
         path: Decompiler/bin/Release/linux-x64/publish
 
     - name: Upload Decompiler (Linux arm)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'ubuntu-latest'
       with:
         name: Decompiler-linux-arm
         path: Decompiler/bin/Release/linux-arm/publish
 
     - name: Upload Decompiler (Linux arm64)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'ubuntu-latest'
       with:
         name: Decompiler-linux-arm64
         path: Decompiler/bin/Release/linux-arm64/publish
 
     - name: Upload Decompiler (macOS x64)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'macos-latest'
       with:
         name: Decompiler-macos-x64
         path: Decompiler/bin/Release/osx-x64/publish
 
     - name: Upload Decompiler (macOS arm64)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: matrix.os == 'macos-latest'
       with:
         name: Decompiler-macos-arm64
         path: Decompiler/bin/Release/osx-arm64/publish
 
     - name: Upload test coverage
-      uses: coverallsapp/github-action@v1.1.2
+      uses: codecov/codecov-action@v4
+      if: github.ref == 'refs/heads/master'
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./Tests/lcov.info
-        flag-name: run-${{ matrix.test_number }}
-        parallel: true
-
-  finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@v1.1.2
-      with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./Tests/lcov.info
+        fail_ci_if_error: true
+        verbose: true
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -149,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         path: artifacts
 
@@ -159,6 +177,7 @@ jobs:
 
     - name: Create release files
       run: |
+       set -eux
        mkdir release
        chmod +x artifacts/Decompiler-linux-x64/Decompiler
        chmod +x artifacts/Decompiler-linux-arm/Decompiler
@@ -171,17 +190,20 @@ jobs:
        zip -9j release/Decompiler-linux-arm64.zip artifacts/Decompiler-linux-arm64/*
        zip -9j release/Decompiler-macos-x64.zip artifacts/Decompiler-macos-x64/*
        zip -9j release/Decompiler-macos-arm64.zip artifacts/Decompiler-macos-arm64/*
-       mv artifacts/VRF-GUI/VRF.exe release/
-       mv artifacts/nupkg/*.nupkg release/
+       mv artifacts/Source2Viewer/Source2Viewer.exe release/
+       mv artifacts/nupkg/ValveResourceFormat.*.nupkg release/ValveResourceFormat.nupkg
 
     - name: Display structure of archived files
       run: ls -Rl
       working-directory: release
 
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         draft: true
         files: release/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to NuGet Gallery
+      run: dotnet nuget push release/ValveResourceFormat.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source "https://api.nuget.org/v3/index.json"

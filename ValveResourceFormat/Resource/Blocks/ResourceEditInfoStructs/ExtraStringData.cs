@@ -1,5 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -19,7 +17,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
                 writer.Indent++;
                 writer.WriteLine("CResourceString m_Name = \"{0}\"", Name);
 
-                var lines = Value.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                var lines = Value.Split(["\r\n", "\n"], StringSplitOptions.None);
 
                 if (lines.Length > 1)
                 {
@@ -50,7 +48,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
         public ExtraStringData()
         {
-            List = new List<EditStringData>();
+            List = new((int)Size);
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -59,10 +57,11 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             for (var i = 0; i < Size; i++)
             {
-                var dep = new EditStringData();
-
-                dep.Name = reader.ReadOffsetString(Encoding.UTF8);
-                dep.Value = reader.ReadOffsetString(Encoding.UTF8);
+                var dep = new EditStringData
+                {
+                    Name = reader.ReadOffsetString(Encoding.UTF8),
+                    Value = reader.ReadOffsetString(Encoding.UTF8)
+                };
 
                 List.Add(dep);
             }

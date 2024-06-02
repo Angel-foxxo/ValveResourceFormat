@@ -1,35 +1,22 @@
-using System;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RandomLifeTime : IParticleInitializer
+    class RandomLifeTime : ParticleFunctionInitializer
     {
-        private readonly Random random;
-
         private readonly float lifetimeMin;
         private readonly float lifetimeMax;
+        private readonly float lifetimeRandomExponent = 1;
 
-        public RandomLifeTime(IKeyValueCollection keyValues)
+        public RandomLifeTime(ParticleDefinitionParser parse) : base(parse)
         {
-            random = new Random();
-
-            if (keyValues.ContainsKey("m_fLifetimeMin"))
-            {
-                lifetimeMin = keyValues.GetFloatProperty("m_fLifetimeMin");
-            }
-
-            if (keyValues.ContainsKey("m_fLifetimeMax"))
-            {
-                lifetimeMax = keyValues.GetFloatProperty("m_fLifetimeMax");
-            }
+            lifetimeMin = parse.Float("m_fLifetimeMin", lifetimeMin);
+            lifetimeMax = parse.Float("m_fLifetimeMax", lifetimeMax);
+            lifetimeMax = parse.Float("m_flLifetimeRandExponent", lifetimeMax);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var lifetime = lifetimeMin + ((lifetimeMax - lifetimeMin) * (float)random.NextDouble());
+            var lifetime = ParticleCollection.RandomWithExponentBetween(particle.ParticleID, lifetimeRandomExponent, lifetimeMin, lifetimeMax);
 
-            particle.ConstantLifetime = lifetime;
             particle.Lifetime = lifetime;
 
             return particle;

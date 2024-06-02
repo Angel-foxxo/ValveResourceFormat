@@ -1,55 +1,39 @@
-using System;
-using System.Numerics;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RingWave : IParticleInitializer
+    class RingWave : ParticleFunctionInitializer
     {
         private readonly bool evenDistribution;
-        private readonly float initialRadius;
-        private readonly float thickness;
-        private readonly float particlesPerOrbit = -1f;
-
-        private readonly Random random = new Random();
+        private readonly INumberProvider initialRadius = new LiteralNumberProvider(0);
+        private readonly INumberProvider thickness = new LiteralNumberProvider(0);
+        private readonly INumberProvider particlesPerOrbit = new LiteralNumberProvider(-1);
 
         private float orbitCount;
 
-        public RingWave(IKeyValueCollection keyValues)
+        public RingWave(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_bEvenDistribution"))
-            {
-                evenDistribution = keyValues.GetProperty<bool>("m_bEvenDistribution");
-            }
+            evenDistribution = parse.Boolean("m_bEvenDistribution", evenDistribution);
+            particlesPerOrbit = parse.NumberProvider("m_flParticlesPerOrbit", particlesPerOrbit);
+            initialRadius = parse.NumberProvider("m_flInitialRadius", initialRadius);
+            thickness = parse.NumberProvider("m_flThickness", thickness);
 
-            if (keyValues.ContainsKey("m_flParticlesPerOrbit"))
-            {
-                particlesPerOrbit = keyValues.GetFloatProperty("m_flParticlesPerOrbit");
-            }
-
-            if (keyValues.ContainsKey("m_flInitialRadius"))
-            {
-                initialRadius = keyValues.GetFloatProperty("m_flInitialRadius");
-            }
-
-            if (keyValues.ContainsKey("m_flThickness"))
-            {
-                thickness = keyValues.GetFloatProperty("m_flThickness");
-            }
+            // other properties: m_vInitialSpeedMin/Max, m_flRoll
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var radius = initialRadius + ((float)random.NextDouble() * thickness);
+            var thickness = this.thickness.NextNumber(ref particle, particleSystemState);
+            var particlesPerOrbit = this.particlesPerOrbit.NextInt(ref particle, particleSystemState);
 
-            var angle = GetNextAngle();
+            var radius = initialRadius.NextNumber(ref particle, particleSystemState) + (Random.Shared.NextSingle() * thickness);
 
-            particle.Position += radius * new Vector3((float)Math.Cos(angle), (float)Math.Sin(angle), 0);
+            var angle = GetNextAngle(particlesPerOrbit);
+
+            particle.Position += radius * new Vector3(MathF.Cos(angle), MathF.Sin(angle), 0);
 
             return particle;
         }
 
-        private double GetNextAngle()
+        private float GetNextAngle(int particlesPerOrbit)
         {
             if (evenDistribution)
             {
@@ -57,12 +41,12 @@ namespace GUI.Types.ParticleRenderer.Initializers
 
                 orbitCount = (orbitCount + 1) % particlesPerOrbit;
 
-                return offset * 2 * Math.PI;
+                return offset * 2 * MathF.PI;
             }
             else
             {
                 // Return a random angle between 0 and 2pi
-                return 2 * Math.PI * random.NextDouble();
+                return 2 * MathF.PI * Random.Shared.NextSingle();
             }
         }
     }

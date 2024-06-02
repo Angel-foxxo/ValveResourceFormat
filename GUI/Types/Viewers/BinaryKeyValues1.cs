@@ -1,27 +1,27 @@
-using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using GUI.Controls;
 using GUI.Utils;
 using ValveKeyValue;
 using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Viewers
 {
-    public class BinaryKeyValues1 : IViewer
+    class BinaryKeyValues1 : IViewer
     {
         public static bool IsAccepted(uint magic)
         {
             return magic == BinaryKV1.MAGIC;
         }
 
-        public TabPage Create(VrfGuiContext vrfGuiContext, byte[] input)
+        public TabPage Create(VrfGuiContext vrfGuiContext, Stream input)
         {
             Stream stream;
             KVObject kv;
 
             if (input != null)
             {
-                stream = new MemoryStream(input);
+                stream = input;
             }
             else
             {
@@ -46,14 +46,7 @@ namespace GUI.Types.Viewers
 
             var text = reader.ReadToEnd();
 
-            var control = new TextBox();
-            control.Font = new Font(FontFamily.GenericMonospace, control.Font.Size);
-            control.Text = Utils.Utils.NormalizeLineEndings(text);
-            control.Dock = DockStyle.Fill;
-            control.Multiline = true;
-            control.ReadOnly = true;
-            control.ScrollBars = ScrollBars.Both;
-
+            var control = new CodeTextBox(text);
             var tab = new TabPage();
             tab.Controls.Add(control);
 

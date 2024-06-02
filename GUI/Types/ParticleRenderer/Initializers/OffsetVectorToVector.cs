@@ -1,65 +1,31 @@
-using System;
-using System.Numerics;
-using ValveResourceFormat.Serialization;
+using ValveResourceFormat;
 
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class OffsetVectorToVector : IParticleInitializer
+    class OffsetVectorToVector : ParticleFunctionInitializer
     {
-        private readonly ParticleField inputField = ParticleField.Position;
-        private readonly ParticleField outputField = ParticleField.Position;
-        private readonly Vector3 offsetMin = Vector3.Zero;
-        private readonly Vector3 offsetMax = Vector3.One;
+        private readonly ParticleField FieldInput = ParticleField.Position;
+        private readonly ParticleField FieldOutput = ParticleField.Position;
+        private readonly Vector3 OutputMin = Vector3.Zero;
+        private readonly Vector3 OutputMax = Vector3.One;
 
-        private readonly Random random = new Random();
-
-        public OffsetVectorToVector(IKeyValueCollection keyValues)
+        public OffsetVectorToVector(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_nFieldInput"))
-            {
-                inputField = (ParticleField)keyValues.GetIntegerProperty("m_nFieldInput");
-            }
-
-            if (keyValues.ContainsKey("m_nFieldOutput"))
-            {
-                outputField = (ParticleField)keyValues.GetIntegerProperty("m_nFieldOutput");
-            }
-
-            if (keyValues.ContainsKey("m_vecOutputMin"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_vecOutputMin");
-                offsetMin = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
-
-            if (keyValues.ContainsKey("m_vecOutputMax"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_vecOutputMax");
-                offsetMax = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
+            FieldInput = parse.ParticleField("m_nFieldInput", FieldInput);
+            FieldOutput = parse.ParticleField("m_nFieldOutput", FieldOutput);
+            OutputMin = parse.Vector3("m_vecOutputMin", OutputMin);
+            OutputMax = parse.Vector3("m_vecOutputMax", OutputMax);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var input = particle.GetVector(inputField);
+            var input = particle.GetVector(FieldInput);
 
-            var offset = new Vector3(
-                Lerp(offsetMin.X, offsetMax.X, (float)random.NextDouble()),
-                Lerp(offsetMin.Y, offsetMax.Y, (float)random.NextDouble()),
-                Lerp(offsetMin.Z, offsetMax.Z, (float)random.NextDouble()));
+            var offset = ParticleCollection.RandomBetweenPerComponent(particle.ParticleID, OutputMin, OutputMax);
 
-            if (outputField == ParticleField.Position)
-            {
-                particle.Position += input + offset;
-            }
-            else if (outputField == ParticleField.PositionPrevious)
-            {
-                particle.PositionPrevious = input + offset;
-            }
+            particle.SetVector(FieldOutput, input + offset);
 
             return particle;
         }
-
-        private static float Lerp(float min, float max, float t)
-            => min + (t * (max - min));
     }
 }

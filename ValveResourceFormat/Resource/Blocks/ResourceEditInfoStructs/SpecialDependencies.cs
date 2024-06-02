@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -31,7 +30,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
         public SpecialDependencies()
         {
-            List = new List<SpecialDependency>();
+            List = new((int)Size);
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -40,12 +39,13 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             for (var i = 0; i < Size; i++)
             {
-                var dep = new SpecialDependency();
-
-                dep.String = reader.ReadOffsetString(Encoding.UTF8);
-                dep.CompilerIdentifier = reader.ReadOffsetString(Encoding.UTF8);
-                dep.Fingerprint = reader.ReadUInt32();
-                dep.UserData = reader.ReadUInt32();
+                var dep = new SpecialDependency
+                {
+                    String = reader.ReadOffsetString(Encoding.UTF8),
+                    CompilerIdentifier = reader.ReadOffsetString(Encoding.UTF8),
+                    Fingerprint = reader.ReadUInt32(),
+                    UserData = reader.ReadUInt32()
+                };
 
                 List.Add(dep);
             }

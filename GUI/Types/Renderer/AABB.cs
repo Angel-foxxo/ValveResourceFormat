@@ -1,11 +1,9 @@
-using System.Numerics;
-
 namespace GUI.Types.Renderer
 {
-    internal struct AABB
+    internal readonly struct AABB
     {
-        public Vector3 Min;
-        public Vector3 Max;
+        public readonly Vector3 Min;
+        public readonly Vector3 Max;
 
         public Vector3 Size => Max - Min;
         public Vector3 Center => (Min + Max) * 0.5f;
@@ -25,21 +23,20 @@ namespace GUI.Types.Renderer
         public bool Contains(Vector3 point)
         {
             return
-                point.X >= Min.X && point.X < Max.X &&
-                point.Y >= Min.Y && point.Y < Max.Y &&
-                point.Z >= Min.Z && point.Z < Max.Z;
+                point.X >= Min.X && point.X <= Max.X &&
+                point.Y >= Min.Y && point.Y <= Max.Y &&
+                point.Z >= Min.Z && point.Z <= Max.Z;
         }
 
-        public bool Intersects(AABB other)
+        public bool Intersects(in AABB other)
         {
             return
-                other.Max.X >= Min.X && other.Min.X < Max.X &&
-                other.Max.Y >= Min.Y && other.Min.Y < Max.Y &&
-                other.Max.Z >= Min.Z && other.Min.Z < Max.Z
-                ;
+                other.Max.X >= Min.X && other.Min.X <= Max.X &&
+                other.Max.Y >= Min.Y && other.Min.Y <= Max.Y &&
+                other.Max.Z >= Min.Z && other.Min.Z <= Max.Z;
         }
 
-        public bool Contains(AABB other)
+        public bool Contains(in AABB other)
         {
             return
                 other.Min.X >= Min.X && other.Max.X <= Max.X &&
@@ -47,12 +44,12 @@ namespace GUI.Types.Renderer
                 other.Min.Z >= Min.Z && other.Max.Z <= Max.Z;
         }
 
-        public AABB Union(AABB other)
+        public AABB Union(in AABB other)
         {
             return new AABB(Vector3.Min(Min, other.Min), Vector3.Max(Max, other.Max));
         }
 
-        public AABB Translate(Vector3 offset)
+        public AABB Translate(in Vector3 offset)
         {
             return new AABB(Min + offset, Max + offset);
         }
@@ -60,34 +57,47 @@ namespace GUI.Types.Renderer
         // Note: Since we're dealing with AABBs here, the resulting AABB is likely to be bigger than the original if rotation
         // and whatnot is involved. This problem compounds with multiple transformations. Therefore, endeavour to premultiply matrices
         // and only use this at the last step.
-        public AABB Transform(Matrix4x4 transform)
+        public AABB Transform(in Matrix4x4 transform)
         {
-            var points = new[]
-            {
-                Vector4.Transform(new Vector4(Min.X, Min.Y, Min.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Max.X, Min.Y, Min.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Max.X, Max.Y, Min.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Min.X, Max.Y, Min.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Min.X, Max.Y, Max.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Min.X, Min.Y, Max.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Max.X, Min.Y, Max.Z, 1.0f), transform),
-                Vector4.Transform(new Vector4(Max.X, Max.Y, Max.Z, 1.0f), transform),
-            };
+            var c1 = Vector3.Transform(new Vector3(Min.X, Min.Y, Min.Z), transform);
+            var c2 = Vector3.Transform(new Vector3(Max.X, Min.Y, Min.Z), transform);
+            var c3 = Vector3.Transform(new Vector3(Max.X, Max.Y, Min.Z), transform);
+            var c4 = Vector3.Transform(new Vector3(Min.X, Max.Y, Min.Z), transform);
+            var c5 = Vector3.Transform(new Vector3(Min.X, Max.Y, Max.Z), transform);
+            var c6 = Vector3.Transform(new Vector3(Min.X, Min.Y, Max.Z), transform);
+            var c7 = Vector3.Transform(new Vector3(Max.X, Min.Y, Max.Z), transform);
+            var c8 = Vector3.Transform(new Vector3(Max.X, Max.Y, Max.Z), transform);
 
-            var min = points[0];
-            var max = points[0];
-            for (int i = 1; i < points.Length; ++i)
-            {
-                min = Vector4.Min(min, points[i]);
-                max = Vector4.Max(max, points[i]);
-            }
+            var min = c1;
+            var max = c1;
 
-            return new AABB(new Vector3(min.X, min.Y, min.Z), new Vector3(max.X, max.Y, max.Z));
+            min = Vector3.Min(min, c2);
+            max = Vector3.Max(max, c2);
+
+            min = Vector3.Min(min, c3);
+            max = Vector3.Max(max, c3);
+
+            min = Vector3.Min(min, c4);
+            max = Vector3.Max(max, c4);
+
+            min = Vector3.Min(min, c5);
+            max = Vector3.Max(max, c5);
+
+            min = Vector3.Min(min, c6);
+            max = Vector3.Max(max, c6);
+
+            min = Vector3.Min(min, c7);
+            max = Vector3.Max(max, c7);
+
+            min = Vector3.Min(min, c8);
+            max = Vector3.Max(max, c8);
+
+            return new AABB(min, max);
         }
 
         public override string ToString()
         {
-            return string.Format("AABB [({0},{1},{2}) -> ({3},{4},{5}))", Min.X, Min.Y, Min.Z, Max.X, Max.Y, Max.Z);
+            return $"AABB [({Min.X},{Min.Y},{Min.Z}) -> ({Max.X},{Max.Y},{Max.Z}))";
         }
     }
 }

@@ -1,337 +1,316 @@
-using System;
-using System.Collections.Generic;
-using OpenTK.Graphics.OpenGL;
+using System.Linq;
 using GUI.Utils;
+using ValveResourceFormat.IO;
 using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.Serialization;
-using System.Numerics;
-using System.Linq;
-using ValveResourceFormat.Serialization.NTRO;
 
 namespace GUI.Types.Renderer
 {
-    internal class PhysSceneNode : SceneNode
+    class PhysSceneNode : ShapeSceneNode
     {
+        private static readonly Color32 ColorSphere = new(0f, 1f, 0f, 0.65f);
+        private static readonly Color32 ColorCapsule = new(0f, 1f, 0f, 0.65f);
+        private static readonly Color32 ColorMesh = new(0f, 0f, 1f, 0.65f);
+        private static readonly Color32 ColorHull = new(1.0f, 0.0f, 0.0f, 0.65f);
+
+        public override bool LayerEnabled => Enabled && base.LayerEnabled;
         public bool Enabled { get; set; }
-        public bool IsTrigger { get; set; }
-        PhysAggregateData phys;
-        Shader shader;
-        int indexCount;
-        int vboHandle;
-        int iboHandle;
-        int vaoHandle;
+        public string PhysGroupName { get; set; }
 
-        public PhysSceneNode(Scene scene, PhysAggregateData phys)
-            : base(scene)
+        public PhysSceneNode(Scene scene, List<SimpleVertexNormal> verts, List<int> inds) : base(scene, verts, inds)
         {
-            this.phys = phys;
+        }
 
-            var verts = new List<float>();
-            var inds = new List<int>();
 
-            var bindPose = phys.Data.GetArray("m_bindPose")
-                 .Select(v => Matrix4x4FromArray(v
-                    .Select(m => Convert.ToSingle(m.Value))
-                    .ToArray()))
-                 .ToArray();
+        public static IEnumerable<PhysSceneNode> CreatePhysSceneNodes(Scene scene, PhysAggregateData phys, string fileName, string classname = null)
+        {
+            var groupCount = phys.CollisionAttributes.Count;
+            var verts = new List<SimpleVertexNormal>[groupCount];
+            var inds = new List<int>[groupCount];
+            var boundingBoxes = new AABB[groupCount];
+            var boundingBoxInitted = new bool[groupCount];
 
-            if (bindPose.Length == 0)
+            // constants for sizes of spheres/capsules
+            var hemisphereVerts = SphereBands * SphereSegments + 1;
+            var hemisphereTriangles = SphereSegments * (2 * SphereBands - 1);
+            var capsuleTriangles = 2 * hemisphereTriangles + 2 * SphereSegments;
+
+            for (var i = 0; i < groupCount; i++)
             {
-                bindPose = new Matrix4x4[] { Matrix4x4.Identity };
+                verts[i] = [];
+                inds[i] = [];
             }
-            //m_boneParents
 
-            bool firstBbox = true;
+            var bindPose = phys.BindPose;
 
-            var parts = phys.Data.GetArray("m_parts");
-            for (int p = 0; p < parts.Length; p++)
+            for (var p = 0; p < phys.Parts.Length; p++)
             {
-                var shape = parts[p].GetSubCollection("m_rnShape");
+                var shape = phys.Parts[p].Shape;
+                //var partCollisionAttributeIndex = phys.Parts[p].CollisionAttributeIndex;
 
-                var spheres = shape.GetArray("m_spheres");
-                foreach (var s in spheres)
+                // Spheres
+                foreach (var sphere in shape.Spheres)
                 {
-                    var sphere = s.GetSubCollection("m_Sphere");
-                    var center = sphere.GetSubCollection("m_vCenter").ToVector3();
-                    var radius = sphere.GetFloatProperty("m_flRadius");
+                    var collisionAttributeIndex = sphere.CollisionAttributeIndex;
+                    //var surfacePropertyIndex = capsule.SurfacePropertyIndex;
+                    var center = sphere.Shape.Center;
+                    var radius = sphere.Shape.Radius;
 
-                    if (bindPose.Any())
+                    if (bindPose.Length != 0)
+                    {
                         center = Vector3.Transform(center, bindPose[p]);
+                    }
 
-                    AddSphere(verts, inds, center, radius);
+                    verts[collisionAttributeIndex].EnsureCapacity(verts[collisionAttributeIndex].Count + hemisphereVerts);
+                    inds[collisionAttributeIndex].EnsureCapacity(inds[collisionAttributeIndex].Count + hemisphereTriangles * 6);
 
-                    AABB bbox = new AABB(center + new Vector3(radius),
-                                         center - new Vector3(radius));
-                    LocalBoundingBox = firstBbox ? bbox : LocalBoundingBox.Union(bbox);
-                    firstBbox = false;
+                    AddSphere(verts[collisionAttributeIndex], inds[collisionAttributeIndex], center, radius, ColorSphere);
+
+                    var bbox = new AABB(center + new Vector3(radius),
+                                        center - new Vector3(radius));
+
+                    if (!boundingBoxInitted[collisionAttributeIndex])
+                    {
+                        boundingBoxInitted[collisionAttributeIndex] = true;
+                        boundingBoxes[collisionAttributeIndex] = bbox;
+                    }
+                    else
+                    {
+                        boundingBoxes[collisionAttributeIndex] = boundingBoxes[collisionAttributeIndex].Union(bbox);
+                    }
                 }
 
-                var capsules = shape.GetArray("m_capsules");
-                foreach (var c in capsules)
+                // Capsules
+                foreach (var capsule in shape.Capsules)
                 {
-                    var capsule = c.GetSubCollection("m_Capsule");
-                    var center = capsule.GetArray("m_vCenter").Select(v => v.ToVector3()).ToArray();
-                    var radius = capsule.GetFloatProperty("m_flRadius");
+                    var collisionAttributeIndex = capsule.CollisionAttributeIndex;
+                    //var surfacePropertyIndex = capsule.SurfacePropertyIndex;
+                    var center = capsule.Shape.Center;
+                    var radius = capsule.Shape.Radius;
 
-                    center[0] = Vector3.Transform(center[0], bindPose[p]);
-                    center[1] = Vector3.Transform(center[1], bindPose[p]);
+                    if (bindPose.Length != 0)
+                    {
+                        center[0] = Vector3.Transform(center[0], bindPose[p]);
+                        center[1] = Vector3.Transform(center[1], bindPose[p]);
+                    }
 
-                    AddCapsule(verts, inds, center[0], center[1], radius);
+                    verts[collisionAttributeIndex].EnsureCapacity(verts[collisionAttributeIndex].Count + hemisphereVerts * 2);
+                    inds[collisionAttributeIndex].EnsureCapacity(inds[collisionAttributeIndex].Count + capsuleTriangles * 6);
+
+                    AddCapsule(verts[collisionAttributeIndex], inds[collisionAttributeIndex], center[0], center[1], radius, ColorCapsule);
                     foreach (var cn in center)
                     {
-                        AABB bbox = new AABB(cn + new Vector3(radius),
+                        var bbox = new AABB(cn + new Vector3(radius),
                                              cn - new Vector3(radius));
-                        LocalBoundingBox = firstBbox ? bbox : LocalBoundingBox.Union(bbox);
-                        firstBbox = false;
+
+                        if (!boundingBoxInitted[collisionAttributeIndex])
+                        {
+                            boundingBoxInitted[collisionAttributeIndex] = true;
+                            boundingBoxes[collisionAttributeIndex] = bbox;
+                        }
+                        else
+                        {
+                            boundingBoxes[collisionAttributeIndex] = boundingBoxes[collisionAttributeIndex].Union(bbox);
+                        }
                     }
                 }
-                var hulls = shape.GetArray("m_hulls");
-                foreach (var h in hulls)
-                {
-                    var hull = h.GetSubCollection("m_Hull");
-                    //m_vCentroid
-                    //m_flMaxAngularRadius
-                    //m_Vertices
-                    var vertices = hull.GetArray("m_Vertices");
-                    var vertOffset = verts.Count / 7;
-                    foreach (var v in vertices)
-                    {
-                        var vec = v.ToVector3();
-                        if (bindPose.Any())
-                            vec = Vector3.Transform(vec, bindPose[p]);
-                        verts.Add(vec.X);
-                        verts.Add(vec.Y);
-                        verts.Add(vec.Z);
-                        //color red
-                        verts.Add(1);
-                        verts.Add(0);
-                        verts.Add(0);
-                        verts.Add(1);
-                    }
-                    //m_Planes
-                    var edges = hull.GetArray("m_Edges");
-                    foreach (var e in edges)
-                    {
-                        inds.Add((int)(vertOffset + e.GetIntegerProperty("m_nOrigin")));
-                        var next = edges[e.GetIntegerProperty("m_nNext")];
-                        inds.Add((int)(vertOffset + next.GetIntegerProperty("m_nOrigin")));
-                    }
-                    //m_Faces
-                    var bounds = hull.GetSubCollection("m_Bounds");
-                    AABB bbox = new AABB(bounds.GetSubCollection("m_vMinBounds").ToVector3(),
-                                         bounds.GetSubCollection("m_vMaxBounds").ToVector3());
 
-                    LocalBoundingBox = firstBbox ? bbox : LocalBoundingBox.Union(bbox);
-                    firstBbox = false;
-                }
-                var meshes = shape.GetArray("m_meshes");
-                foreach (var m in meshes)
+                // Hulls
+                foreach (var hull in shape.Hulls)
                 {
-                    var mesh = m.GetSubCollection("m_Mesh");
-                    //m_Nodes
+                    var collisionAttributeIndex = hull.CollisionAttributeIndex;
+                    //var surfacePropertyIndex = capsule.SurfacePropertyIndex;
 
-                    var vertOffset = verts.Count / 7;
-                    Vector3[] vertices = null;
-                    if (mesh is NTROStruct)
+                    var vertexPositions = hull.Shape.GetVertexPositions();
+
+                    var pose = bindPose.Length == 0 ? Matrix4x4.Identity : bindPose[p];
+
+                    var shapeVerts = verts[collisionAttributeIndex];
+                    var shapeInds = inds[collisionAttributeIndex];
+
+                    // vertex positions
+                    var positions = new Vector3[vertexPositions.Length];
+                    for (var i = 0; i < vertexPositions.Length; i++)
                     {
-                        //NTRO has vertices as array of structs
-                        var verticesArr = mesh.GetArray("m_Vertices");
-                        vertices = verticesArr.Select(v => v.ToVector3()).ToArray();
+                        positions[i] = Vector3.Transform(vertexPositions[i], pose);
+                    }
+
+
+                    var faces = hull.Shape.GetFaces();
+                    var edges = hull.Shape.GetEdges();
+
+                    var numTriangles = edges.Length - faces.Length * 2;
+                    shapeVerts.EnsureCapacity(shapeVerts.Count + numTriangles * 3);
+                    shapeInds.EnsureCapacity(shapeInds.Count + numTriangles * 6);
+
+                    foreach (var face in faces)
+                    {
+                        var startEdge = face.Edge;
+
+                        for (var edge = edges[startEdge].Next; edge != startEdge;)
+                        {
+                            var nextEdge = edges[edge].Next;
+
+                            if (nextEdge == startEdge)
+                            {
+                                break;
+                            }
+
+                            var a = positions[edges[startEdge].Origin];
+                            var b = positions[edges[edge].Origin];
+                            var c = positions[edges[nextEdge].Origin];
+
+                            var normal = ComputeNormal(a, b, c);
+
+                            var offset = shapeVerts.Count;
+                            shapeVerts.Add(new(a, ColorHull, normal));
+                            shapeVerts.Add(new(b, ColorHull, normal));
+                            shapeVerts.Add(new(c, ColorHull, normal));
+
+                            AddTriangle(shapeInds, offset, 0, 1, 2);
+
+                            edge = nextEdge;
+                        }
+                    }
+
+                    var bbox = new AABB(hull.Shape.Min, hull.Shape.Max);
+
+                    if (!boundingBoxInitted[collisionAttributeIndex])
+                    {
+                        boundingBoxInitted[collisionAttributeIndex] = true;
+                        boundingBoxes[collisionAttributeIndex] = bbox;
                     }
                     else
                     {
-                        //KV3 has vertices as blob
-                        var verticesBlob = mesh.GetArray<byte>("m_Vertices");
-                        vertices = Enumerable.Range(0, verticesBlob.Length / 12)
-                            .Select(i => new Vector3(BitConverter.ToSingle(verticesBlob, i * 12),
-                                BitConverter.ToSingle(verticesBlob, (i * 12) + 4),
-                                BitConverter.ToSingle(verticesBlob, (i * 12) + 8)))
-                            .ToArray();
+                        boundingBoxes[collisionAttributeIndex] = boundingBoxes[collisionAttributeIndex].Union(bbox);
+                    }
+                }
+
+                // Meshes
+                foreach (var mesh in shape.Meshes)
+                {
+                    var collisionAttributeIndex = mesh.CollisionAttributeIndex;
+                    //var surfacePropertyIndex = capsule.SurfacePropertyIndex;
+
+                    var triangles = mesh.Shape.GetTriangles();
+                    var vertices = mesh.Shape.GetVertices();
+
+                    var pose = bindPose.Length == 0 ? Matrix4x4.Identity : bindPose[p];
+
+                    var shapeVerts = verts[collisionAttributeIndex];
+                    var shapeInds = inds[collisionAttributeIndex];
+
+                    var numTriangles = triangles.Length;
+                    shapeVerts.EnsureCapacity(shapeVerts.Count + numTriangles * 3);
+                    shapeInds.EnsureCapacity(shapeInds.Count + numTriangles * 6);
+
+                    // vertex positions
+                    var positions = new Vector3[vertices.Length];
+                    for (var i = 0; i < vertices.Length; i++)
+                    {
+                        positions[i] = Vector3.Transform(vertices[i], pose);
                     }
 
-                    foreach (var vec in vertices)
+                    foreach (var tri in triangles)
                     {
-                        var v = vec;
-                        if (bindPose.Any())
-                            v = Vector3.Transform(vec, bindPose[p]);
-                        verts.Add(v.X);
-                        verts.Add(v.Y);
-                        verts.Add(v.Z);
-                        //color green
-                        verts.Add(0);
-                        verts.Add(1);
-                        verts.Add(0);
-                        verts.Add(1);
+                        var a = positions[tri.X];
+                        var b = positions[tri.Y];
+                        var c = positions[tri.Z];
+
+                        var normal = ComputeNormal(a, b, c);
+
+                        var offset = shapeVerts.Count;
+                        shapeVerts.Add(new(a, ColorMesh, normal));
+                        shapeVerts.Add(new(b, ColorMesh, normal));
+                        shapeVerts.Add(new(c, ColorMesh, normal));
+
+                        AddTriangle(shapeInds, offset, 0, 1, 2);
                     }
 
-                    int[] triangles = null;
-                    if (mesh is NTROStruct)
+                    var bbox = new AABB(mesh.Shape.Min, mesh.Shape.Max);
+
+                    if (!boundingBoxInitted[collisionAttributeIndex])
                     {
-                        //NTRO and SOME KV3 has triangles as array of structs
-                        var trianglesArr = mesh.GetArray("m_Triangles");
-                        triangles = trianglesArr.SelectMany(t => t.GetArray<object>("m_nIndex").
-                                                            Select(Convert.ToInt32)).ToArray();
+                        boundingBoxInitted[collisionAttributeIndex] = true;
+                        boundingBoxes[collisionAttributeIndex] = bbox;
                     }
                     else
                     {
-                        //some KV3 has triangles as blob
-                        var trianglesBlob = mesh.GetArray<byte>("m_Triangles");
-                        triangles = new int[trianglesBlob.Length / 4];
-                        System.Buffer.BlockCopy(trianglesBlob, 0, triangles, 0, trianglesBlob.Length);
+                        boundingBoxes[collisionAttributeIndex] = boundingBoxes[collisionAttributeIndex].Union(bbox);
                     }
-
-                    for (int i = 0; i < triangles.Length; i += 3)
-                    {
-                        inds.Add(vertOffset + triangles[i]);
-                        inds.Add(vertOffset + triangles[i + 1]);
-                        inds.Add(vertOffset + triangles[i + 1]);
-                        inds.Add(vertOffset + triangles[i + 2]);
-                        inds.Add(vertOffset + triangles[i + 2]);
-                        inds.Add(vertOffset + triangles[i]);
-                    }
-
-                    AABB bbox = new AABB(mesh.GetSubCollection("m_vMin").ToVector3(),
-                                         mesh.GetSubCollection("m_vMax").ToVector3());
-                    LocalBoundingBox = firstBbox ? bbox : LocalBoundingBox.Union(bbox);
-                    firstBbox = false;
                 }
-                //m_CollisionAttributeIndices
-
-                //Console.WriteLine($"Phys mesh verts {verts.Count} inds {inds.Count}");
             }
 
-            shader = Scene.GuiContext.ShaderLoader.LoadShader("vrf.grid", new Dictionary<string, bool>());
-            GL.UseProgram(shader.Program);
-
-            vaoHandle = GL.GenVertexArray();
-            GL.BindVertexArray(vaoHandle);
-
-            vboHandle = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vboHandle);
-            GL.BufferData(BufferTarget.ArrayBuffer, verts.Count * sizeof(float), verts.ToArray(), BufferUsageHint.StaticDraw);
-
-            iboHandle = GL.GenBuffer();
-            indexCount = inds.Count;
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, iboHandle);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, inds.Count * sizeof(int), inds.ToArray(), BufferUsageHint.StaticDraw);
-
-            const int stride = sizeof(float) * 7;
-            var positionAttributeLocation = GL.GetAttribLocation(shader.Program, "aVertexPosition");
-            GL.EnableVertexAttribArray(positionAttributeLocation);
-            GL.VertexAttribPointer(positionAttributeLocation, 3, VertexAttribPointerType.Float, false, stride, 0);
-
-            var colorAttributeLocation = GL.GetAttribLocation(shader.Program, "aVertexColor");
-            GL.EnableVertexAttribArray(colorAttributeLocation);
-            GL.VertexAttribPointer(colorAttributeLocation, 4, VertexAttribPointerType.Float, false, stride, sizeof(float) * 3);
-
-            GL.BindVertexArray(0);
-        }
-
-        static Matrix4x4 Matrix4x4FromArray(float[] a)
-        {
-            return new Matrix4x4(a[0], a[4], a[8], 0,
-                a[1], a[5], a[9], 0,
-                a[2], a[6], a[10], 0,
-                a[3], a[7], a[11], 1);
-        }
-
-        private static void AddCapsule(List<float> verts, List<int> inds, Vector3 c0, Vector3 c1, float radius)
-        {
-            Matrix4x4 mtx = Matrix4x4.CreateLookAt(c0, c1, Vector3.UnitY);
-            mtx.Translation = Vector3.Zero;
-            AddSphere(verts, inds, c0, radius);
-            AddSphere(verts, inds, c1, radius);
-
-            var vertOffset = verts.Count / 7;
-
-            for (int i = 0; i < 4; i++)
+            var nodes = phys.CollisionAttributes.Select((attributes, i) =>
             {
-                Vector3 vr = new Vector3(
-                    MathF.Cos(i * MathF.PI / 2) * radius,
-                    MathF.Sin(i * MathF.PI / 2) * radius,
-                    0);
-                vr = Vector3.Transform(vr, mtx);
-                Vector3 v = vr + c0;
+                if (verts.Length == 0) // TODO: Remove this
+                {
+                    return null;
+                }
 
-                verts.Add(v.X);
-                verts.Add(v.Y);
-                verts.Add(v.Z);
-                //color red
-                verts.Add(1);
-                verts.Add(0);
-                verts.Add(0);
-                verts.Add(1);
+                var tags = attributes.GetArray<string>("m_InteractAsStrings") ?? attributes.GetArray<string>("m_PhysicsTagStrings");
+                var group = attributes.GetStringProperty("m_CollisionGroupString");
 
-                v = vr + c1;
+                var tooltexture = MapExtract.GetToolTextureShortenedName_ForInteractStrings(new HashSet<string>(tags));
 
-                verts.Add(v.X);
-                verts.Add(v.Y);
-                verts.Add(v.Z);
-                //color red
-                verts.Add(1);
-                verts.Add(0);
-                verts.Add(0);
-                verts.Add(1);
+                var name = string.Empty;
 
-                inds.Add(vertOffset + i * 2);
-                inds.Add(vertOffset + i * 2 + 1);
-            }
+                if (group != null)
+                {
+                    if (group.Equals("default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        name = $"- default";
+                    }
+                    else if (!group.Equals("conditionallysolid", StringComparison.OrdinalIgnoreCase))
+                    {
+                        name = group;
+                    }
+                }
+
+                if (tags.Length > 0)
+                {
+                    name = $"[{string.Join(", ", tags)}]" + name;
+                }
+
+                var physSceneNode = new PhysSceneNode(scene, verts[i], inds[i])
+                {
+                    Name = fileName,
+                    LocalBoundingBox = boundingBoxes[i],
+                };
+
+                if (tooltexture != "nodraw")
+                {
+                    name = $"- {tooltexture} {name}";
+                    physSceneNode.SetToolTexture($"materials/tools/tools{tooltexture}.vmat");
+                }
+
+                if (classname != null)
+                {
+                    physSceneNode.SetToolTexture(MapExtract.GetToolTextureForEntity(classname));
+                }
+
+                physSceneNode.PhysGroupName = name;
+
+                return physSceneNode;
+            }).ToArray();
+            return nodes;
         }
 
-        private static void AddSphere(List<float> verts, List<int> inds, Vector3 center, float radius)
+        private void SetToolTexture(string toolMaterialName)
         {
-            AddCircle(verts, inds, center, radius, Matrix4x4.Identity);
-            AddCircle(verts, inds, center, radius, Matrix4x4.CreateRotationX(MathF.PI * 0.5f));
-            AddCircle(verts, inds, center, radius, Matrix4x4.CreateRotationY(MathF.PI * 0.5f));
+            ToolTexture = Scene.GuiContext.MaterialLoader.GetMaterial(toolMaterialName, null).Textures.GetValueOrDefault("g_tColor");
         }
 
-        private static void AddCircle(List<float> verts, List<int> inds, Vector3 center, float radius, Matrix4x4 mtx)
+        private static Vector3 ComputeNormal(Vector3 a, Vector3 b, Vector3 c)
         {
-            var vertOffset = verts.Count / 7;
-            for (int i = 0; i < 16; i++)
-            {
-                Vector3 v = new Vector3(
-                    MathF.Cos(i * MathF.PI / 8) * radius,
-                    MathF.Sin(i * MathF.PI / 8) * radius,
-                    0);
-                v = Vector3.Transform(v, mtx) + center;
+            var side1 = b - a;
+            var side2 = c - a;
 
-                verts.Add(v.X);
-                verts.Add(v.Y);
-                verts.Add(v.Z);
-                //color red
-                verts.Add(1);
-                verts.Add(0);
-                verts.Add(0);
-                verts.Add(1);
-
-                inds.Add(vertOffset + i);
-                inds.Add(vertOffset + (i + 1) % 16);
-            }
-        }
-
-        public override void Render(Scene.RenderContext context)
-        {
-            if (!Enabled)
-                return;
-
-            var viewProjectionMatrix = (Transform * context.Camera.ViewProjectionMatrix).ToOpenTK();
-
-            GL.UseProgram(shader.Program);
-
-            GL.UniformMatrix4(shader.GetUniformLocation("uProjectionViewMatrix"), false, ref viewProjectionMatrix);
-            GL.DepthMask(false);
-
-            GL.BindVertexArray(vaoHandle);
-            GL.DrawElements(PrimitiveType.Lines, indexCount, DrawElementsType.UnsignedInt, 0);
-            GL.BindVertexArray(0);
-
-            GL.DepthMask(true);
+            return Vector3.Normalize(Vector3.Cross(side1, side2));
         }
 
         public override void Update(Scene.UpdateContext context)
         {
-
         }
     }
 }

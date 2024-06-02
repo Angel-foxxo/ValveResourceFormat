@@ -1,5 +1,6 @@
-using System;
+using System.Globalization;
 using System.Windows.Forms;
+using GUI.Utils;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -7,7 +8,7 @@ namespace GUI.Controls
 {
     internal partial class AudioPlaybackPanel : UserControl
     {
-        private IWavePlayer waveOut;
+        private WaveOutEvent waveOut;
         private WaveStream waveStream;
         private Action<float> setVolumeDelegate;
 
@@ -18,10 +19,13 @@ namespace GUI.Controls
             InitializeComponent();
 
             waveStream = inputStream;
-            labelTotalTime.Text = waveStream.TotalTime.ToString("mm\\:ss\\.ff");
+            labelTotalTime.Text = waveStream.TotalTime.ToString("mm\\:ss\\.ff", CultureInfo.InvariantCulture);
+            volumeSlider1.Volume = Settings.Config.Volume;
         }
 
-        private void OnButtonPlayClick(object sender, EventArgs e)
+        private void OnButtonPlayClick(object sender, EventArgs e) => Play();
+
+        public void Play()
         {
             if (waveOut == null)
             {
@@ -33,7 +37,7 @@ namespace GUI.Controls
                 }
                 catch (Exception driverCreateException)
                 {
-                    MessageBox.Show(driverCreateException.Message);
+                    MessageBox.Show(driverCreateException.Message, "Failed to play audio");
                     return;
                 }
             }
@@ -49,7 +53,7 @@ namespace GUI.Controls
             UpdateTime();
         }
 
-        private ISampleProvider CreateInputStream()
+        private MeteringSampleProvider CreateInputStream()
         {
             var sampleChannel = new SampleChannel(waveStream, true);
             sampleChannel.PreVolumeMeter += OnPreVolumeMeter;
@@ -128,6 +132,8 @@ namespace GUI.Controls
         private void OnVolumeSliderChanged(object sender, EventArgs e)
         {
             setVolumeDelegate?.Invoke(volumeSlider1.Volume);
+
+            Settings.Config.Volume = volumeSlider1.Volume;
         }
 
         private void OnButtonStopClick(object sender, EventArgs e)
@@ -143,7 +149,7 @@ namespace GUI.Controls
             UpdateTime();
         }
 
-        private void trackBarPosition_Scroll(object sender, EventArgs e)
+        private void OnTrackBarPositionScroll(object sender, EventArgs e)
         {
             waveStream.CurrentTime = TimeSpan.FromSeconds(waveStream.TotalTime.TotalSeconds * trackBarPosition.Value / 100.0);
             UpdateTime();
@@ -153,7 +159,7 @@ namespace GUI.Controls
         {
             var currentTime = waveStream.CurrentTime;
             trackBarPosition.Value = Math.Min(trackBarPosition.Maximum, (int)(100 * currentTime.TotalSeconds / waveStream.TotalTime.TotalSeconds));
-            labelCurrentTime.Text = currentTime.ToString("mm\\:ss\\.ff");
+            labelCurrentTime.Text = currentTime.ToString("mm\\:ss\\.ff", CultureInfo.InvariantCulture);
         }
     }
 }

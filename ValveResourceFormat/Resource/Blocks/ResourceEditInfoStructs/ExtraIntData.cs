@@ -1,4 +1,3 @@
-﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -27,7 +26,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
         public ExtraIntData()
         {
-            List = new List<EditIntData>();
+            List = new((int)Size);
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -36,10 +35,11 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             for (var i = 0; i < Size; i++)
             {
-                var dep = new EditIntData();
-
-                dep.Name = reader.ReadOffsetString(Encoding.UTF8);
-                dep.Value = reader.ReadInt32();
+                var dep = new EditIntData
+                {
+                    Name = reader.ReadOffsetString(Encoding.UTF8),
+                    Value = reader.ReadInt32()
+                };
 
                 List.Add(dep);
             }

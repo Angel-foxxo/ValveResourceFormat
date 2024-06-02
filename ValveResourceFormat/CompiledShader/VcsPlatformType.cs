@@ -6,12 +6,13 @@ namespace ValveResourceFormat.CompiledShader
      * X360, MAC are not implemented
      *
      */
-    public enum VcsPlatformType {
+    public enum VcsPlatformType
+    {
+        VULKAN,
         PC,
         PCGL,
         X360,
         MAC,
-        VULKAN,
         MOBILE_GLES,
         IOS_VULKAN,
         ANDROID_VULKAN,

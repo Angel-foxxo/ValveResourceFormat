@@ -8,6 +8,9 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 
 [*.cs]
+tab_width = 4
+end_of_line = lf
+
 # CA1002: Do not expose generic lists.
 dotnet_diagnostic.CA1002.severity = none
 
@@ -54,7 +57,7 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1710.severity = none
 
 # CA1711: Identifiers should not have incorrect suffix
-dotnet_diagnostic.CA1711.severity = suggestion
+dotnet_diagnostic.CA1711.severity = none
 
 # CA1720: Identifier contains type name
 dotnet_diagnostic.CA1720.severity = none
@@ -74,9 +77,6 @@ dotnet_diagnostic.CA1815.severity = none
 # CA1819: Properties should not return arrays
 dotnet_diagnostic.CA1819.severity = none
 
-# CA2000: Dispose objects before losing scope
-dotnet_diagnostic.CA2000.severity = none
-
 # CA2008: Do not create tasks without passing a TaskScheduler
 dotnet_diagnostic.CA2008.severity = none
 
@@ -90,7 +90,22 @@ dotnet_diagnostic.CA2201.severity = suggestion
 dotnet_diagnostic.CA2214.severity = none
 
 # CA5394: Do not use insecure randomness
-dotnet_diagnostic.CA5394.severity = suggestion
+dotnet_diagnostic.CA5394.severity = none
+
+# CS0219: Variable is assigned but its value is never used
+dotnet_diagnostic.CS0219.severity = suggestion
+
+# CA1308: Normalize strings to uppercase
+dotnet_diagnostic.CA1308.severity = none
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = none
+
+# IDE0059: Remove unnecessary value assignment
+dotnet_diagnostic.IDE0059.severity = none
+
+# IDE0079: Remove unnecessary suppression
+dotnet_diagnostic.IDE0079.severity = none
 
 # CA5392 Use DefaultDllImportSearchPaths attribute for P/Invokes
 dotnet_diagnostic.CA5392.severity = none
@@ -123,6 +138,9 @@ dotnet_style_collection_initializer = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
+
+# IDE0042: Deconstruct variable declaration
+csharp_style_deconstructed_variable_declaration = false:silent
 
 #
 # CSharp code style settings:
@@ -200,3 +218,26 @@ csharp_preserve_single_line_statements = false:suggestion
 csharp_prefer_static_local_function = true:suggestion
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_namespace_declarations = block_scoped:silent
+csharp_style_prefer_method_group_conversion = true:silent
+csharp_style_prefer_top_level_statements = true:silent
+csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_local_functions = false:silent
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_prefer_local_over_anonymous_function = true:suggestion
+csharp_style_prefer_tuple_swap = false:suggestion
+
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = silent
+dotnet_naming_rule.types_should_be_pascal_case.severity = silent
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = silent
+
+# IDE1006: Naming Styles
+dotnet_diagnostic.IDE1006.severity = none
+
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = none
+
+# Disable very slow analyzers - https://github.com/dotnet/roslyn-analyzers/issues/6737
+dotnet_diagnostic.CA5403.severity = none # Do not hard-code certificate
+dotnet_diagnostic.CA5390.severity = none # Do not hard-code encryption key

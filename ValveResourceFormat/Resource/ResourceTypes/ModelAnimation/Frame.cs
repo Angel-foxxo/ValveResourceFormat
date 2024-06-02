@@ -1,46 +1,86 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
+using ValveResourceFormat.ResourceTypes.ModelFlex;
 
 namespace ValveResourceFormat.ResourceTypes.ModelAnimation
 {
     public class Frame
     {
-        public Dictionary<string, FrameBone> Bones { get; }
+        public int FrameIndex { get; set; } = 1;
+        public FrameBone[] Bones { get; }
+        public float[] Datas { get; }
 
-        public Frame()
+        public Frame(Skeleton skeleton, FlexController[] flexControllers)
         {
-            Bones = new Dictionary<string, FrameBone>();
+            Bones = new FrameBone[skeleton.Bones.Length];
+            Datas = new float[flexControllers.Length];
+            Clear(skeleton);
         }
 
-        public void SetAttribute(string bone, string attribute, object data)
+        public void SetAttribute(int bone, AnimationChannelAttribute attribute, Vector3 data)
         {
             switch (attribute)
             {
-                case "Position":
-                    InsertIfUnknown(bone);
-                    Bones[bone].Position = (Vector3)data;
+                case AnimationChannelAttribute.Position:
+                    Bones[bone].Position = data;
                     break;
-                case "Angle":
-                    InsertIfUnknown(bone);
-                    Bones[bone].Angle = (Quaternion)data;
-                    break;
-                case "data":
-                    //ignore
-                    break;
+
 #if DEBUG
                 default:
-                    Console.WriteLine($"Unknown frame attribute '{attribute}' encountered");
+                    Console.WriteLine($"Unknown frame attribute '{attribute}' encountered with Vector3 data");
                     break;
 #endif
             }
         }
 
-        private void InsertIfUnknown(string name)
+        public void SetAttribute(int bone, AnimationChannelAttribute attribute, Quaternion data)
         {
-            if (!Bones.ContainsKey(name))
+            switch (attribute)
             {
-                Bones[name] = new FrameBone(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 1));
+                case AnimationChannelAttribute.Angle:
+                    Bones[bone].Angle = data;
+                    break;
+
+#if DEBUG
+                default:
+                    Console.WriteLine($"Unknown frame attribute '{attribute}' encountered with Quaternion data");
+                    break;
+#endif
+            }
+        }
+
+        public void SetAttribute(int bone, AnimationChannelAttribute attribute, float data)
+        {
+            switch (attribute)
+            {
+                case AnimationChannelAttribute.Scale:
+                    Bones[bone].Scale = data;
+                    break;
+
+                case AnimationChannelAttribute.Data:
+                    Datas[bone] = data;
+                    break;
+
+#if DEBUG
+                default:
+                    Console.WriteLine($"Unknown frame attribute '{attribute}' encountered with float data");
+                    break;
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Resets frame bones to their bind pose.
+        /// Should be used on animation change.
+        /// </summary>
+        /// <param name="skeleton">The same skeleton that was passed to the constructor.</param>
+        public void Clear(Skeleton skeleton)
+        {
+            FrameIndex = -1;
+
+            for (var i = 0; i < Bones.Length; i++)
+            {
+                Bones[i].Position = skeleton.Bones[i].Position;
+                Bones[i].Angle = skeleton.Bones[i].Angle;
+                Bones[i].Scale = 1;
             }
         }
     }

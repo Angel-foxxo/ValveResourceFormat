@@ -1,67 +1,223 @@
-using System;
+//#define SCREENSHOT_MODE // Uncomment to hide version, keep title bar static, set an exact window size
+
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Forms;
 using GUI.Types.Exporter;
+using GUI.Types.PackageViewer;
+using GUI.Types.Renderer;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
-using Resource = ValveResourceFormat.Resource;
+using ValveResourceFormat.IO;
+using ValveResourceFormat.Utils;
 
 namespace GUI
 {
-    public partial class MainForm : Form
+    partial class MainForm : Form
     {
-        private SearchForm searchForm;
-#pragma warning disable CA2213
         // Disposable fields should be disposed
         // for some reason disposing it makes closing GUI very slow
-        private ImageList ImageList;
-#pragma warning restore CA2213
-        public ContextMenuStrip VpkContextMenu => vpkContextMenu; // TODO
-        public ToolStripDropDownButton ExportToolStripButton => exportToolStripButton; // TODO
+        public static ImageList ImageList { get; }
+        public static Dictionary<string, int> ImageListLookup { get; }
 
-        public MainForm()
+        private SearchForm searchForm;
+
+        static MainForm()
         {
-            LoadAssetTypes();
-            InitializeComponent();
-
-            Text = "VRF - Source 2 Resource Viewer v" + Application.ProductVersion;
-
-            mainTabs.SelectedIndexChanged += (o, e) =>
+            ImageList = new ImageList
             {
-                ShowHideSearch();
+                ColorDepth = ColorDepth.Depth32Bit
             };
 
-            mainTabs.TabPages.Add(ConsoleTab.CreateTab());
+            var assembly = Assembly.GetExecutingAssembly();
+            var names = assembly.GetManifestResourceNames().Where(n => n.StartsWith("GUI.AssetTypes.", StringComparison.Ordinal)).ToList();
 
-            Console.WriteLine($"VRF v{Application.ProductVersion}");
+            ImageListLookup = new(names.Count);
+
+            foreach (var name in names)
+            {
+                var extension = name.Split('.')[2];
+
+                using var stream = assembly.GetManifestResourceStream(name);
+                ImageList.Images.Add(extension, Image.FromStream(stream));
+
+                // Keep our own lookup because IndexOfKey is slow and not thread safe
+                var index = ImageList.Images.IndexOfKey(extension); // O(n)
+                ImageListLookup.Add(extension, index);
+                Debug.Assert(index >= 0);
+            }
+        }
+
+        public MainForm(string[] args)
+        {
+            InitializeComponent();
+
+            mainTabs.ImageList = ImageList;
+            mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
+
+            var consoleTab = new ConsoleTab();
+            Log.SetConsoleTab(consoleTab);
+            var consoleTabPage = consoleTab.CreateTab();
+            consoleTabPage.ImageIndex = ImageListLookup["_console"];
+            mainTabs.TabPages.Add(consoleTabPage);
+
+            var version = Application.ProductVersion;
+            var versionPlus = version.IndexOf('+', StringComparison.InvariantCulture);
+
+            if (versionPlus > 0)
+            {
+                // If version ends with ".0", display part of the commit hash, otherwise the zero is replaced with CI build number
+                if (version[versionPlus - 2] == '.' && version[versionPlus - 1] == '0')
+                {
+                    versionPlus += 8;
+                }
+
+                versionLabel.Text = string.Concat("v", version[..versionPlus]);
+            }
+            else
+            {
+                versionLabel.Text = string.Concat("v", version);
+
+#if !CI_RELEASE_BUILD // Set in Directory.Build.props
+                versionLabel.Text += "-dev";
+#endif
+            }
+
+#if DEBUG
+            versionLabel.Text += " (DEBUG)";
+#endif
 
             searchForm = new SearchForm();
 
             Settings.Load();
 
-            string[] args = Environment.GetCommandLineArgs();
-            for (int i = 1; i < args.Length; i++)
+            HardwareAcceleratedTextureDecoder.Decoder = new GLTextureDecoder();
+
+#if DEBUG
+            if (args.Length > 0 && args[0] == "validate_shaders")
             {
-                string file = args[i];
-                if (File.Exists(file))
-                {
-                    OpenFile(file);
-                }
+                GUI.Types.Renderer.ShaderLoader.ValidateShaders();
+                return;
             }
+#endif
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                var file = args[i];
+
+                // Handle vpk: protocol
+                if (file.StartsWith("vpk:", StringComparison.InvariantCulture))
+                {
+                    file = System.Net.WebUtility.UrlDecode(file[4..]);
+
+                    var innerFilePosition = file.LastIndexOf(".vpk:", StringComparison.InvariantCulture);
+
+                    if (innerFilePosition == -1)
+                    {
+                        Log.Error(nameof(MainForm), $"For vpk: protocol to work, specify a file path inside of the package, for example: \"vpk:C:/path/pak01_dir.vpk:inner/file.vmdl_c\"");
+
+                        OpenFile(file);
+
+                        return;
+                    }
+
+                    var innerFile = file[(innerFilePosition + 5)..];
+                    file = file[..(innerFilePosition + 4)];
+
+                    if (!File.Exists(file))
+                    {
+                        var dirFile = file[..innerFilePosition] + "_dir.vpk";
+
+                        if (!File.Exists(dirFile))
+                        {
+                            Log.Error(nameof(MainForm), $"File '{file}' does not exist.");
+                            return;
+                        }
+
+                        file = dirFile;
+                    }
+
+                    Log.Info(nameof(MainForm), $"Opening {file}");
+
+                    var package = new Package();
+                    try
+                    {
+                        package.OptimizeEntriesForBinarySearch(StringComparison.OrdinalIgnoreCase);
+                        package.Read(file);
+
+                        var packageFile = package.FindEntry(innerFile);
+
+                        if (packageFile == null)
+                        {
+                            packageFile = package.FindEntry(innerFile + GameFileLoader.CompiledFileSuffix);
+
+                            if (packageFile == null)
+                            {
+                                Log.Error(nameof(MainForm), $"File '{packageFile}' does not exist in package '{file}'.");
+                                return;
+                            }
+                        }
+
+                        innerFile = packageFile.GetFullPath();
+
+                        Log.Info(nameof(MainForm), $"Opening {innerFile}");
+
+                        var vrfGuiContext = new VrfGuiContext(file, null)
+                        {
+                            CurrentPackage = package
+                        };
+                        var fileContext = new VrfGuiContext(innerFile, vrfGuiContext);
+                        package = null;
+
+                        try
+                        {
+                            OpenFile(fileContext, packageFile);
+                            fileContext = null;
+                        }
+                        finally
+                        {
+                            fileContext?.Dispose();
+                            vrfGuiContext?.Dispose();
+                        }
+                    }
+                    finally
+                    {
+                        package?.Dispose();
+                    }
+
+                    continue;
+                }
+
+                if (!File.Exists(file))
+                {
+                    Log.Error(nameof(MainForm), $"File '{file}' does not exist.");
+                    continue;
+                }
+
+                OpenFile(file);
+            }
+
+            if (args.Length == 0 && Settings.Config.OpenExplorerOnStart != 0)
+            {
+                OpenExplorer();
+            }
+
+            // Force refresh title due to OpenFile calls above, SelectedIndexChanged is not called in the same tick
+            OnMainSelectedTabChanged(null, null);
         }
 
-        protected override void OnShown(EventArgs e)
+        protected override void OnLoad(EventArgs e)
         {
+            base.OnLoad(e);
+
             var savedWindowDimensionsAreValid = IsOnScreen(new Rectangle(
                 Settings.Config.WindowLeft,
                 Settings.Config.WindowTop,
@@ -70,10 +226,12 @@ namespace GUI
 
             if (savedWindowDimensionsAreValid)
             {
-                Left = Settings.Config.WindowLeft;
-                Top = Settings.Config.WindowTop;
-                Height = Settings.Config.WindowHeight;
-                Width = Settings.Config.WindowWidth;
+                SetBounds(
+                    Settings.Config.WindowLeft,
+                    Settings.Config.WindowTop,
+                    Settings.Config.WindowWidth,
+                    Settings.Config.WindowHeight
+                );
 
                 var newState = (FormWindowState)Settings.Config.WindowState;
 
@@ -83,7 +241,11 @@ namespace GUI
                 }
             }
 
-            base.OnShown(e);
+#if SCREENSHOT_MODE
+            checkForUpdatesToolStripMenuItem.Visible = false;
+            versionToolStripLabel.Visible = false;
+            SetBounds(x: 100, y: 100, width: 1800 + 22, height: 1200 + 11); // Tweak size as needed
+#endif
         }
 
         // checks if the Rectangle is within bounds of one of the user's screen
@@ -99,6 +261,7 @@ namespace GUI
 
         protected override void OnClosing(CancelEventArgs e)
         {
+#if !SCREENSHOT_MODE
             // save the application window size, position and state (if maximized)
             (Settings.Config.WindowLeft, Settings.Config.WindowTop, Settings.Config.WindowWidth, Settings.Config.WindowHeight, Settings.Config.WindowState) = WindowState switch
             {
@@ -110,6 +273,7 @@ namespace GUI
                 // the default switch should never happen (FormWindowState only takes the values Normal, Maximized, Minimized)
                 _ => (0, 0, 0, 0, (int)FormWindowState.Normal),
             };
+#endif
 
             Settings.Save();
             base.OnClosing(e);
@@ -141,13 +305,35 @@ namespace GUI
                 CloseTabsToRight(mainTabs.SelectedTab);
             }
 
+            if (keyData == (Keys.Control | Keys.R) || keyData == Keys.F5)
+            {
+                CloseAndReOpenActiveTab();
+            }
+
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+
+        private void OnMainSelectedTabChanged(object sender, EventArgs e)
+        {
+#if !SCREENSHOT_MODE
+            if (string.IsNullOrEmpty(mainTabs.SelectedTab?.ToolTipText))
+            {
+                Text = "Source 2 Viewer";
+            }
+            else
+            {
+                Text = $"Source 2 Viewer - {mainTabs.SelectedTab.ToolTipText}";
+            }
+#endif
+
+            ShowHideSearch();
         }
 
         private void ShowHideSearch()
         {
             // enable/disable the search button as necessary
-            if (mainTabs.SelectedTab != null && mainTabs.SelectedTab.Controls["TreeViewWithSearchResults"] is TreeViewWithSearchResults package)
+            if (mainTabs.SelectedTab != null && mainTabs.SelectedTab.Controls[nameof(TreeViewWithSearchResults)] is TreeViewWithSearchResults package)
             {
                 findToolStripButton.Enabled = true;
                 recoverDeletedToolStripMenuItem.Enabled = !package.DeletedFilesRecovered;
@@ -162,7 +348,7 @@ namespace GUI
         private int GetTabIndex(TabPage tab)
         {
             //Work out the index of the requested tab
-            for (int i = 0; i < mainTabs.TabPages.Count; i++)
+            for (var i = 0; i < mainTabs.TabPages.Count; i++)
             {
                 if (mainTabs.TabPages[i] == tab)
                 {
@@ -171,6 +357,19 @@ namespace GUI
             }
 
             return -1;
+        }
+
+        private void CloseAndReOpenActiveTab()
+        {
+            var tab = mainTabs.SelectedTab;
+            if (tab is not null && tab.Tag is ExportData exportData)
+            {
+                var (newFileContext, packageEntry) = exportData.VrfGuiContext.FileLoader.FindFileWithContext(
+                    exportData.PackageEntry?.GetFullPath() ?? exportData.VrfGuiContext.FileName
+                );
+                OpenFile(newFileContext, packageEntry);
+                CloseTab(tab);
+            }
         }
 
         private void CloseTab(TabPage tab)
@@ -185,57 +384,43 @@ namespace GUI
             }
 
             //Close the requested tab
-            Console.WriteLine($"Closing {tab.Text}");
-            mainTabs.TabPages.Remove(tab);
+            Log.Info(nameof(MainForm), $"Closing {tab.Text}");
 
             if (isClosingCurrentTab && tabIndex > 0)
             {
                 mainTabs.SelectedIndex = tabIndex - 1;
             }
 
-            ShowHideSearch();
-
+            mainTabs.TabPages.Remove(tab);
             tab.Dispose();
         }
 
         private void CloseAllTabs()
         {
+            mainTabs.SelectedIndex = 0;
+
             //Close all tabs currently open (excluding console)
-            int tabCount = mainTabs.TabPages.Count;
-            for (int i = 1; i < tabCount; i++)
+            var tabCount = mainTabs.TabPages.Count;
+            for (var i = 1; i < tabCount; i++)
             {
                 CloseTab(mainTabs.TabPages[tabCount - i]);
             }
-
-            ShowHideSearch();
         }
 
         private void CloseTabsToLeft(TabPage basePage)
         {
-            if (mainTabs.SelectedTab == null)
-            {
-                return;
-            }
-
             //Close all tabs to the left of the base (excluding console)
-            for (int i = GetTabIndex(basePage); i > 0; i--)
+            for (var i = GetTabIndex(basePage) - 1; i > 0; i--)
             {
                 CloseTab(mainTabs.TabPages[i]);
             }
-
-            ShowHideSearch();
         }
 
         private void CloseTabsToRight(TabPage basePage)
         {
-            if (mainTabs.SelectedTab == null)
-            {
-                return;
-            }
-
             //Close all tabs to the right of the base one
-            int tabCount = mainTabs.TabPages.Count;
-            for (int i = 1; i < tabCount; i++)
+            var tabCount = mainTabs.TabPages.Count;
+            for (var i = 1; i < tabCount; i++)
             {
                 if (mainTabs.TabPages[tabCount - i] == basePage)
                 {
@@ -244,27 +429,6 @@ namespace GUI
 
                 CloseTab(mainTabs.TabPages[tabCount - i]);
             }
-
-            ShowHideSearch();
-        }
-
-        private void LoadAssetTypes()
-        {
-            ImageList = new ImageList();
-            ImageList.ColorDepth = ColorDepth.Depth32Bit;
-
-            var assembly = Assembly.GetExecutingAssembly();
-            var names = assembly.GetManifestResourceNames().Where(n => n.StartsWith("GUI.AssetTypes.", StringComparison.Ordinal));
-
-            foreach (var name in names)
-            {
-                var res = name.Split('.');
-
-                using (var stream = assembly.GetManifestResourceStream(name))
-                {
-                    ImageList.Images.Add(res[2], Image.FromStream(stream));
-                }
-            }
         }
 
         private void OnTabClick(object sender, MouseEventArgs e)
@@ -272,7 +436,7 @@ namespace GUI
             //Work out what tab we're interacting with
             var tabControl = sender as TabControl;
             var tabs = tabControl.TabPages;
-            TabPage thisTab = tabs.Cast<TabPage>().Where((t, i) => tabControl.GetTabRect(i).Contains(e.Location)).First();
+            var thisTab = tabs.Cast<TabPage>().Where((t, i) => tabControl.GetTabRect(i).Contains(e.Location)).First();
 
             if (e.Button == MouseButtons.Middle)
             {
@@ -281,6 +445,7 @@ namespace GUI
             else if (e.Button == MouseButtons.Right)
             {
                 var tabIndex = GetTabIndex(thisTab);
+                var tabName = thisTab.Text;
 
                 //Can't close tabs to the left/right if there aren't any!
                 closeToolStripMenuItemsToLeft.Visible = tabIndex > 1;
@@ -288,6 +453,12 @@ namespace GUI
 
                 //For UX purposes, hide the option to close the console also (this is disabled later in code too)
                 closeToolStripMenuItem.Visible = tabIndex != 0;
+
+                var canExport = tabName != "Console" && tabName != "Explorer";
+                exportAsIsToolStripMenuItem.Visible = canExport;
+                decompileExportToolStripMenuItem.Visible = canExport;
+
+                clearConsoleToolStripMenuItem.Visible = tabIndex == 0;
 
                 //Show context menu at the mouse position
                 tabContextMenuStrip.Tag = e.Location;
@@ -297,13 +468,13 @@ namespace GUI
 
         private void OnAboutItemClick(object sender, EventArgs e)
         {
-            var form = new AboutForm();
+            using var form = new AboutForm();
             form.ShowDialog(this);
         }
 
         private void OnSettingsItemClick(object sender, EventArgs e)
         {
-            var form = new SettingsForm();
+            using var form = new SettingsForm();
             form.ShowDialog(this);
         }
 
@@ -314,6 +485,7 @@ namespace GUI
                 InitialDirectory = Settings.Config.OpenDirectory,
                 Filter = "Valve Resource Format (*.*_c, *.vpk)|*.*_c;*.vpk;*.vcs|All files (*.*)|*.*",
                 Multiselect = true,
+                AddToRecent = true,
             };
             var userOK = openDialog.ShowDialog();
 
@@ -325,7 +497,6 @@ namespace GUI
             if (openDialog.FileNames.Length > 0)
             {
                 Settings.Config.OpenDirectory = Path.GetDirectoryName(openDialog.FileNames[0]);
-                Settings.Save();
             }
 
             foreach (var file in openDialog.FileNames)
@@ -334,45 +505,101 @@ namespace GUI
             }
         }
 
-        public void OpenFile(string fileName, byte[] input = null, TreeViewWithSearchResults.TreeViewPackageTag currentPackage = null)
+        public void OpenFile(string fileName)
         {
-            Console.WriteLine($"Opening {fileName}");
+            Log.Info(nameof(MainForm), $"Opening {fileName}");
 
-            if (input == null && Regex.IsMatch(fileName, @"_[0-9]{3}\.vpk$"))
+            if (Regexes.VpkNumberArchive().IsMatch(fileName))
             {
-                var fixedPackage = $"{fileName.Substring(0, fileName.Length - 8)}_dir.vpk";
+                var fixedPackage = $"{fileName[..^8]}_dir.vpk";
 
                 if (File.Exists(fixedPackage))
                 {
-                    Console.WriteLine($"You opened \"{Path.GetFileName(fileName)}\" but there is \"{Path.GetFileName(fixedPackage)}\"");
+                    Log.Warn(nameof(MainForm), $"You opened \"{Path.GetFileName(fileName)}\" but there is \"{Path.GetFileName(fixedPackage)}\"");
                     fileName = fixedPackage;
                 }
             }
 
-            var tab = new TabPage(Path.GetFileName(fileName));
-            tab.ToolTipText = fileName;
-            tab.Controls.Add(new LoadingFile());
+            var vrfGuiContext = new VrfGuiContext(fileName, null);
+            OpenFile(vrfGuiContext, null);
 
-            mainTabs.TabPages.Add(tab);
-            mainTabs.SelectTab(tab);
+            Settings.TrackRecentFile(fileName);
+        }
 
-            var task = Task.Factory.StartNew(() => ProcessFile(fileName, input, currentPackage));
+        public Task<TabPage> OpenFile(VrfGuiContext vrfGuiContext, PackageEntry file, TreeViewWithSearchResults packageTreeView = null)
+        {
+            var isPreview = packageTreeView != null;
+            var tabTemp = new TabPage(Path.GetFileName(vrfGuiContext.FileName))
+            {
+                ToolTipText = vrfGuiContext.FileName,
+                Tag = new ExportData
+                {
+                    PackageEntry = file,
+                    VrfGuiContext = vrfGuiContext,
+                }
+            };
+            var tab = tabTemp;
+            tab.Disposed += OnTabDisposed;
+
+            void OnTabDisposed(object sender, EventArgs e)
+            {
+                tab.Disposed -= OnTabDisposed;
+
+                var oldTag = tab.Tag;
+                tab.Tag = null;
+
+                if (oldTag is ExportData exportData)
+                {
+                    exportData.VrfGuiContext.Dispose();
+                }
+            }
+
+            try
+            {
+                var parentContext = vrfGuiContext.ParentGuiContext;
+
+                while (parentContext != null)
+                {
+                    tab.ToolTipText = $"{parentContext.FileName} > {tab.ToolTipText}";
+
+                    parentContext = parentContext.ParentGuiContext;
+                }
+
+                var extension = Path.GetExtension(tab.Text);
+
+                if (extension.Length > 0)
+                {
+                    extension = extension[1..];
+                }
+
+                tab.ImageIndex = GetImageIndexForExtension(extension);
+
+                mainTabs.TabPages.Insert(mainTabs.SelectedIndex + 1, tab);
+
+                if (!isPreview)
+                {
+                    mainTabs.SelectTab(tab);
+                }
+
+                tabTemp = null;
+            }
+            finally
+            {
+                tabTemp?.Dispose();
+            }
+
+            var loadingFile = new LoadingFile();
+            tab.Controls.Add(loadingFile);
+
+            var task = Task.Factory.StartNew(() => ProcessFile(vrfGuiContext, file, isPreview));
 
             task.ContinueWith(
                 t =>
                 {
                     t.Exception?.Flatten().Handle(ex =>
                     {
-                        var control = new TextBox
-                        {
-                            Dock = DockStyle.Fill,
-                            Font = new Font(FontFamily.GenericMonospace, 8),
-                            Multiline = true,
-                            ReadOnly = true,
-                            Text = ex.ToString(),
-                        };
+                        var control = new CodeTextBox(ex.ToString());
 
-                        tab.Controls.Clear();
                         tab.Controls.Add(control);
 
                         return false;
@@ -385,91 +612,134 @@ namespace GUI
             task.ContinueWith(
                 t =>
                 {
-                    tab.Controls.Clear();
+                    Cursor.Current = Cursors.WaitCursor;
 
-                    foreach (Control c in t.Result.Controls)
+                    tab.SuspendLayout();
+
+                    try
                     {
-                        tab.Controls.Add(c);
+                        foreach (Control c in t.Result.Controls)
+                        {
+                            if (tab.IsDisposed || tab.Disposing)
+                            {
+                                c.Dispose();
+                                continue;
+                            }
+
+                            tab.Controls.Add(c);
+                        }
+                    }
+                    finally
+                    {
+                        tab.ResumeLayout();
                     }
 
                     ShowHideSearch();
+
+                    Cursor.Current = Cursors.Default;
                 },
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnRanToCompletion,
                 TaskScheduler.FromCurrentSynchronizationContext());
+
+            task.ContinueWith(t =>
+                {
+                    tab.BeginInvoke(() =>
+                    {
+                        loadingFile.Dispose();
+
+                        if (isPreview)
+                        {
+                            packageTreeView.ReplaceListViewWithControl(tab);
+                        }
+                    });
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.FromCurrentSynchronizationContext());
+
+            return task;
         }
 
-        private TabPage ProcessFile(string fileName, byte[] input, TreeViewWithSearchResults.TreeViewPackageTag currentPackage)
+        private static TabPage ProcessFile(VrfGuiContext vrfGuiContext, PackageEntry entry, bool isPreview)
         {
-            uint magic = 0;
-            ushort magicResourceVersion = 0;
+            Stream stream = null;
+            Span<byte> magicData = stackalloc byte[6];
 
-            if (input != null)
+            if (entry != null)
             {
-                if (input.Length >= 6)
+                stream = AdvancedGuiFileLoader.GetPackageEntryStream(vrfGuiContext.ParentGuiContext.CurrentPackage, entry);
+
+                if (stream.Length >= magicData.Length)
                 {
-                    magic = BitConverter.ToUInt32(input, 0);
-                    magicResourceVersion = BitConverter.ToUInt16(input, 4);
+                    stream.Read(magicData);
+                    stream.Seek(-magicData.Length, SeekOrigin.Current);
                 }
             }
             else
             {
-                var magicData = new byte[6];
-
-                using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    fs.Read(magicData, 0, 6);
-                }
-
-                magic = BitConverter.ToUInt32(magicData, 0);
-                magicResourceVersion = BitConverter.ToUInt16(magicData, 4);
+                using var fs = new FileStream(vrfGuiContext.FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                fs.Read(magicData);
             }
 
-            var vrfGuiContext = new VrfGuiContext(fileName, currentPackage);
+            var magic = BitConverter.ToUInt32(magicData[..4]);
+            var magicResourceVersion = BitConverter.ToUInt16(magicData[4..]);
 
-            if (Types.Viewers.Package.IsAccepted(magic))
+            if (Types.PackageViewer.PackageViewer.IsAccepted(magic))
             {
-                var tab = new Types.Viewers.Package
-                {
-                    ImageList = ImageList, // TODO: Move this directly into Package
-                }.Create(vrfGuiContext, input);
+                var tab = new PackageViewer().Create(vrfGuiContext, stream);
 
                 return tab;
             }
             else if (Types.Viewers.CompiledShader.IsAccepted(magic))
             {
-                return new Types.Viewers.CompiledShader().Create(vrfGuiContext, input);
+                var viewer = new Types.Viewers.CompiledShader();
+
+                try
+                {
+                    var tab = viewer.Create(vrfGuiContext, stream);
+                    viewer = null;
+                    return tab;
+                }
+                finally
+                {
+                    viewer?.Dispose();
+                }
             }
             else if (Types.Viewers.ClosedCaptions.IsAccepted(magic))
             {
-                return new Types.Viewers.ClosedCaptions().Create(vrfGuiContext, input);
+                return new Types.Viewers.ClosedCaptions().Create(vrfGuiContext, stream);
             }
             else if (Types.Viewers.ToolsAssetInfo.IsAccepted(magic))
             {
-                return new Types.Viewers.ToolsAssetInfo().Create(vrfGuiContext, input);
+                return new Types.Viewers.ToolsAssetInfo().Create(vrfGuiContext, stream);
             }
             else if (Types.Viewers.BinaryKeyValues.IsAccepted(magic))
             {
-                return new Types.Viewers.BinaryKeyValues().Create(vrfGuiContext, input);
+                return new Types.Viewers.BinaryKeyValues().Create(vrfGuiContext, stream);
             }
             else if (Types.Viewers.BinaryKeyValues1.IsAccepted(magic))
             {
-                return new Types.Viewers.BinaryKeyValues1().Create(vrfGuiContext, input);
+                return new Types.Viewers.BinaryKeyValues1().Create(vrfGuiContext, stream);
             }
             else if (Types.Viewers.Resource.IsAccepted(magicResourceVersion))
             {
-                return new Types.Viewers.Resource().Create(vrfGuiContext, input);
+                return new Types.Viewers.Resource().Create(vrfGuiContext, stream, isPreview);
             }
             else if (Types.Viewers.Image.IsAccepted(magic))
             {
-                return new Types.Viewers.Image().Create(vrfGuiContext, input);
+                return new Types.Viewers.Image().Create(vrfGuiContext, stream);
             }
-            else if (Types.Viewers.Audio.IsAccepted(magic, fileName))
+            else if (Types.Viewers.Audio.IsAccepted(magic, vrfGuiContext.FileName))
             {
-                return new Types.Viewers.Audio().Create(vrfGuiContext, input);
+                return new Types.Viewers.Audio().Create(vrfGuiContext, stream);
+            }
+            else if (Types.Viewers.FlexSceneFile.IsAccepted(magic))
+            {
+                return new Types.Viewers.FlexSceneFile().Create(vrfGuiContext, stream);
             }
 
-            return new Types.Viewers.ByteViewer().Create(vrfGuiContext, input);
+            return new Types.Viewers.ByteViewer().Create(vrfGuiContext, stream);
         }
 
         private void MainForm_DragDrop(object sender, DragEventArgs e)
@@ -490,181 +760,6 @@ namespace GUI
             }
         }
 
-        private static TabPage FetchToolstripTabContext(object sender)
-        {
-            var contextMenu = ((ToolStripMenuItem)sender).Owner;
-            var tabControl = ((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl as TabControl;
-            var tabs = tabControl.TabPages;
-
-            return tabs.Cast<TabPage>().Where((t, i) => tabControl.GetTabRect(i).Contains((Point)contextMenu.Tag)).First();
-        }
-
-        private void CloseToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            CloseTab(FetchToolstripTabContext(sender));
-        }
-
-        private void CloseToolStripMenuItemsToLeft_Click(object sender, EventArgs e)
-        {
-            CloseTabsToLeft(FetchToolstripTabContext(sender));
-        }
-
-        private void CloseToolStripMenuItemsToRight_Click(object sender, EventArgs e)
-        {
-            CloseTabsToRight(FetchToolstripTabContext(sender));
-        }
-
-        private void CloseToolStripMenuItems_Click(object sender, EventArgs e)
-        {
-            CloseAllTabs();
-        }
-
-        private void CopyFileNameToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            TreeNode selectedNode = null;
-            var control = ((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl;
-
-            if (control is TreeView treeView)
-            {
-                selectedNode = treeView.SelectedNode;
-            }
-            else if (control is ListView listView)
-            {
-                selectedNode = listView.SelectedItems[0].Tag as TreeNode;
-            }
-
-            if (selectedNode.Tag is PackageEntry packageEntry)
-            {
-                Clipboard.SetText(packageEntry.GetFullPath());
-            }
-            else
-            {
-                Clipboard.SetText(selectedNode.Name);
-            }
-        }
-
-        private void OpenWithDefaultAppToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            TreeNode selectedNode = null;
-            var control = ((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl;
-
-            if (control is TreeView treeView)
-            {
-                selectedNode = treeView.SelectedNode;
-            }
-            else if (control is ListView listView)
-            {
-                selectedNode = listView.SelectedItems[0].Tag as TreeNode;
-            }
-
-            if (selectedNode.Tag is PackageEntry file)
-            {
-                var package = selectedNode.TreeView.Tag as TreeViewWithSearchResults.TreeViewPackageTag;
-                package.Package.ReadEntry(file, out var output, validateCrc: file.CRC32 > 0);
-
-                var tempPath = $"{Path.GetTempPath()}VRF - {Path.GetFileName(package.Package.FileName)} - {file.GetFileName()}";
-                using (var stream = new FileStream(tempPath, FileMode.Create))
-                {
-                    stream.Write(output, 0, output.Length);
-                }
-
-                try
-                {
-                    Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true }).Start();
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine(ex.Message);
-                }
-            }
-        }
-
-        private void DecompileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ExtractFiles(sender, true);
-        }
-
-        private void ExtractToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ExtractFiles(sender, false);
-        }
-
-        private static void ExtractFiles(object sender, bool decompile)
-        {
-            TreeViewWithSearchResults.TreeViewPackageTag package = null;
-            TreeNode selectedNode = null;
-
-            // the context menu can come from a TreeView or a ListView depending on where the user clicked to extract
-            // each option has a difference in where we can get the values to extract
-            if (((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl is TreeView)
-            {
-                var tree = ((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl as TreeView;
-                selectedNode = tree.SelectedNode;
-                package = tree.Tag as TreeViewWithSearchResults.TreeViewPackageTag;
-            }
-            else if (((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl is ListView)
-            {
-                var listView = ((ContextMenuStrip)((ToolStripMenuItem)sender).Owner).SourceControl as ListView;
-                selectedNode = listView.SelectedItems[0].Tag as TreeNode;
-                package = listView.Tag as TreeViewWithSearchResults.TreeViewPackageTag;
-            }
-
-            if (selectedNode.Tag.GetType() == typeof(PackageEntry))
-            {
-                // We are a file
-                var file = selectedNode.Tag as PackageEntry;
-                var fileName = file.GetFileName();
-
-                package.Package.ReadEntry(file, out var output, validateCrc: file.CRC32 > 0);
-
-                if (decompile && fileName.EndsWith("_c", StringComparison.Ordinal))
-                {
-                    using var resource = new Resource
-                    {
-                        FileName = fileName,
-                    };
-                    using var memory = new MemoryStream(output);
-
-                    resource.Read(memory);
-
-                    ExportFile.Export(fileName, new ExportData
-                    {
-                        Resource = resource,
-                        VrfGuiContext = new VrfGuiContext(null, package),
-                    });
-
-                    return;
-                }
-
-                var dialog = new SaveFileDialog
-                {
-                    InitialDirectory = Settings.Config.SaveDirectory,
-                    Filter = "All files (*.*)|*.*",
-                    FileName = fileName,
-                };
-                var userOK = dialog.ShowDialog();
-
-                if (userOK == DialogResult.OK)
-                {
-                    Settings.Config.SaveDirectory = Path.GetDirectoryName(dialog.FileName);
-                    Settings.Save();
-
-                    using var stream = dialog.OpenFile();
-                    stream.Write(output, 0, output.Length);
-                }
-            }
-            else
-            {
-                //We are a folder
-                var dialog = new FolderBrowserDialog();
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    var extractDialog = new ExtractProgressForm(package.Package, selectedNode, dialog.SelectedPath, decompile);
-                    extractDialog.ShowDialog();
-                }
-            }
-        }
-
         /// <summary>
         /// When the user clicks to search from the toolbar, open a dialog with search options. If the user clicks OK in the dialog,
         /// perform a search in the selected tab's TreeView for the entered value and display the results in a ListView.
@@ -680,18 +775,136 @@ namespace GUI
                 var searchText = searchForm.SearchText;
                 if (!string.IsNullOrEmpty(searchText) && mainTabs.TabCount > 0 && mainTabs.SelectedTab != null)
                 {
-                    var treeView = mainTabs.SelectedTab.Controls["TreeViewWithSearchResults"] as TreeViewWithSearchResults;
+                    var treeView = mainTabs.SelectedTab.Controls[nameof(TreeViewWithSearchResults)] as TreeViewWithSearchResults;
                     treeView.SearchAndFillResults(searchText, searchForm.SelectedSearchType);
                 }
             }
         }
 
-        private void RecoverDeletedToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            recoverDeletedToolStripMenuItem.Enabled = false;
+        private void OpenExplorer_Click(object sender, EventArgs e) => OpenExplorer();
 
-            var treeView = mainTabs.SelectedTab.Controls["TreeViewWithSearchResults"] as TreeViewWithSearchResults;
-            treeView.RecoverDeletedFiles();
+        private void OpenExplorer()
+        {
+            foreach (TabPage tabPage in mainTabs.TabPages)
+            {
+                if (tabPage.Text == "Explorer")
+                {
+                    mainTabs.SelectTab(tabPage);
+                    return;
+                }
+            }
+
+            var loadingFile = new LoadingFile();
+            var explorerTab = new TabPage("Explorer")
+            {
+                ToolTipText = "Explorer"
+            };
+            TabPage explorerTabRef = null;
+
+            try
+            {
+                explorerTab.Controls.Add(loadingFile);
+                explorerTab.ImageIndex = ImageListLookup["_folder_star"];
+                mainTabs.TabPages.Insert(1, explorerTab);
+                mainTabs.SelectTab(explorerTab);
+                explorerTabRef = explorerTab;
+                explorerTab = null;
+            }
+            finally
+            {
+                explorerTab?.Dispose();
+            }
+
+            Task.Factory.StartNew(() =>
+            {
+                var explorer = new ExplorerControl
+                {
+                    Dock = DockStyle.Fill,
+                };
+
+                Invoke(() =>
+                {
+                    loadingFile.Dispose();
+                    explorerTabRef.Controls.Add(explorer);
+                });
+            }).ContinueWith(t =>
+            {
+                Log.Error(nameof(ExplorerControl), t.Exception.ToString());
+
+                t.Exception?.Flatten().Handle(ex =>
+                {
+                    loadingFile.Dispose();
+
+                    var control = new CodeTextBox(ex.ToString());
+
+                    explorerTabRef.Controls.Add(control);
+
+                    return false;
+                });
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        public static int GetImageIndexForExtension(string extension)
+        {
+            if (extension.EndsWith(GameFileLoader.CompiledFileSuffix, StringComparison.Ordinal))
+            {
+                extension = extension[0..^2];
+            }
+
+            if (ImageListLookup.TryGetValue(extension, out var image))
+            {
+                return image;
+            }
+
+            if (extension.Length > 0 && extension[0] == 'v' && ImageListLookup.TryGetValue(extension[1..], out image))
+            {
+                return image;
+            }
+
+            return ImageListLookup["_default"];
+        }
+
+        private void ClearConsoleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Log.ClearConsole();
+        }
+
+        private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Task.Run(CheckForUpdates);
+
+            checkForUpdatesToolStripMenuItem.Enabled = false;
+        }
+
+        private void NewVersionAvailableToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using var form = new UpdateAvailableForm();
+            form.ShowDialog(this);
+        }
+
+        private async Task CheckForUpdates()
+        {
+            await UpdateChecker.CheckForUpdates().ConfigureAwait(false);
+
+            Invoke(() =>
+            {
+                if (UpdateChecker.IsNewVersionAvailable)
+                {
+                    checkForUpdatesToolStripMenuItem.Visible = false;
+                    newVersionAvailableToolStripMenuItem.Text = $"New {(UpdateChecker.IsNewVersionStableBuild ? "release" : "build")} {UpdateChecker.NewVersion} available";
+                    newVersionAvailableToolStripMenuItem.Visible = true;
+                }
+                else
+                {
+                    checkForUpdatesToolStripMenuItem.Text = "Up to date";
+                }
+
+                using var form = new UpdateAvailableForm();
+                form.ShowDialog(this);
+            });
         }
     }
 }

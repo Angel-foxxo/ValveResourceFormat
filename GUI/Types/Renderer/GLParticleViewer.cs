@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Windows.Forms;
 using GUI.Controls;
-using GUI.Types.ParticleRenderer;
 using GUI.Utils;
-using static GUI.Controls.GLViewerControl;
+using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Renderer
 {
@@ -13,58 +8,67 @@ namespace GUI.Types.Renderer
     /// GL Render control with particle controls (control points? particle counts?).
     /// Renders a list of ParticleRenderers.
     /// </summary>
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable
-    internal class GLParticleViewer
-#pragma warning restore CA1001 // Types that own disposable fields should be disposable
+    class GLParticleViewer : GLSceneViewer
     {
-        private ICollection<ParticleRenderer.ParticleRenderer> Renderers { get; } = new HashSet<ParticleRenderer.ParticleRenderer>();
+        private readonly ParticleSystem particleSystem;
+        private ParticleSceneNode particleSceneNode;
+        private GLViewerTrackBarControl slowmodeTrackBar;
 
-        public event EventHandler Load;
+        private bool ShowRenderBounds { get; set; }
 
-        public Control Control => viewerControl;
-
-        private readonly GLViewerControl viewerControl;
-        private readonly VrfGuiContext vrfGuiContext;
-
-        private ParticleGrid particleGrid;
-
-        public GLParticleViewer(VrfGuiContext guiContext)
+        public GLParticleViewer(VrfGuiContext guiContext, ParticleSystem particleSystem) : base(guiContext, Frustum.CreateEmpty())
         {
-            vrfGuiContext = guiContext;
-
-            viewerControl = new GLViewerControl();
-
-            viewerControl.GLLoad += OnLoad;
+            this.particleSystem = particleSystem;
         }
 
-        private void OnLoad(object sender, EventArgs e)
+        protected override void Dispose(bool disposing)
         {
-            particleGrid = new ParticleGrid(20, 5, vrfGuiContext);
+            base.Dispose(disposing);
 
-            viewerControl.Camera.SetViewportSize(viewerControl.GLControl.Width, viewerControl.GLControl.Height);
-            viewerControl.Camera.SetLocation(new Vector3(200));
-            viewerControl.Camera.LookAt(new Vector3(0));
-
-            Load?.Invoke(this, e);
-
-            viewerControl.GLPaint += OnPaint;
-        }
-
-        private void OnPaint(object sender, RenderEventArgs e)
-        {
-            particleGrid.Render(e.Camera, RenderPass.Both);
-
-            foreach (var renderer in Renderers)
+            if (disposing)
             {
-                renderer.Update(e.FrameTime);
-
-                renderer.Render(e.Camera, RenderPass.Both);
+                slowmodeTrackBar?.Dispose();
             }
         }
 
-        public void AddRenderer(ParticleRenderer.ParticleRenderer renderer)
+        protected override void LoadScene()
         {
-            Renderers.Add(renderer);
+            particleSceneNode = new ParticleSceneNode(Scene, particleSystem)
+            {
+                Transform = Matrix4x4.Identity
+            };
+            Scene.Add(particleSceneNode, true);
+        }
+
+        protected override void OnLoad(object sender, EventArgs e)
+        {
+            base.OnLoad(sender, e);
+            selectedNodeRenderer.UpdateEveryFrame = true;
+
+            Camera.SetLocation(new Vector3(200, 200, 200));
+            Camera.LookAt(Vector3.Zero);
+        }
+
+        protected override void InitializeControl()
+        {
+            AddRenderModeSelectionControl();
+            AddBaseGridControl();
+
+            slowmodeTrackBar = AddTrackBar(value =>
+            {
+                particleSceneNode.FrametimeMultiplier = value / 100f;
+            });
+            slowmodeTrackBar.TrackBar.TickFrequency = 10;
+            slowmodeTrackBar.TrackBar.Minimum = 0;
+            slowmodeTrackBar.TrackBar.Maximum = 100;
+            slowmodeTrackBar.TrackBar.Value = 100;
+
+            AddCheckBox("Show render bounds", ShowRenderBounds, value => selectedNodeRenderer.SelectNode(value ? particleSceneNode : null));
+        }
+
+        protected override void OnPicked(object sender, PickingTexture.PickingResponse pixelInfo)
+        {
+            //
         }
     }
 }

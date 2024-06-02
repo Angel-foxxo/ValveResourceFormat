@@ -1,72 +1,45 @@
-using System;
-using System.Numerics;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class CreateWithinSphere : IParticleInitializer
+    class CreateWithinSphere : ParticleFunctionInitializer
     {
-        private readonly float radiusMin;
-        private readonly float radiusMax;
-        private readonly float speedMin;
-        private readonly float speedMax;
-        private readonly Vector3 localCoordinateSystemSpeedMin;
-        private readonly Vector3 localCoordinateSystemSpeedMax;
+        private readonly INumberProvider radiusMin = new LiteralNumberProvider(0);
+        private readonly INumberProvider radiusMax = new LiteralNumberProvider(0);
+        private readonly INumberProvider speedMin = new LiteralNumberProvider(0);
+        private readonly INumberProvider speedMax = new LiteralNumberProvider(0);
+        private readonly IVectorProvider localCoordinateSystemSpeedMin = new LiteralVectorProvider(Vector3.Zero);
+        private readonly IVectorProvider localCoordinateSystemSpeedMax = new LiteralVectorProvider(Vector3.Zero);
 
-        private readonly Random random;
-
-        public CreateWithinSphere(IKeyValueCollection keyValues)
+        public CreateWithinSphere(ParticleDefinitionParser parse) : base(parse)
         {
-            random = new Random();
-
-            if (keyValues.ContainsKey("m_fRadiusMin"))
-            {
-                radiusMin = keyValues.GetFloatProperty("m_fRadiusMin");
-            }
-
-            if (keyValues.ContainsKey("m_fRadiusMax"))
-            {
-                radiusMax = keyValues.GetFloatProperty("m_fRadiusMax");
-            }
-
-            if (keyValues.ContainsKey("m_fSpeedMin"))
-            {
-                speedMin = keyValues.GetFloatProperty("m_fSpeedMin");
-            }
-
-            if (keyValues.ContainsKey("m_fSpeedMax"))
-            {
-                speedMax = keyValues.GetFloatProperty("m_fSpeedMax");
-            }
-
-            if (keyValues.ContainsKey("m_LocalCoordinateSystemSpeedMin"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_LocalCoordinateSystemSpeedMin");
-                localCoordinateSystemSpeedMin = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
-
-            if (keyValues.ContainsKey("m_LocalCoordinateSystemSpeedMax"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_LocalCoordinateSystemSpeedMax");
-                localCoordinateSystemSpeedMax = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
+            radiusMin = parse.NumberProvider("m_fRadiusMin", radiusMin);
+            radiusMax = parse.NumberProvider("m_fRadiusMax", radiusMax);
+            speedMin = parse.NumberProvider("m_fSpeedMin", speedMin);
+            speedMax = parse.NumberProvider("m_fSpeedMax", speedMax);
+            localCoordinateSystemSpeedMin = parse.VectorProvider("m_LocalCoordinateSystemSpeedMin", localCoordinateSystemSpeedMin);
+            localCoordinateSystemSpeedMax = parse.VectorProvider("m_LocalCoordinateSystemSpeedMax", localCoordinateSystemSpeedMax);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var randomVector = new Vector3(
-                ((float)random.NextDouble() * 2) - 1,
-                ((float)random.NextDouble() * 2) - 1,
-                ((float)random.NextDouble() * 2) - 1);
+            var randomVector = ParticleCollection.RandomBetweenPerComponent(particle.ParticleID, new Vector3(-1), new Vector3(1));
 
             // Normalize
-            var direction = randomVector / randomVector.Length();
+            var direction = Vector3.Normalize(randomVector);
 
-            var distance = radiusMin + ((float)random.NextDouble() * (radiusMax - radiusMin));
-            var speed = speedMin + ((float)random.NextDouble() * (speedMax - speedMin));
+            var distance = ParticleCollection.RandomBetween(
+                particle.ParticleID,
+                radiusMin.NextNumber(ref particle, particleSystemState),
+                radiusMax.NextNumber(ref particle, particleSystemState));
 
-            var localCoordinateSystemSpeed = localCoordinateSystemSpeedMin
-                + ((float)random.NextDouble() * (localCoordinateSystemSpeedMax - localCoordinateSystemSpeedMin));
+            var speed = ParticleCollection.RandomBetween(
+                particle.ParticleID,
+                speedMin.NextNumber(ref particle, particleSystemState),
+                speedMax.NextNumber(ref particle, particleSystemState));
+
+            var localCoordinateSystemSpeed = ParticleCollection.RandomBetweenPerComponent(
+                particle.ParticleID,
+                localCoordinateSystemSpeedMin.NextVector(ref particle, particleSystemState),
+                localCoordinateSystemSpeedMax.NextVector(ref particle, particleSystemState));
 
             particle.Position += direction * distance;
             particle.Velocity = (direction * speed) + localCoordinateSystemSpeed;

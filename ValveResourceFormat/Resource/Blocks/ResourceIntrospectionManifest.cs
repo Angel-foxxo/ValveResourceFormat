@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -20,11 +19,11 @@ namespace ValveResourceFormat.Blocks
                 public short OnDiskOffset { get; set; }
                 public List<byte> Indirections { get; private set; }
                 public uint TypeData { get; set; }
-                public DataType Type { get; set; } // TODO: make this an enum?
+                public SchemaFieldType Type { get; set; }
 
                 public Field()
                 {
-                    Indirections = new List<byte>();
+                    Indirections = [];
                 }
 
                 public void WriteText(IndentedTextWriter writer)
@@ -68,7 +67,7 @@ namespace ValveResourceFormat.Blocks
 
             public ResourceDiskStruct()
             {
-                FieldIntrospection = new List<Field>();
+                FieldIntrospection = [];
             }
 
             public void WriteText(IndentedTextWriter writer)
@@ -130,7 +129,7 @@ namespace ValveResourceFormat.Blocks
 
             public ResourceDiskEnum()
             {
-                EnumValueIntrospection = new List<Value>();
+                EnumValueIntrospection = [];
             }
 
             public void WriteText(IndentedTextWriter writer)
@@ -167,8 +166,8 @@ namespace ValveResourceFormat.Blocks
 
         public ResourceIntrospectionManifest()
         {
-            ReferencedStructs = new List<ResourceDiskStruct>();
-            ReferencedEnums = new List<ResourceDiskEnum>();
+            ReferencedStructs = [];
+            ReferencedEnums = [];
         }
 
         public override void Read(BinaryReader reader, Resource resource)
@@ -246,9 +245,9 @@ namespace ValveResourceFormat.Blocks
                         }
 
                         field.TypeData = reader.ReadUInt32();
-                        field.Type = (DataType)reader.ReadInt16();
+                        field.Type = (SchemaFieldType)reader.ReadInt16();
 
-                        reader.ReadBytes(2); // TODO: ????
+                        reader.ReadBytes(2); // alignment bytes
 
                         diskStruct.FieldIntrospection.Add(field);
                     }
@@ -258,7 +257,7 @@ namespace ValveResourceFormat.Blocks
 
                 diskStruct.StructFlags = reader.ReadByte();
 
-                reader.ReadBytes(3); // TODO: ????
+                reader.ReadBytes(3); // alignment bytes
 
                 ReferencedStructs.Add(diskStruct);
             }

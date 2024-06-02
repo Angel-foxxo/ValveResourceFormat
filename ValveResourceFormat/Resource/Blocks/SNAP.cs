@@ -1,8 +1,7 @@
+using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using ValveResourceFormat.Compression;
 using ValveResourceFormat.Serialization;
 using ValveResourceFormat.Utils;
@@ -18,7 +17,7 @@ namespace ValveResourceFormat.Blocks
 
         public uint NumParticles { get; private set; }
 
-        public IReadOnlyDictionary<string, IEnumerable> AttributeData { get; private set; }
+        public IReadOnlyDictionary<(string Name, string Type), IEnumerable> AttributeData { get; private set; }
 
         public override void WriteText(IndentedTextWriter writer)
         {
@@ -29,7 +28,7 @@ namespace ValveResourceFormat.Blocks
 
             foreach (var (attribute, data) in AttributeData)
             {
-                writer.WriteLine($"- Attribute {attribute} -");
+                writer.WriteLine($"- Attribute {attribute.Name} ({attribute.Type}) -");
                 foreach (var d in data)
                 {
                     writer.WriteLine(d);
@@ -43,36 +42,47 @@ namespace ValveResourceFormat.Blocks
             reader.BaseStream.Position = Offset;
 
             // Decompress SNAP block compression
-            using var decompressedStream = BlockCompress.Decompress(reader, Size);
-            using var innerReader = new BinaryReader(decompressedStream);
+            var info = BlockCompress.GetDecompressedSize(reader);
+            var decompressed = ArrayPool<byte>.Shared.Rent(info.Size);
 
-            // Get DATA block to know how to read SNAP data
-            var data = resource.DataBlock.AsKeyValueCollection();
-
-            var numParticles = data.GetIntegerProperty("num_particles");
-            var attributes = data.GetArray("attributes");
-            var stringList = data.GetArray<string>("string_list");
-
-            var attributeData = new Dictionary<string, IEnumerable>();
-
-            foreach (var attribute in attributes)
+            try
             {
-                var attributeName = attribute.GetProperty<string>("name");
-                var attributeType = attribute.GetProperty<string>("type");
+                BlockCompress.FastDecompress(info, reader, decompressed.AsSpan(0, info.Size));
+                using var decompressedStream = new MemoryStream(decompressed);
+                using var innerReader = new BinaryReader(decompressedStream);
 
-                var attributeArray = attributeType switch
+                // Get DATA block to know how to read SNAP data
+                var data = resource.DataBlock.AsKeyValueCollection();
+
+                var numParticles = data.GetIntegerProperty("num_particles");
+                var attributes = data.GetArray("attributes");
+                var stringList = data.GetArray<string>("string_list");
+
+                var attributeData = new Dictionary<(string Name, string Type), IEnumerable>();
+
+                foreach (var attribute in attributes)
                 {
-                    "skinning" => ReadSkinningData(innerReader, numParticles, stringList),
-                    "string" => ReadStringArray(innerReader, numParticles, stringList),
-                    "bone" => ReadStringArray(innerReader, numParticles, stringList),
-                    _ => ReadArrayOfType(innerReader, numParticles, attributeType),
-                };
+                    var attributeName = attribute.GetProperty<string>("name");
+                    var attributeType = attribute.GetProperty<string>("type");
 
-                attributeData.Add(attributeName, attributeArray);
+                    var attributeArray = attributeType switch
+                    {
+                        "skinning" => ReadSkinningData(innerReader, numParticles, stringList),
+                        "string" => ReadStringArray(innerReader, numParticles, stringList),
+                        "bone" => ReadStringArray(innerReader, numParticles, stringList),
+                        _ => ReadArrayOfType(innerReader, numParticles, attributeType),
+                    };
+
+                    attributeData.Add((attributeName, attributeType), attributeArray);
+                }
+
+                NumParticles = (uint)numParticles;
+                AttributeData = attributeData;
             }
-
-            NumParticles = (uint)numParticles;
-            AttributeData = attributeData;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(decompressed);
+            }
         }
 
         private static IEnumerable ReadArrayOfType(BinaryReader reader, long count, string type)

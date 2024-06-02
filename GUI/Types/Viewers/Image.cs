@@ -1,11 +1,12 @@
-using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using GUI.Types.Renderer;
 using GUI.Utils;
+using SkiaSharp;
 
 namespace GUI.Types.Viewers
 {
-    public class Image : IViewer
+    class Image : IViewer
     {
         public static bool IsAccepted(uint magic)
         {
@@ -14,19 +15,32 @@ namespace GUI.Types.Viewers
                    magic << 8 == 0x46494700; /* gif */
         }
 
-        public TabPage Create(VrfGuiContext vrfGuiContext, byte[] input)
+        public TabPage Create(VrfGuiContext vrfGuiContext, Stream stream)
         {
-            var img = input != null ? System.Drawing.Image.FromStream(new MemoryStream(input)) : System.Drawing.Image.FromFile(vrfGuiContext.FileName);
+            SKBitmap bitmap;
 
-            var control = new Forms.Texture
+            if (stream != null)
             {
-                BackColor = Color.Black,
-            };
-            control.SetImage(new Bitmap(img), Path.GetFileNameWithoutExtension(vrfGuiContext.FileName), img.Width, img.Height);
+                bitmap = SKBitmap.Decode(stream);
+            }
+            else
+            {
+                bitmap = SKBitmap.Decode(vrfGuiContext.FileName);
+            }
 
-            var tab = new TabPage();
-            tab.Controls.Add(control);
-            return tab;
+            try
+            {
+                var textureControl = new GLTextureViewer(vrfGuiContext, bitmap);
+                var tab = new TabPage("IMAGE");
+                tab.Controls.Add(textureControl);
+                bitmap = null;
+
+                return tab;
+            }
+            finally
+            {
+                bitmap?.Dispose();
+            }
         }
     }
 }

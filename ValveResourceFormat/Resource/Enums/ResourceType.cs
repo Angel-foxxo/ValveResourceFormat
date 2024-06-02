@@ -1,11 +1,8 @@
-using System;
-
 namespace ValveResourceFormat
 {
     // Friendly names are used
     public enum ResourceType
     {
-#pragma warning disable 1591
         Unknown = 0,
 
         [Extension("vanim")]
@@ -71,6 +68,9 @@ namespace ValveResourceFormat
         [Extension("vsndevts")]
         SoundEventScript,
 
+        [Extension("vmix")]
+        VMix,
+
         [Extension("vsndstck")]
         SoundStackScript,
 
@@ -100,23 +100,64 @@ namespace ValveResourceFormat
         [Extension("vjs")]
         PanoramaScript,
 
+        [Extension("vts")]
+        PanoramaTypescript,
+
         [Extension("vsvg")]
         PanoramaVectorGraphic,
 
         [Extension("vpsf")]
         ParticleSnapshot,
 
+        [Extension("vsnap")]
+        Snap,
+
         [Extension("vmap")]
         Map,
+
+        [Extension("vpost")]
+        PostProcessing,
 
         [Extension("vdata")]
         VData,
 
+        [Extension("vcompmat")]
+        CompositeMaterial,
+
+        [Extension("vrr")]
+        ResponseRules,
+
+        [Extension("csgoitem")]
+        CSGOItem,
+
+        [Extension("econitem")]
+        CSGOEconItem,
+
         [Extension("item")]
         ArtifactItem,
 
-        [Extension("sbox")] // TODO: Specify each type individually when sbox ships (sound, decal, surface, etc)
-        SboxData,
-#pragma warning restore 1591
+        [Extension("pulse")]
+        PulseGraphDef,
+
+        [Extension("vsmart")]
+        SmartProp,
+
+        [Extension("vpram")]
+        ProcessingGraphInstance,
+
+        [Extension("herolist")]
+        DotaHeroList,
+
+        [Extension("vdpn")]
+        DotaPatchNotes,
+
+        [Extension("vdvn")]
+        DotaVisualNovels,
+
+        [Extension("sbox")] // TODO: Managed resources can have any extension
+        SboxManagedResource,
+
+        [Extension("shader")]
+        Shader, // This is for sbox
     }
 }

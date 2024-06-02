@@ -1,12 +1,11 @@
 using GUI.Utils;
-using ValveResourceFormat;
+using SteamDatabase.ValvePak;
 
 namespace GUI.Types.Exporter
 {
-    public class ExportData
+    class ExportData
     {
-        public Resource Resource { get; set; }
+        public PackageEntry PackageEntry { get; set; }
         public VrfGuiContext VrfGuiContext { get; set; }
-        public ExportFileType FileType { get; set; } = ExportFileType.Auto;
     }
 }

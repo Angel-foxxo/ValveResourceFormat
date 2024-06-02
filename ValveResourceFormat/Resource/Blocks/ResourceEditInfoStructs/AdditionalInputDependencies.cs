@@ -1,5 +1,3 @@
-﻿using System;
-
 namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 {
     public class AdditionalInputDependencies : InputDependencies

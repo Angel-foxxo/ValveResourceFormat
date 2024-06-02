@@ -1,28 +1,27 @@
-using System;
-using ValveResourceFormat.Serialization;
+using ValveResourceFormat;
 
 namespace GUI.Types.ParticleRenderer.Operators
 {
-    public class FadeInSimple : IParticleOperator
+    class FadeInSimple : ParticleFunctionOperator
     {
         private readonly float fadeInTime = 0.25f;
+        private readonly ParticleField FieldOutput = ParticleField.Alpha;
 
-        public FadeInSimple(IKeyValueCollection keyValues)
+        public FadeInSimple(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_flFadeInTime"))
-            {
-                fadeInTime = keyValues.GetFloatProperty("m_flFadeInTime");
-            }
+            fadeInTime = parse.Float("m_flFadeInTime", fadeInTime);
+            FieldOutput = parse.ParticleField("m_nFieldOutput", FieldOutput);
         }
 
-        public void Update(Span<Particle> particles, float frameTime, ParticleSystemRenderState particleSystemState)
+        public override void Operate(ParticleCollection particles, float frameTime, ParticleSystemRenderState particleSystemState)
         {
-            for (int i = 0; i < particles.Length; ++i)
+            foreach (ref var particle in particles.Current)
             {
-                var time = 1 - (particles[i].Lifetime / particles[i].ConstantLifetime);
+                var time = particle.NormalizedAge;
                 if (time <= fadeInTime)
                 {
-                    particles[i].Alpha = (time / fadeInTime) * particles[i].ConstantAlpha;
+                    var newAlpha = (time / fadeInTime) * particle.GetInitialScalar(particles, ParticleField.Alpha);
+                    particle.SetScalar(FieldOutput, newAlpha);
                 }
             }
         }

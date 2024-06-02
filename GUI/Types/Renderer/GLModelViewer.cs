@@ -1,96 +1,176 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Utils;
+using ValveResourceFormat.IO;
 using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Renderer
 {
-    /// <summary>
-    /// GL Render control with model controls (render mode, animation panels).
-    /// </summary>
-    internal class GLModelViewer : GLSceneViewer
+    class GLModelViewer : GLSingleNodeViewer
     {
-        private readonly Model model;
-        private readonly Mesh mesh;
+        protected Model model { get; init; }
         private PhysAggregateData phys;
-        private ComboBox animationComboBox;
+        public ComboBox animationComboBox { get; private set; }
         private CheckBox animationPlayPause;
+        private CheckBox showSkeletonCheckbox;
+        private ComboBox hitboxComboBox;
         private GLViewerTrackBarControl animationTrackBar;
-        private CheckedListBox meshGroupListBox;
-        private ComboBox materialGroupListBox;
+        private GLViewerTrackBarControl slowmodeTrackBar;
+        public CheckedListBox meshGroupListBox { get; private set; }
+        public ComboBox materialGroupListBox { get; private set; }
         private ModelSceneNode modelSceneNode;
-        private MeshSceneNode meshSceneNode;
-        private PhysSceneNode physSceneNode;
+        private SkeletonSceneNode skeletonSceneNode;
+        private HitboxSetSceneNode hitboxSetSceneNode;
+        private CheckedListBox physicsGroupsComboBox;
 
-        public GLModelViewer(VrfGuiContext guiContext, Model model)
-            : base(guiContext, Frustum.CreateEmpty())
+        public GLModelViewer(VrfGuiContext guiContext) : base(guiContext)
+        {
+            //
+        }
+
+        public GLModelViewer(VrfGuiContext guiContext, Model model) : base(guiContext)
         {
             this.model = model;
         }
 
-        public GLModelViewer(VrfGuiContext guiContext, Mesh mesh)
-           : base(guiContext, Frustum.CreateEmpty())
-        {
-            this.mesh = mesh;
-        }
-
-        public GLModelViewer(VrfGuiContext guiContext, PhysAggregateData phys)
-           : base(guiContext, Frustum.CreateEmpty())
+        public GLModelViewer(VrfGuiContext guiContext, PhysAggregateData phys) : base(guiContext)
         {
             this.phys = phys;
         }
 
-        protected override void InitializeControl()
+        protected override void Dispose(bool disposing)
         {
-            AddRenderModeSelectionControl();
+            base.Dispose(disposing);
 
-            animationComboBox = ViewerControl.AddSelection("Animation", (animation, _) =>
+            if (disposing)
+            {
+                animationComboBox?.Dispose();
+                animationPlayPause?.Dispose();
+                animationTrackBar?.Dispose();
+                slowmodeTrackBar?.Dispose();
+                meshGroupListBox?.Dispose();
+                materialGroupListBox?.Dispose();
+                physicsGroupsComboBox?.Dispose();
+                showSkeletonCheckbox?.Dispose();
+                hitboxComboBox?.Dispose();
+            }
+        }
+
+        private void AddAnimationControls()
+        {
+            animationComboBox = AddSelection("Animation", (animation, _) =>
             {
                 modelSceneNode?.SetAnimation(animation);
             });
-            animationPlayPause = ViewerControl.AddCheckBox("Autoplay", true, isChecked =>
+            animationPlayPause = AddCheckBox("Autoplay", true, isChecked =>
             {
                 if (modelSceneNode != null)
                 {
                     modelSceneNode.AnimationController.IsPaused = !isChecked;
                 }
             });
-            animationTrackBar = ViewerControl.AddTrackBar("Animation Frame", frame =>
+            animationTrackBar = AddTrackBar(frame =>
             {
                 if (modelSceneNode != null)
                 {
                     modelSceneNode.AnimationController.Frame = frame;
                 }
             });
+
+            slowmodeTrackBar = AddTrackBar(value =>
+            {
+                modelSceneNode.AnimationController.FrametimeMultiplier = value / 100f;
+            });
+            slowmodeTrackBar.TrackBar.TickFrequency = 10;
+            slowmodeTrackBar.TrackBar.Minimum = 0;
+            slowmodeTrackBar.TrackBar.Maximum = 100;
+            slowmodeTrackBar.TrackBar.Value = 100;
+
             animationPlayPause.Enabled = false;
             animationTrackBar.Enabled = false;
+            slowmodeTrackBar.Enabled = false;
+
+            var previousPaused = false;
+            animationTrackBar.TrackBar.MouseDown += (_, __) =>
+            {
+                previousPaused = modelSceneNode.AnimationController.IsPaused;
+                modelSceneNode.AnimationController.IsPaused = true;
+            };
+            animationTrackBar.TrackBar.MouseUp += (_, __) =>
+            {
+                modelSceneNode.AnimationController.IsPaused = previousPaused;
+            };
         }
 
         protected override void LoadScene()
         {
+            base.LoadScene();
+
             if (model != null)
             {
                 modelSceneNode = new ModelSceneNode(Scene, model);
-                SetAvailableAnimations(modelSceneNode.GetSupportedAnimationNames());
-                Scene.Add(modelSceneNode, false);
+                Scene.Add(modelSceneNode, true);
+
+                var animations = modelSceneNode.GetSupportedAnimationNames().ToArray();
+
+                if (animations.Length > 0)
+                {
+                    AddAnimationControls();
+                    SetAvailableAnimations(animations);
+                }
+
+                skeletonSceneNode = new SkeletonSceneNode(Scene, modelSceneNode.AnimationController, model.Skeleton, textRenderer);
+                Scene.Add(skeletonSceneNode, true);
+
+                if (model.Skeleton.Bones.Length > 0)
+                {
+                    showSkeletonCheckbox = AddCheckBox("Show skeleton", false, isChecked =>
+                    {
+                        if (skeletonSceneNode != null)
+                        {
+                            skeletonSceneNode.Enabled = isChecked;
+                        }
+                    });
+                }
+
+                if (model.HitboxSets != null && model.HitboxSets.Count > 0)
+                {
+                    var hitboxSets = model.HitboxSets;
+                    hitboxSetSceneNode = new HitboxSetSceneNode(Scene, modelSceneNode.AnimationController, hitboxSets);
+                    Scene.Add(hitboxSetSceneNode, true);
+
+                    hitboxComboBox = AddSelection("Hitbox Set", (hitboxSet, i) =>
+                    {
+                        if (i == 0)
+                        {
+                            hitboxSetSceneNode.SetHitboxSet(null);
+                        }
+                        else
+                        {
+                            hitboxSetSceneNode.SetHitboxSet(hitboxSet);
+                        }
+                    });
+                    hitboxComboBox.Items.Add("");
+                    hitboxComboBox.Items.AddRange([.. hitboxSets.Keys]);
+                }
 
                 phys = model.GetEmbeddedPhys();
                 if (phys == null)
                 {
-                    var refPhysicsPaths = model.GetReferencedPhysNames();
-                    if (refPhysicsPaths.Any())
+                    var refPhysicsPaths = model.GetReferencedPhysNames().ToArray();
+                    if (refPhysicsPaths.Length != 0)
                     {
                         //TODO are there any models with more than one vphys?
-                        if (refPhysicsPaths.Count() != 1)
+                        if (refPhysicsPaths.Length != 1)
                         {
-                            Console.WriteLine($"Model has more than 1 vphys ({refPhysicsPaths.Count()})." +
-                                " Please report this on https://github.com/SteamDatabase/ValveResourceFormat and provide the file that caused this.");
+                            Log.Debug(nameof(GLModelViewer), $"Model has more than 1 vphys ({refPhysicsPaths.Length})." +
+                                " Please report this on https://github.com/ValveResourceFormat/ValveResourceFormat and provide the file that caused this.");
                         }
 
-                        var newResource = Scene.GuiContext.LoadFileByAnyMeansNecessary(refPhysicsPaths.First() + "_c");
+                        var newResource = Scene.GuiContext.LoadFileCompiled(refPhysicsPaths.First());
                         if (newResource != null)
                         {
                             phys = (PhysAggregateData)newResource.DataBlock;
@@ -98,85 +178,184 @@ namespace GUI.Types.Renderer
                     }
                 }
 
-                var meshGroups = modelSceneNode.GetMeshGroups();
+                var meshGroups = modelSceneNode.GetMeshGroups().ToArray<object>();
 
-                if (meshGroups.Count() > 1)
+                if (meshGroups.Length > 1)
                 {
-                    meshGroupListBox = ViewerControl.AddMultiSelection("Mesh Group", selectedGroups =>
+                    meshGroupListBox = AddMultiSelection("Mesh Group", listBox =>
                     {
-                        modelSceneNode.SetActiveMeshGroups(selectedGroups);
-                    });
+                        listBox.Items.AddRange(meshGroups);
 
-                    meshGroupListBox.Items.AddRange(modelSceneNode.GetMeshGroups().ToArray<object>());
-                    foreach (var group in modelSceneNode.GetActiveMeshGroups())
-                    {
-                        meshGroupListBox.SetItemChecked(meshGroupListBox.FindStringExact(group), true);
-                    }
+                        foreach (var group in modelSceneNode.GetActiveMeshGroups())
+                        {
+                            listBox.SetItemChecked(listBox.FindStringExact(group), true);
+                        }
+                    }, modelSceneNode.SetActiveMeshGroups);
                 }
 
-                var materialGroups = model.GetMaterialGroups();
+                var materialGroupNames = model.GetMaterialGroups().Select(group => group.Name).ToArray<object>();
 
-                if (materialGroups.Count() > 1)
+                if (materialGroupNames.Length > 1)
                 {
-                    materialGroupListBox = ViewerControl.AddSelection("Material Group", (selectedGroup, _) =>
+                    materialGroupListBox = AddSelection("Material Group", (selectedGroup, _) =>
                     {
-                        modelSceneNode?.SetSkin(selectedGroup);
+                        modelSceneNode?.SetMaterialGroup(selectedGroup);
                     });
 
-                    materialGroupListBox.Items.AddRange(materialGroups.ToArray<object>());
+                    materialGroupListBox.Items.AddRange(materialGroupNames);
                     materialGroupListBox.SelectedIndex = 0;
                 }
 
                 modelSceneNode.AnimationController.RegisterUpdateHandler((animation, frame) =>
                 {
-                    if (animationTrackBar.TrackBar.Value != frame)
+                    if (frame == -1)
                     {
-                        animationTrackBar.UpdateValueSilently(frame);
+                        var maximum = animation == null ? 1 : animation.FrameCount - 1;
+                        if (maximum < 0)
+                        {
+                            maximum = 0;
+                        }
+                        if (animationTrackBar.TrackBar.Maximum != maximum)
+                        {
+                            animationTrackBar.TrackBar.Maximum = maximum;
+                            animationTrackBar.TrackBar.TickFrequency = maximum / 10;
+                        }
+                        animationTrackBar.Enabled = animation != null;
+                        animationPlayPause.Enabled = animation != null;
+                        slowmodeTrackBar.Enabled = animation != null;
+
+                        frame = 0;
                     }
-                    var maximum = animation == null ? 1 : animation.FrameCount - 1;
-                    if (animationTrackBar.TrackBar.Maximum != maximum)
+                    else if (animationTrackBar.TrackBar.Value != frame)
                     {
-                        animationTrackBar.TrackBar.Maximum = maximum;
+                        animationTrackBar.TrackBar.Value = frame;
                     }
-                    animationTrackBar.Enabled = animation != null;
-                    animationPlayPause.Enabled = animation != null;
                 });
             }
             else
             {
-                SetAvailableAnimations(Enumerable.Empty<string>());
-            }
-
-            if (mesh != null)
-            {
-                meshSceneNode = new MeshSceneNode(Scene, mesh);
-                Scene.Add(meshSceneNode, false);
+                Picker.OnPicked -= OnPicked;
             }
 
             if (phys != null)
             {
-                physSceneNode = new PhysSceneNode(Scene, phys);
-                Scene.Add(physSceneNode, false);
+                var physSceneNodes = PhysSceneNode.CreatePhysSceneNodes(Scene, phys, null);
 
-                //disabled by default. Enable if viewing only phys or model without meshes
-                physSceneNode.Enabled = (modelSceneNode == null || !modelSceneNode.RenderableMeshes.Any());
+                foreach (var physSceneNode in physSceneNodes)
+                {
+                    Scene.Add(physSceneNode, false);
+                }
 
-                ViewerControl.AddCheckBox("Show Physics", physSceneNode.Enabled, (v) => { physSceneNode.Enabled = v; });
+                // Physics are not shown by default unless the model has no meshes
+                var enabledAllPhysByDefault = modelSceneNode == null || modelSceneNode.RenderableMeshes.Count == 0;
+
+                var physicsGroups = Scene.AllNodes
+                    .OfType<PhysSceneNode>()
+                    .Select(r => r.PhysGroupName)
+                    .Distinct()
+                    .ToArray();
+
+                if (physicsGroups.Length > 0)
+                {
+                    physicsGroupsComboBox = AddMultiSelection("Physics Groups", (listBox) =>
+                    {
+                        if (!enabledAllPhysByDefault)
+                        {
+                            listBox.Items.AddRange(physicsGroups);
+                            return;
+                        }
+
+                        listBox.BeginUpdate();
+
+                        foreach (var physGroup in physicsGroups)
+                        {
+                            listBox.Items.Add(physGroup, true);
+                        }
+
+                        listBox.EndUpdate();
+
+                        SetEnabledPhysicsGroups([.. physicsGroups]);
+                    }, (enabledPhysicsGroups) =>
+                    {
+                        SetEnabledPhysicsGroups(enabledPhysicsGroups.ToHashSet());
+                    });
+                }
             }
         }
 
-        private void SetAvailableAnimations(IEnumerable<string> animations)
+        private void SetEnabledPhysicsGroups(HashSet<string> physicsGroups)
+        {
+            foreach (var physNode in Scene.AllNodes.OfType<PhysSceneNode>())
+            {
+                physNode.Enabled = physicsGroups.Contains(physNode.PhysGroupName);
+            }
+
+            Scene.UpdateOctrees();
+            SkyboxScene?.UpdateOctrees();
+        }
+
+        protected override void OnPicked(object sender, PickingTexture.PickingResponse pickingResponse)
+        {
+            if (modelSceneNode == null)
+            {
+                return;
+            }
+
+            // Void
+            if (pickingResponse.PixelInfo.ObjectId == 0)
+            {
+                selectedNodeRenderer.SelectNode(null);
+                selectedNodeRenderer.UpdateEveryFrame = false;
+                return;
+            }
+
+            if (pickingResponse.Intent == PickingTexture.PickingIntent.Select)
+            {
+                var sceneNode = Scene.Find(pickingResponse.PixelInfo.ObjectId);
+                selectedNodeRenderer.SelectNode(sceneNode);
+                selectedNodeRenderer.UpdateEveryFrame = true;
+
+                return;
+            }
+
+            if (pickingResponse.Intent == PickingTexture.PickingIntent.Open)
+            {
+                var refMesh = modelSceneNode.GetLod1RefMeshes().FirstOrDefault(x => x.MeshIndex == pickingResponse.PixelInfo.MeshId);
+                if (refMesh.MeshName != null)
+                {
+                    var foundFile = GuiContext.FileLoader.FindFileWithContext(refMesh.MeshName + GameFileLoader.CompiledFileSuffix);
+                    if (foundFile.Context != null)
+                    {
+                        var task = Program.MainForm.OpenFile(foundFile.Context, foundFile.PackageEntry);
+                        task.ContinueWith(
+                            t =>
+                            {
+                                var glViewer = t.Result.Controls.OfType<TabControl>().FirstOrDefault()?
+                                    .Controls.OfType<TabPage>().First(tab => tab.Controls.OfType<GLViewerControl>() is not null)?
+                                    .Controls.OfType<GLViewerControl>().First();
+                                if (glViewer is not null)
+                                {
+                                    glViewer.GLPostLoad = (viewerControl) => viewerControl.Camera.CopyFrom(Camera);
+                                }
+                            },
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnRanToCompletion,
+                        TaskScheduler.Default);
+                    }
+                }
+            }
+        }
+
+        private void SetAvailableAnimations(string[] animations)
         {
             animationComboBox.BeginUpdate();
             animationComboBox.Items.Clear();
 
-            var count = animations.Count();
-
-            if (count > 0)
+            if (animations.Length > 0)
             {
                 animationComboBox.Enabled = true;
-                animationComboBox.Items.Add($"({count} animations available)");
-                animationComboBox.Items.AddRange(animations.ToArray());
+                animationComboBox.Items.Add($"({animations.Length} animations available)");
+                animationComboBox.Items.AddRange(animations);
                 animationComboBox.SelectedIndex = 0;
             }
             else

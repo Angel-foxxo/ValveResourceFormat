@@ -1,34 +1,21 @@
-using System;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RandomRadius : IParticleInitializer
+    class RandomRadius : ParticleFunctionInitializer
     {
-        private readonly float radiusMin;
-        private readonly float radiusMax;
+        private readonly float radiusMin = 1;
+        private readonly float radiusMax = 1;
+        private readonly float radiusRandomExponent = 1;
 
-        private readonly Random random;
-
-        public RandomRadius(IKeyValueCollection keyValues)
+        public RandomRadius(ParticleDefinitionParser parse) : base(parse)
         {
-            random = new Random();
-
-            if (keyValues.ContainsKey("m_flRadiusMin"))
-            {
-                radiusMin = keyValues.GetFloatProperty("m_flRadiusMin");
-            }
-
-            if (keyValues.ContainsKey("m_flRadiusMax"))
-            {
-                radiusMax = keyValues.GetFloatProperty("m_flRadiusMax");
-            }
+            radiusMin = parse.Float("m_flRadiusMin", radiusMin);
+            radiusMax = parse.Float("m_flRadiusMax", radiusMax);
+            radiusRandomExponent = parse.Float("m_flRadiusRandExponent", radiusRandomExponent);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            particle.ConstantRadius = radiusMin + ((float)random.NextDouble() * (radiusMax - radiusMin));
-            particle.Radius = particle.ConstantRadius;
+            particle.Radius = ParticleCollection.RandomWithExponentBetween(particle.ParticleID, radiusRandomExponent, radiusMin, radiusMax);
 
             return particle;
         }

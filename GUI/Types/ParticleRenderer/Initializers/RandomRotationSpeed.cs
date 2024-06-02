@@ -1,63 +1,38 @@
-using System;
-using System.Numerics;
-using ValveResourceFormat.Serialization;
+using GUI.Utils;
+using ValveResourceFormat;
 
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RandomRotationSpeed : IParticleInitializer
+    class RandomRotationSpeed : ParticleFunctionInitializer
     {
-        private const float PiOver180 = (float)Math.PI / 180f;
-
-        private readonly ParticleField fieldOutput = ParticleField.Roll;
+        private readonly ParticleField FieldOutput = ParticleField.Roll;
         private readonly bool randomlyFlipDirection = true;
         private readonly float degrees;
         private readonly float degreesMin;
         private readonly float degreesMax = 360f;
-
-        private readonly Random random = new Random();
-
-        public RandomRotationSpeed(IKeyValueCollection keyValues)
+        public RandomRotationSpeed(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_nFieldOutput"))
-            {
-                fieldOutput = (ParticleField)keyValues.GetIntegerProperty("m_nFieldOutput");
-            }
-
-            if (keyValues.ContainsKey("m_bRandomlyFlipDirection"))
-            {
-                randomlyFlipDirection = keyValues.GetProperty<bool>("m_bRandomlyFlipDirection");
-            }
-
-            if (keyValues.ContainsKey("m_flDegrees"))
-            {
-                degrees = keyValues.GetFloatProperty("m_flDegrees");
-            }
-
-            if (keyValues.ContainsKey("m_flDegreesMin"))
-            {
-                degreesMin = keyValues.GetFloatProperty("m_flDegreesMin");
-            }
-
-            if (keyValues.ContainsKey("m_flDegreesMax"))
-            {
-                degreesMax = keyValues.GetFloatProperty("m_flDegreesMax");
-            }
+            FieldOutput = parse.ParticleField("m_nFieldOutput", FieldOutput);
+            randomlyFlipDirection = parse.Boolean("m_bRandomlyFlipDirection", randomlyFlipDirection);
+            degrees = parse.Float("m_flDegrees", degrees);
+            degreesMin = parse.Float("m_flDegreesMin", degreesMin);
+            degreesMax = parse.Float("m_flDegreesMax", degreesMax);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var value = PiOver180 * (degrees + degreesMin + ((float)random.NextDouble() * (degreesMax - degreesMin)));
+            var value = MathUtils.ToRadians(degrees + ParticleCollection.RandomBetween(particle.ParticleID, degreesMin, degreesMax));
 
-            if (randomlyFlipDirection && random.NextDouble() > 0.5)
+            if (randomlyFlipDirection && Random.Shared.NextSingle() > 0.5f)
             {
                 value *= -1;
             }
 
-            if (fieldOutput == ParticleField.Yaw)
+            if (FieldOutput == ParticleField.Yaw)
             {
                 particle.RotationSpeed = new Vector3(value, 0, 0);
             }
-            else if (fieldOutput == ParticleField.Roll)
+            else if (FieldOutput == ParticleField.Roll)
             {
                 particle.RotationSpeed = new Vector3(0, 0, value);
             }

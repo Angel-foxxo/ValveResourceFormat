@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-
 namespace GUI.Types.Renderer
 {
-    internal class Octree<T>
+    class Octree<T>
         where T : class
     {
         private const int MaximumElementsBeforeSubdivide = 4;
@@ -48,7 +44,7 @@ namespace GUI.Types.Renderer
                 var remainingElements = new List<Element>();
                 foreach (var element in Elements)
                 {
-                    bool movedDown = false;
+                    var movedDown = false;
 
                     foreach (var child in Children)
                     {
@@ -85,7 +81,7 @@ namespace GUI.Types.Renderer
                     Subdivide();
                 }
 
-                bool inserted = false;
+                var inserted = false;
 
                 if (HasChildren)
                 {
@@ -104,20 +100,17 @@ namespace GUI.Types.Renderer
 
                 if (!inserted)
                 {
-                    if (Elements == null)
-                    {
-                        Elements = new List<Element>();
-                    }
+                    Elements ??= [];
 
                     Elements.Add(element);
                 }
             }
 
-            public (Node Node, int Index) Find(T clientObject, AABB bounds)
+            public (Node Node, int Index) Find(T clientObject, in AABB bounds)
             {
                 if (HasElements)
                 {
-                    for (int i = 0; i < Elements.Count; ++i)
+                    for (var i = 0; i < Elements.Count; ++i)
                     {
                         if (Elements[i].ClientObject == clientObject)
                         {
@@ -146,7 +139,7 @@ namespace GUI.Types.Renderer
                 Children = null;
             }
 
-            public void Query(AABB boundingBox, List<T> results)
+            public void Query(in AABB boundingBox, List<T> results)
             {
                 if (HasElements)
                 {
@@ -195,47 +188,62 @@ namespace GUI.Types.Renderer
                     }
                 }
             }
+
+            public AABB GetBounds()
+            {
+                var mins = new Vector3(float.MaxValue);
+                var maxs = new Vector3(-float.MaxValue);
+
+                if (HasElements)
+                {
+                    foreach (var element in Elements)
+                    {
+                        mins = Vector3.Min(mins, element.BoundingBox.Min);
+                        maxs = Vector3.Max(maxs, element.BoundingBox.Max);
+                    }
+                }
+
+                if (HasChildren)
+                {
+                    foreach (var child in Children)
+                    {
+                        var childBounds = child.GetBounds();
+                        mins = Vector3.Min(mins, childBounds.Min);
+                        maxs = Vector3.Max(maxs, childBounds.Max);
+                    }
+                }
+
+                return new AABB(mins, maxs);
+            }
         }
 
         public Node Root { get; }
 
         public Octree(float size)
         {
-            if (size <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(size);
 
             Root = new Node(null, new Vector3(-size * 0.5f), new Vector3(size));
         }
 
-        public void Insert(T obj, AABB bounds)
+        public void Insert(T obj, in AABB bounds)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             Root.Insert(new Element { ClientObject = obj, BoundingBox = bounds });
         }
 
-        public void Remove(T obj, AABB bounds)
+        public void Remove(T obj, in AABB bounds)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             var (node, index) = Root.Find(obj, bounds);
             node?.Elements.RemoveAt(index);
         }
 
-        public void Update(T obj, AABB oldBounds, AABB newBounds)
+        public void Update(T obj, in AABB oldBounds, in AABB newBounds)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             var (node, index) = Root.Find(obj, oldBounds);
             if (node != null)
@@ -278,20 +286,6 @@ namespace GUI.Types.Renderer
         public void Clear()
         {
             Root.Clear();
-        }
-
-        public List<T> Query(AABB boundingBox)
-        {
-            var results = new List<T>();
-            Root.Query(boundingBox, results);
-            return results;
-        }
-
-        public List<T> Query(Frustum frustum)
-        {
-            var results = new List<T>();
-            Root.Query(frustum, results);
-            return results;
         }
     }
 }

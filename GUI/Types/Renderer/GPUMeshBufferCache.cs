@@ -1,133 +1,176 @@
-using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using OpenTK.Graphics.OpenGL;
 using ValveResourceFormat;
 using ValveResourceFormat.Blocks;
+using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Renderer
 {
-    public class GPUMeshBufferCache
+    class GPUMeshBufferCache
     {
-        private Dictionary<VBIB, GPUMeshBuffers> gpuBuffers = new Dictionary<VBIB, GPUMeshBuffers>();
-        private Dictionary<VAOKey, uint> vertexArrayObjects = new Dictionary<VAOKey, uint>();
+        private readonly Dictionary<ulong, GPUMeshBuffers> gpuBuffers = [];
+        private readonly Dictionary<VAOKey, int> vertexArrayObjects = [];
+        private QuadIndexBuffer quadIndices;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public QuadIndexBuffer QuadIndices
+        {
+            get
+            {
+                quadIndices ??= new QuadIndexBuffer(65532);
+
+                return quadIndices;
+            }
+        }
 
         private struct VAOKey
         {
             public GPUMeshBuffers VBIB;
-            public Shader Shader;
+            public int Shader;
             public uint VertexIndex;
             public uint IndexIndex;
         }
 
-        public GPUMeshBufferCache()
+        public void CreateVertexIndexBuffers(ulong key, VBIB vbib)
         {
-        }
-
-        public GPUMeshBuffers GetVertexIndexBuffers(VBIB vbib)
-        {
-            if (gpuBuffers.TryGetValue(vbib, out var gpuVbib))
-            {
-                return gpuVbib;
-            }
-            else
+            if (!gpuBuffers.ContainsKey(key))
             {
                 var newGpuVbib = new GPUMeshBuffers(vbib);
-                gpuBuffers.Add(vbib, newGpuVbib);
-                return newGpuVbib;
+                gpuBuffers.Add(key, newGpuVbib);
             }
         }
 
-        public uint GetVertexArrayObject(VBIB vbib, Shader shader, uint vtxIndex, uint idxIndex)
+        public int GetVertexArrayObject(ulong key, VertexDrawBuffer curVertexBuffer, RenderMaterial material, uint idxIndex)
         {
-            var gpuVbib = GetVertexIndexBuffers(vbib);
-            var vaoKey = new VAOKey { VBIB = gpuVbib, Shader = shader, VertexIndex = vtxIndex, IndexIndex = idxIndex };
+            var gpuVbib = gpuBuffers[key];
+            var vaoKey = new VAOKey
+            {
+                VBIB = gpuVbib,
+                Shader = material.Shader.Program,
+                VertexIndex = curVertexBuffer.Id,
+                IndexIndex = idxIndex,
+            };
 
-            if (vertexArrayObjects.TryGetValue(vaoKey, out uint vaoHandle))
+            if (vertexArrayObjects.TryGetValue(vaoKey, out var vaoHandle))
             {
                 return vaoHandle;
             }
-            else
+
+            GL.CreateVertexArrays(1, out int newVaoHandle);
+            GL.VertexArrayVertexBuffer(newVaoHandle, 0, gpuVbib.VertexBuffers[curVertexBuffer.Id], 0, (int)curVertexBuffer.ElementSizeInBytes);
+            GL.VertexArrayElementBuffer(newVaoHandle, gpuVbib.IndexBuffers[idxIndex]);
+
+            // Workaround a bug in Intel drivers when mixing float and integer attributes
+            // See https://gist.github.com/stefalie/e17a20a88a0fdbd97110611569a6605f for reference
+            // We are using DSA apis, so we don't actually need to bind the VAO
+            GL.BindVertexArray(newVaoHandle);
+
+            foreach (var attribute in curVertexBuffer.InputLayoutFields)
             {
-                GL.GenVertexArrays(1, out uint newVaoHandle);
+                var attributeLocation = -1;
+                var insgElemName = string.Empty;
 
-                GL.BindVertexArray(newVaoHandle);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, gpuVbib.VertexBuffers[vtxIndex].Handle);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, gpuVbib.IndexBuffers[idxIndex].Handle);
-
-                var curVertexBuffer = vbib.VertexBuffers[(int)vtxIndex];
-                var texCoordNum = 0;
-                foreach (var attribute in curVertexBuffer.InputLayoutFields)
+                if (material.Material is { InputSignature.Elements.Length: > 0 })
                 {
-                    var attributeName = "v" + attribute.SemanticName;
-
-                    // TODO: other params too?
-                    if (attribute.SemanticName == "TEXCOORD" && texCoordNum++ > 0)
+                    var matchingName = Material.FindD3DInputSignatureElement(material.Material.InputSignature, attribute.SemanticName, attribute.SemanticIndex).Name;
+                    if (!string.IsNullOrEmpty(matchingName))
                     {
-                        attributeName += texCoordNum;
+                        insgElemName = matchingName;
+                        attributeLocation = GL.GetAttribLocation(material.Shader.Program, insgElemName switch
+                        {
+                            "vLightmapUVW" => "vLightmapUV",
+                            _ => insgElemName,
+                        });
                     }
-
-                    BindVertexAttrib(attribute, attributeName, shader.Program, (int)curVertexBuffer.ElementSizeInBytes);
                 }
 
-                GL.BindVertexArray(0);
+                // Fallback to guessing basic attribute name if INSG does not exist or attribute was not found
+                if (attributeLocation == -1)
+                {
+                    var attributeName = "v" + attribute.SemanticName;
+                    if (attribute.SemanticName is "TEXCOORD" or "COLOR" && attribute.SemanticIndex > 0)
+                    {
+                        attributeName += attribute.SemanticIndex;
+                    }
 
-                vertexArrayObjects.Add(vaoKey, newVaoHandle);
-                return newVaoHandle;
+                    attributeLocation = GL.GetAttribLocation(material.Shader.Program, attributeName);
+                }
+
+                // Ignore this attribute if it is not found in the shader
+                if (attributeLocation == -1)
+                {
+#if DEBUG
+                    Utils.Log.Debug(nameof(GPUMeshBufferCache), $"Attribute {attribute.SemanticName} ({attribute.SemanticIndex}) could not be bound in shader {material.Shader.Name} (insg: {insgElemName})");
+#endif
+                    continue;
+                }
+
+                BindVertexAttrib(newVaoHandle, attribute, attributeLocation, (int)attribute.Offset);
             }
+
+            GL.BindVertexArray(0);
+
+            vertexArrayObjects.Add(vaoKey, newVaoHandle);
+            return newVaoHandle;
         }
 
-        private static void BindVertexAttrib(VBIB.RenderInputLayoutField attribute, string attributeName, int shaderProgram, int stride)
+        private static void BindVertexAttrib(int vao, VBIB.RenderInputLayoutField attribute, int attributeLocation, int offset)
         {
-            var attributeLocation = GL.GetAttribLocation(shaderProgram, attributeName);
-
-            //Ignore this attribute if it is not found in the shader
-            if (attributeLocation == -1)
-            {
-                return;
-            }
-
-            GL.EnableVertexAttribArray(attributeLocation);
+            GL.EnableVertexArrayAttrib(vao, attributeLocation);
+            GL.VertexArrayAttribBinding(vao, attributeLocation, 0);
 
             switch (attribute.Format)
             {
                 case DXGI_FORMAT.R32G32B32_FLOAT:
-                    GL.VertexAttribPointer(attributeLocation, 3, VertexAttribPointerType.Float, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 3, VertexAttribType.Float, false, offset);
                     break;
 
                 case DXGI_FORMAT.R8G8B8A8_UNORM:
-                    GL.VertexAttribPointer(attributeLocation, 4, VertexAttribPointerType.UnsignedByte, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 4, VertexAttribType.UnsignedByte, true, offset);
+                    break;
+
+                case DXGI_FORMAT.R32_FLOAT:
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 1, VertexAttribType.Float, false, offset);
                     break;
 
                 case DXGI_FORMAT.R32G32_FLOAT:
-                    GL.VertexAttribPointer(attributeLocation, 2, VertexAttribPointerType.Float, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 2, VertexAttribType.Float, false, offset);
                     break;
 
                 case DXGI_FORMAT.R16G16_FLOAT:
-                    GL.VertexAttribPointer(attributeLocation, 2, VertexAttribPointerType.HalfFloat, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 2, VertexAttribType.HalfFloat, false, offset);
                     break;
 
                 case DXGI_FORMAT.R32G32B32A32_FLOAT:
-                    GL.VertexAttribPointer(attributeLocation, 4, VertexAttribPointerType.Float, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 4, VertexAttribType.Float, false, offset);
                     break;
 
                 case DXGI_FORMAT.R8G8B8A8_UINT:
-                    GL.VertexAttribPointer(attributeLocation, 4, VertexAttribPointerType.UnsignedByte, false, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribIFormat(vao, attributeLocation, 4, VertexAttribType.UnsignedByte, offset);
                     break;
 
                 case DXGI_FORMAT.R16G16_SINT:
-                    GL.VertexAttribIPointer(attributeLocation, 2, VertexAttribIntegerType.Short, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribIFormat(vao, attributeLocation, 2, VertexAttribType.Short, offset);
                     break;
 
                 case DXGI_FORMAT.R16G16B16A16_SINT:
-                    GL.VertexAttribIPointer(attributeLocation, 4, VertexAttribIntegerType.Short, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribIFormat(vao, attributeLocation, 4, VertexAttribType.Short, offset);
+                    break;
+
+                case DXGI_FORMAT.R16G16_SNORM:
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 2, VertexAttribType.Short, true, offset);
                     break;
 
                 case DXGI_FORMAT.R16G16_UNORM:
-                    GL.VertexAttribPointer(attributeLocation, 2, VertexAttribPointerType.UnsignedShort, true, stride, (IntPtr)attribute.Offset);
+                    GL.VertexArrayAttribFormat(vao, attributeLocation, 2, VertexAttribType.UnsignedShort, true, offset);
+                    break;
+
+                case DXGI_FORMAT.R32_UINT:
+                    GL.VertexArrayAttribIFormat(vao, attributeLocation, 1, VertexAttribType.UnsignedInt, offset);
                     break;
 
                 default:
-                    throw new Exception("Unknown attribute format " + attribute.Format);
+                    throw new NotImplementedException($"Unknown vertex attribute format {attribute.Format} ({attribute.SemanticName})");
             }
         }
     }

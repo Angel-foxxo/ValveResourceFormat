@@ -1,30 +1,44 @@
-using System;
 using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Renderer
 {
-    internal class ParticleSceneNode : SceneNode
+    class ParticleSceneNode : SceneNode
     {
-        private ParticleRenderer.ParticleRenderer particleRenderer;
+        private readonly ParticleRenderer.ParticleRenderer particleRenderer;
+        public float FrametimeMultiplier { get; set; } = 1.0f;
 
         public ParticleSceneNode(Scene scene, ParticleSystem particleSystem)
             : base(scene)
         {
             particleRenderer = new ParticleRenderer.ParticleRenderer(particleSystem, Scene.GuiContext);
-            LocalBoundingBox = particleRenderer.BoundingBox;
+            LocalBoundingBox = particleRenderer.LocalBoundingBox;
         }
 
         public override void Update(Scene.UpdateContext context)
         {
-            particleRenderer.Position = Transform.Translation;
-            particleRenderer.Update(context.Timestep);
+            particleRenderer.MainControlPoint.Position = Transform.Translation;
+            particleRenderer.Update(context.Timestep * FrametimeMultiplier);
+            LocalBoundingBox = particleRenderer.LocalBoundingBox;
 
-            LocalBoundingBox = particleRenderer.BoundingBox.Translate(-particleRenderer.Position);
+            // Restart if all emitters are done and all particles expired
+            if (particleRenderer.IsFinished())
+            {
+                particleRenderer.Restart();
+            }
         }
 
         public override void Render(Scene.RenderContext context)
         {
-            particleRenderer.Render(context.Camera, context.RenderPass);
+            if (context.RenderPass != RenderPass.Translucent || context.ReplacementShader is not null)
+            {
+                return;
+            }
+
+            particleRenderer.Render(context.Camera);
         }
+
+        public override IEnumerable<string> GetSupportedRenderModes() => particleRenderer.GetSupportedRenderModes();
+
+        public override void SetRenderMode(string mode) => particleRenderer.SetRenderMode(mode);
     }
 }

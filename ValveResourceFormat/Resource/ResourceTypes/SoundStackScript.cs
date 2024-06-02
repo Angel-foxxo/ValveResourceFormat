@@ -1,8 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using ValveResourceFormat.Blocks;
+using ValveResourceFormat.Utils;
 
 namespace ValveResourceFormat.ResourceTypes
 {
@@ -18,10 +17,10 @@ namespace ValveResourceFormat.ResourceTypes
 
             if (version != 8)
             {
-                throw new NotImplementedException($"Unknown soundstack version: {version}");
+                throw new UnexpectedMagicException("Unknown version", version, nameof(version));
             }
 
-            SoundStackScriptValue = new Dictionary<string, string>();
+            SoundStackScriptValue = [];
 
             var count = reader.ReadInt32();
             var offset = reader.BaseStream.Position;
@@ -41,11 +40,8 @@ namespace ValveResourceFormat.ResourceTypes
 
                 reader.BaseStream.Position = offset;
 
-                if (SoundStackScriptValue.ContainsKey(name))
-                {
-                    // Valve have duplicates, assume last is correct?
-                    SoundStackScriptValue.Remove(name);
-                }
+                // Valve have duplicates, assume last is correct?
+                SoundStackScriptValue.Remove(name);
 
                 SoundStackScriptValue.Add(name, value);
             }
@@ -53,17 +49,15 @@ namespace ValveResourceFormat.ResourceTypes
 
         public override string ToString()
         {
-            using (var writer = new IndentedTextWriter())
+            using var writer = new IndentedTextWriter();
+            foreach (var entry in SoundStackScriptValue)
             {
-                foreach (var entry in SoundStackScriptValue)
-                {
-                    writer.WriteLine($"// {entry.Key}");
-                    writer.Write(entry.Value);
-                    writer.WriteLine(string.Empty);
-                }
-
-                return writer.ToString();
+                writer.WriteLine($"// {entry.Key}");
+                writer.Write(entry.Value);
+                writer.WriteLine(string.Empty);
             }
+
+            return writer.ToString();
         }
     }
 }

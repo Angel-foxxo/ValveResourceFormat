@@ -1,45 +1,30 @@
-using System;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RandomSequence : IParticleInitializer
+    class RandomSequence : ParticleFunctionInitializer
     {
         private readonly int sequenceMin;
         private readonly int sequenceMax;
         private readonly bool shuffle;
 
-        private readonly Random random = new Random();
-
         private int counter;
 
-        public RandomSequence(IKeyValueCollection keyValues)
+        // In Behavior Ver 12+ there is a "weight list" that weights the randomness
+        public RandomSequence(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_nSequenceMin"))
-            {
-                sequenceMin = (int)keyValues.GetIntegerProperty("m_nSequenceMin");
-            }
-
-            if (keyValues.ContainsKey("m_nSequenceMax"))
-            {
-                sequenceMax = (int)keyValues.GetIntegerProperty("m_nSequenceMax");
-            }
-
-            if (keyValues.ContainsKey("m_bShuffle"))
-            {
-                shuffle = keyValues.GetProperty<bool>("m_bShuffle");
-            }
+            sequenceMin = parse.Int32("m_nSequenceMin", sequenceMin);
+            sequenceMax = parse.Int32("m_nSequenceMax", sequenceMax);
+            shuffle = parse.Boolean("m_bShuffle", shuffle);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
             if (shuffle)
             {
-                particle.Sequence = random.Next(sequenceMin, sequenceMax + 1);
+                particle.Sequence = Random.Shared.Next(sequenceMin, sequenceMax + 1);
             }
             else
             {
-                particle.Sequence = sequenceMin + (sequenceMax > sequenceMin ? (counter++ % (sequenceMax - sequenceMin)) : 0);
+                particle.Sequence = sequenceMin + (sequenceMax > sequenceMin ? (counter++ % (sequenceMax - sequenceMin + 1)) : 0);
             }
 
             return particle;

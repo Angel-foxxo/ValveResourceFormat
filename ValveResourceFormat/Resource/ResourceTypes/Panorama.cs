@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.IO;
+using System.IO.Hashing;
 using System.Text;
 using ValveResourceFormat.Blocks;
 
@@ -14,19 +14,22 @@ namespace ValveResourceFormat.ResourceTypes
             public uint Unknown2 { get; set; } // TODO: unconfirmed
         }
 
-        public List<NameEntry> Names { get; }
+        public List<NameEntry> Names { get; } = [];
 
         public byte[] Data { get; private set; }
         public uint CRC32 { get; private set; }
 
-        public Panorama()
-        {
-            Names = new List<NameEntry>();
-        }
-
         public override void Read(BinaryReader reader, Resource resource)
         {
             reader.BaseStream.Position = Offset;
+
+            if ((resource.ResourceType == ResourceType.PanoramaScript && resource.Version >= 4)
+            || (resource.ResourceType == ResourceType.PanoramaTypescript && resource.Version >= 2))
+            {
+                Data = reader.ReadBytes((int)Size);
+
+                return;
+            }
 
             CRC32 = reader.ReadUInt32();
 
@@ -50,7 +53,7 @@ namespace ValveResourceFormat.ResourceTypes
 
             // Valve seemingly screwed up when they started minifying vcss and the crc no longer matches
             // See core/pak01 in Artifact Foundry for such files
-            if (!resource.ContainsBlockType(BlockType.SrMa) && Crc32.Compute(Data) != CRC32)
+            if (Data.Length > 0 && !resource.ContainsBlockType(BlockType.SrMa) && Crc32.HashToUInt32(Data) != CRC32)
             {
                 throw new InvalidDataException("CRC32 mismatch for read data.");
             }

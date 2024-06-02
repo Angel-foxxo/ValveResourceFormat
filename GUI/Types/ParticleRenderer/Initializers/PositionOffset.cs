@@ -1,35 +1,33 @@
-using System;
-using System.Numerics;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class PositionOffset : IParticleInitializer
+    class PositionOffset : ParticleFunctionInitializer
     {
-        private readonly Vector3 offsetMin = Vector3.Zero;
-        private readonly Vector3 offsetMax = Vector3.Zero;
+        private readonly IVectorProvider offsetMin = new LiteralVectorProvider(Vector3.Zero);
+        private readonly IVectorProvider offsetMax = new LiteralVectorProvider(Vector3.Zero);
 
-        private readonly Random random = new Random();
+        //private readonly int controlPoint; // unknown what this does
 
-        public PositionOffset(IKeyValueCollection keyValues)
+        private readonly bool proportional;
+
+        public PositionOffset(ParticleDefinitionParser parse) : base(parse)
         {
-            if (keyValues.ContainsKey("m_OffsetMin"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_OffsetMin");
-                offsetMin = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
-
-            if (keyValues.ContainsKey("m_OffsetMax"))
-            {
-                var vectorValues = keyValues.GetArray<double>("m_OffsetMax");
-                offsetMax = new Vector3((float)vectorValues[0], (float)vectorValues[1], (float)vectorValues[2]);
-            }
+            offsetMin = parse.VectorProvider("m_OffsetMin", offsetMin);
+            offsetMax = parse.VectorProvider("m_OffsetMax", offsetMax);
+            proportional = parse.Boolean("m_bProportional", proportional);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var distance = offsetMax - offsetMin;
-            var offset = offsetMin + (distance * new Vector3((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble()));
+
+            var offset = ParticleCollection.RandomBetweenPerComponent(
+                particle.ParticleID,
+                offsetMin.NextVector(ref particle, particleSystemState),
+                offsetMax.NextVector(ref particle, particleSystemState));
+
+            if (proportional)
+            {
+                offset *= particle.Radius;
+            }
 
             particle.Position += offset;
 

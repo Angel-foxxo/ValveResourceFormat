@@ -1,27 +1,24 @@
-using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using GUI.Controls;
 using GUI.Utils;
 using ValveResourceFormat.ResourceTypes;
 
 namespace GUI.Types.Viewers
 {
-    public class BinaryKeyValues : IViewer
+    class BinaryKeyValues : IViewer
     {
-        public static bool IsAccepted(uint magic)
-        {
-            return magic == BinaryKV3.MAGIC || magic == BinaryKV3.MAGIC2 || magic == BinaryKV3.MAGIC3;
-        }
+        public static bool IsAccepted(uint magic) => BinaryKV3.IsBinaryKV3(magic);
 
-        public TabPage Create(VrfGuiContext vrfGuiContext, byte[] input)
+        public TabPage Create(VrfGuiContext vrfGuiContext, Stream stream)
         {
             var tab = new TabPage();
             var kv3 = new BinaryKV3();
             Stream kv3stream;
 
-            if (input != null)
+            if (stream != null)
             {
-                kv3stream = new MemoryStream(input);
+                kv3stream = stream;
             }
             else
             {
@@ -36,13 +33,7 @@ namespace GUI.Types.Viewers
 
             kv3stream.Close();
 
-            var control = new TextBox();
-            control.Font = new Font(FontFamily.GenericMonospace, control.Font.Size);
-            control.Text = Utils.Utils.NormalizeLineEndings(kv3.ToString());
-            control.Dock = DockStyle.Fill;
-            control.Multiline = true;
-            control.ReadOnly = true;
-            control.ScrollBars = ScrollBars.Both;
+            var control = new CodeTextBox(kv3.ToString());
             tab.Controls.Add(control);
 
             return tab;

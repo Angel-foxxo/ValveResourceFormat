@@ -9,20 +9,20 @@ namespace ValveResourceFormat.ThirdParty
 
         public static uint Hash(string data, uint seed) => Hash(Encoding.ASCII.GetBytes(data), seed);
 
-        public static uint Hash(byte[] data, uint seed)
+        public static uint Hash(ReadOnlySpan<byte> data, uint seed)
         {
-            int length = data.Length;
+            var length = data.Length;
 
             if (length == 0)
             {
                 return 0;
             }
 
-            uint h = seed ^ (uint)length;
-            int currentIndex = 0;
+            var h = seed ^ (uint)length;
+            var currentIndex = 0;
             while (length >= 4)
             {
-                uint k = (uint)(data[currentIndex++] | data[currentIndex++] << 8 | data[currentIndex++] << 16 | data[currentIndex++] << 24);
+                var k = (uint)(data[currentIndex++] | data[currentIndex++] << 8 | data[currentIndex++] << 16 | data[currentIndex++] << 24);
                 k *= M;
                 k ^= k >> R;
                 k *= M;

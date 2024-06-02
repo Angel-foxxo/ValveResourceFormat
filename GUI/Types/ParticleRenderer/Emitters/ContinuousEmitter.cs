@@ -1,13 +1,8 @@
-using System;
-using ValveResourceFormat.Serialization;
-
 namespace GUI.Types.ParticleRenderer.Emitters
 {
-    public class ContinuousEmitter : IParticleEmitter
+    class ContinuousEmitter : ParticleFunctionEmitter
     {
-        public bool IsFinished { get; private set; }
-
-        private readonly IKeyValueCollection baseProperties;
+        public override bool IsFinished { get; protected set; }
 
         private readonly INumberProvider emissionDuration = new LiteralNumberProvider(0);
         private readonly INumberProvider startTime = new LiteralNumberProvider(0);
@@ -19,28 +14,16 @@ namespace GUI.Types.ParticleRenderer.Emitters
         private float time;
         private float lastEmissionTime;
 
-        public ContinuousEmitter(IKeyValueCollection baseProperties, IKeyValueCollection keyValues)
+        public ContinuousEmitter(ParticleDefinitionParser parse) : base(parse)
         {
-            this.baseProperties = baseProperties;
+            emissionDuration = parse.NumberProvider("m_flEmissionDuration", emissionDuration);
+            startTime = parse.NumberProvider("m_flStartTime", startTime);
+            emitRate = parse.NumberProvider("m_flEmitRate", emitRate);
 
-            if (keyValues.ContainsKey("m_flEmissionDuration"))
-            {
-                emissionDuration = keyValues.GetNumberProvider("m_flEmissionDuration");
-            }
-
-            if (keyValues.ContainsKey("m_flStartTime"))
-            {
-                startTime = keyValues.GetNumberProvider("m_flStartTime");
-            }
-
-            if (keyValues.ContainsKey("m_flEmitRate"))
-            {
-                emitRate = keyValues.GetNumberProvider("m_flEmitRate");
-                emitInterval = 1.0f / (float)emitRate.NextNumber();
-            }
+            emitInterval = 1.0f / emitRate.NextNumber();
         }
 
-        public void Start(Action particleEmitCallback)
+        public override void Start(Action particleEmitCallback)
         {
             this.particleEmitCallback = particleEmitCallback;
 
@@ -50,12 +33,12 @@ namespace GUI.Types.ParticleRenderer.Emitters
             IsFinished = false;
         }
 
-        public void Stop()
+        public override void Stop()
         {
             IsFinished = true;
         }
 
-        public void Update(float frameTime)
+        public override void Emit(float frameTime)
         {
             if (IsFinished)
             {
@@ -69,14 +52,19 @@ namespace GUI.Types.ParticleRenderer.Emitters
 
             if (time >= nextStartTime && (nextEmissionDuration == 0f || time <= nextStartTime + nextEmissionDuration))
             {
-                var numToEmit = (int)Math.Floor((time - lastEmissionTime) / emitInterval);
-                var emitCount = Math.Min(5 * emitRate.NextNumber(), numToEmit); // Limit the amount of particles to emit at once in case of refocus
+                var numToEmit = (int)MathF.Floor((time - lastEmissionTime) / emitInterval);
+                var emitCount = Math.Min(5 * (int)emitRate.NextNumber(), numToEmit); // Limit the amount of particles to emit at once in case of refocus
                 for (var i = 0; i < emitCount; i++)
                 {
                     particleEmitCallback();
                 }
 
                 lastEmissionTime += numToEmit * emitInterval;
+            }
+
+            if (nextEmissionDuration != 0f && time > nextStartTime + nextEmissionDuration)
+            {
+                IsFinished = true;
             }
         }
     }

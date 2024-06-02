@@ -1,14 +1,17 @@
-using System;
 using System.Windows.Forms;
 
 namespace GUI.Forms
 {
-    public partial class SearchForm : Form
+    partial class SearchForm : Form
     {
         /// <summary>
         /// Gets whatever text was entered by the user in the search textbox.
         /// </summary>
-        public string SearchText => findTextBox.Text;
+        public string SearchText
+        {
+            get => findTextBox.Text;
+            set => findTextBox.Text = value;
+        }
 
         /// <summary>
         /// Gets whatever options was selected by the user in the search type combobox.
@@ -25,19 +28,9 @@ namespace GUI.Forms
             searchTypeComboBox.Items.Add(new SearchTypeItem("File Name (Exact Match)", SearchType.FileNameExactMatch));
             searchTypeComboBox.Items.Add(new SearchTypeItem("File Full Path", SearchType.FullPath));
             searchTypeComboBox.Items.Add(new SearchTypeItem("Regex", SearchType.Regex));
+            searchTypeComboBox.Items.Add(new SearchTypeItem("File Contents (Case Sensitive)", SearchType.FileContents));
+            searchTypeComboBox.Items.Add(new SearchTypeItem("File Contents Hex Bytes", SearchType.FileContentsHex));
             searchTypeComboBox.SelectedIndex = 0;
-        }
-
-        private void FindButton_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-
-        private void CancelButton_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;
-            Close();
         }
 
         /// <summary>

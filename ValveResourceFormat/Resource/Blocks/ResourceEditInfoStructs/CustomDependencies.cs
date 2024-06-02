@@ -1,4 +1,3 @@
-﻿using System;
 using System.IO;
 
 namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
@@ -11,7 +10,7 @@ namespace ValveResourceFormat.Blocks.ResourceEditInfoStructs
 
             if (Size > 0)
             {
-                throw new NotImplementedException("CustomDependencies block is not handled. Please report this on https://github.com/SteamDatabase/ValveResourceFormat and provide the file that caused this exception.");
+                throw new NotImplementedException("CustomDependencies block is not handled. Please report this on https://github.com/ValveResourceFormat/ValveResourceFormat and provide the file that caused this exception.");
             }
         }
 

@@ -1,42 +1,24 @@
-using System;
-using ValveResourceFormat.Serialization;
+using GUI.Utils;
 
 namespace GUI.Types.ParticleRenderer.Initializers
 {
-    public class RandomAlpha : IParticleInitializer
+    class RandomAlpha : ParticleFunctionInitializer
     {
         private readonly int alphaMin = 255;
         private readonly int alphaMax = 255;
 
-        private readonly Random random;
-
-        public RandomAlpha(IKeyValueCollection keyValue)
+        public RandomAlpha(ParticleDefinitionParser parse) : base(parse)
         {
-            random = new Random();
+            alphaMin = parse.Int32("m_nAlphaMin", alphaMin);
+            alphaMax = parse.Int32("m_nAlphaMax", alphaMax);
 
-            if (keyValue.ContainsKey("m_nAlphaMin"))
-            {
-                alphaMin = (int)keyValue.GetIntegerProperty("m_nAlphaMin");
-            }
-
-            if (keyValue.ContainsKey("m_nAlphaMax"))
-            {
-                alphaMax = (int)keyValue.GetIntegerProperty("m_nAlphaMax");
-            }
-
-            if (alphaMin > alphaMax)
-            {
-                var temp = alphaMin;
-                alphaMin = alphaMax;
-                alphaMax = temp;
-            }
+            MathUtils.MinMaxFixUp(ref alphaMin, ref alphaMax);
         }
 
-        public Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
+        public override Particle Initialize(ref Particle particle, ParticleSystemRenderState particleSystemState)
         {
-            var alpha = random.Next(alphaMin, alphaMax) / 255f;
+            var alpha = ParticleCollection.RandomBetween(particle.ParticleID, alphaMin, alphaMax) / 255f;
 
-            particle.ConstantAlpha = alpha;
             particle.Alpha = alpha;
 
             return particle;

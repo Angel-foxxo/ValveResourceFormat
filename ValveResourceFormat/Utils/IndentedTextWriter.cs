@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -16,7 +15,8 @@ namespace ValveResourceFormat
         /// </summary>
         public const string TabString = "\t";
 
-        private readonly TextWriter writer;
+        private readonly StringBuilder builder;
+        private readonly StringWriter writer;
         private int indentLevel;
         private bool tabsPending;
 
@@ -24,7 +24,7 @@ namespace ValveResourceFormat
         /// Gets the encoding for the text writer to use.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Text.Encoding" /> that indicates the encoding for the text writer to use.
+        /// An <see cref="System.Text.Encoding" /> that indicates the encoding for the text writer to use.
         /// </returns>
         public override Encoding Encoding
         {
@@ -69,7 +69,8 @@ namespace ValveResourceFormat
         public IndentedTextWriter()
             : base(CultureInfo.InvariantCulture)
         {
-            writer = new StringWriter(CultureInfo.InvariantCulture);
+            builder = new StringBuilder();
+            writer = new StringWriter(builder, CultureInfo.InvariantCulture);
             indentLevel = 0;
             tabsPending = false;
         }
@@ -83,10 +84,19 @@ namespace ValveResourceFormat
         }
 
         /// <summary>
-        /// Outputs the tab string once for each level of indentation according to the
-        /// <see
-        ///     cref="P:System.CodeDom.Compiler.IndentedTextWriter.Indent" />
-        /// property.
+        /// Grows this writer to match the specified min capacity.
+        /// </summary>
+        /// <param name="minCapacity">The minimum capacity for this writer.</param>
+        public int Grow(int minCapacity) => builder.EnsureCapacity(builder.Length + minCapacity);
+
+        /// <summary>
+        /// Ensures that the capacity of this writer is at least the specified value.
+        /// </summary>
+        /// <param name="capacity">The new capacity for this writer.</param>
+        public int EnsureCapacity(int capacity) => builder.EnsureCapacity(capacity);
+
+        /// <summary>
+        /// Outputs the tab string once for each level of indentation according to the <see cref="Indent" /> property.
         /// </summary>
         protected virtual void OutputTabs()
         {

@@ -2,8 +2,10 @@ namespace GUI.Types.Renderer
 {
     public enum RenderPass
     {
-        Both,
+        DepthOnly,
         Opaque,
+        StaticOverlay,
+        AfterOpaque,
         Translucent,
     }
 }

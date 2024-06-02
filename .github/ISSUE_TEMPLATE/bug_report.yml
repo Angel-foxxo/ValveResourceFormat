@@ -3,36 +3,53 @@ description: File a bug report
 labels: [bug]
 body:
 - type: textarea
+  id: description
   attributes:
     label: Describe the bug
-    description: A clear and concise description of what the bug is. Include the full error details and the log if possible.
-  validations:
-    required: true
-
-- type: input
-  attributes:
-    label: What Valve game does this happen in
-    placeholder: "Dota 2"
+    description: A clear and concise description of what the bug is.
   validations:
     required: true
 
 - type: textarea
-  attributes:
-    label: Reference file in a Source 2 game
-    description: Give a filename (and path to it) that causes this behavior.
-  validations:
-    required: true
-
-- type: textarea
+  id: expected
   attributes:
     label: Expected behavior
     description: A clear and concise description of what you expected to happen.
   validations:
     required: true
 
-- type: input
+- type: textarea
+  id: logs
   attributes:
-    label: What version of VRF are you using? On what platform?
-    description: Before creating an issue, make sure it still exists on the latest unstable build.
+    label: Relevant log output or exception with stacktrace
+    description: "Copy and paste any relevant log output. *This will be automatically formatted into code, backticks are not needed.*"
+    render: shell
+
+- type: input
+  id: game
+  attributes:
+    label: What game does this happen in
+  validations:
+    required: true
+
+- type: textarea
+  id: file
+  attributes:
+    label: Reference file in a Source 2 game
+    description: Provide path to the file that causes this behavior.
+  validations:
+    required: true
+
+- type: input
+  id: version
+  attributes:
+    label: What version of VRF are you using?
+    description: |
+      > [!IMPORTANT]
+      > **Make sure your issue still exists on [the latest dev build.](https://valveresourceformat.github.io/)**
+
+      > [!TIP]
+      > **Use copy version button in the about window.**
+    placeholder: Use copy version button in the about window.
   validations:
     required: true
