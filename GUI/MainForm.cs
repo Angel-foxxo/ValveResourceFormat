@@ -61,7 +61,7 @@ namespace GUI
         {
             InitializeComponent();
 
-            _ = new DarkModeCS(this, false, true);
+            _ = new DarkModeCS(this, false, false);
 
             mainTabs.ImageList = ImageList;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;

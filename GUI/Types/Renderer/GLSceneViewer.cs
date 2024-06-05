@@ -531,7 +531,7 @@ namespace GUI.Types.Renderer
             if (mode.IsHeader)
             {
                 e.Graphics.FillRectangle(SystemBrushes.Window, e.Bounds);
-                e.Graphics.DrawString(mode.Name, renderModeBoldFont, SystemBrushes.ControlText, e.Bounds);
+                e.Graphics.DrawString(mode.Name, renderModeBoldFont, SystemBrushes.WindowText, e.Bounds);
             }
             else
             {
@@ -545,7 +545,7 @@ namespace GUI.Types.Renderer
                 }
 
                 var isSelected = (e.State & DrawItemState.Selected) > 0;
-                var brush = isSelected ? SystemBrushes.HighlightText : SystemBrushes.ControlText;
+                var brush = isSelected ? SystemBrushes.HighlightText : SystemBrushes.WindowText;
                 e.Graphics.DrawString(mode.Name, comboBox.Font, brush, bounds);
 
                 e.DrawFocusRectangle();

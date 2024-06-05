@@ -35,7 +35,7 @@ namespace GUI.Forms
             // progressBar1
             // 
             progressBar1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            progressBar1.Location = new System.Drawing.Point(627, 393);
+            progressBar1.Location = new System.Drawing.Point(500, 311);
             progressBar1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             progressBar1.MarqueeAnimationSpeed = 30;
             progressBar1.Name = "progressBar1";
@@ -47,7 +47,7 @@ namespace GUI.Forms
             // 
             label1.Anchor = System.Windows.Forms.AnchorStyles.None;
             label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(627, 408);
+            label1.Location = new System.Drawing.Point(503, 326);
             label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label1.Name = "label1";
             label1.Size = new System.Drawing.Size(142, 15);

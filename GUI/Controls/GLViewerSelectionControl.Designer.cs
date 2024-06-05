@@ -1,3 +1,5 @@
+using DarkModeForms;
+
 namespace GUI.Controls
 {
     partial class GLViewerSelectionControl
@@ -29,7 +31,7 @@ namespace GUI.Controls
         private void InitializeComponent()
         {
             selectionNameLabel = new System.Windows.Forms.Label();
-            comboBox = new System.Windows.Forms.ComboBox();
+            comboBox = new FlatComboBox();
             SuspendLayout();
             // 
             // selectionNameLabel
@@ -69,6 +71,6 @@ namespace GUI.Controls
         #endregion
 
         private System.Windows.Forms.Label selectionNameLabel;
-        private System.Windows.Forms.ComboBox comboBox;
+        private FlatComboBox comboBox;
     }
 }

@@ -1,10 +1,11 @@
 using System.Windows.Forms;
+using DarkModeForms;
 
 namespace GUI.Controls
 {
     partial class GLViewerSelectionControl : UserControl
     {
-        public ComboBox ComboBox => comboBox;
+        public FlatComboBox ComboBox => comboBox;
 
         private GLViewerSelectionControl()
         {

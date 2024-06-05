@@ -42,8 +42,7 @@ namespace BlueMystic
             {
                 Appearance = TabAppearance.Buttons;
                 DrawMode = TabDrawMode.Normal;
-                ItemSize = new Size(0, 0);
-                SizeMode = TabSizeMode.Fixed;
+                SizeMode = TabSizeMode.Normal;
             }
             catch { }
         }
@@ -129,21 +128,22 @@ namespace BlueMystic
         internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
         {
             Rectangle tabRect = GetTabRect(nIndex);
-            Rectangle tabTextRect = GetTabRect(nIndex);
             bool isSelected = (SelectedIndex == nIndex);
             Point[] points;
+
+            customTabPage.Padding = new Padding(0, 0, 0, 0);
 
             if (Alignment == TabAlignment.Top)
             {
                 points = new[]
                 {
-                    new Point(tabRect.Left+3, tabRect.Bottom),
-                    new Point(tabRect.Left+3, tabRect.Top + 0),
+                    new Point(tabRect.Left, tabRect.Bottom),
+                    new Point(tabRect.Left, tabRect.Top + 0),
                     new Point(tabRect.Left + 0, tabRect.Top),
                     new Point(tabRect.Right - 0, tabRect.Top),
                     new Point(tabRect.Right, tabRect.Top + 0),
                     new Point(tabRect.Right, tabRect.Bottom),
-                    new Point(tabRect.Left+3, tabRect.Bottom)
+                    new Point(tabRect.Left, tabRect.Bottom)
                 };
             }
             else
@@ -171,16 +171,34 @@ namespace BlueMystic
                 {
                     g.DrawLine(new Pen(BackColor),
                         new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left + 3, tabRect.Top));
-                    g.DrawLine(new Pen(Color.DodgerBlue),
-                        new Point(tabRect.Left + 3, tabRect.Top), new Point(tabRect.Left + tabRect.Width, tabRect.Top));
+                    g.DrawLine(new Pen(Color.DodgerBlue, 2),
+                        new Point(tabRect.Left + 3, tabRect.Bottom), new Point(tabRect.Left + tabRect.Width, tabRect.Bottom));
                 }
             }
 
-            Rectangle rectangleF = tabTextRect;
-            rectangleF.Y += 2;
+            Rectangle imageRect = tabRect;
+            imageRect.Height = (int)(imageRect.Height * 0.7);
+            var imagePadding = 7;
+            var textPadding = 3;
 
-            TextRenderer.DrawText(g, customTabPage.Text, Font, rectangleF,
-                 isSelected ? SelectedForeColor : ForeColor);
+            Rectangle textRect = tabRect;
+
+            if (customTabPage.ImageIndex >= 0 && ImageList != null && ImageList.Images.Count > customTabPage.ImageIndex)
+            {
+                var image = ImageList.Images[customTabPage.ImageIndex];
+                g.DrawImage(image, imageRect.Left + imagePadding, imageRect.Top + 4, imageRect.Height, imageRect.Height);
+
+                textRect.Offset(image.Width + imagePadding + textPadding, 0);
+
+                var flags = new TextFormatFlags() | TextFormatFlags.Left | TextFormatFlags.VerticalCenter;
+                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect,
+                     isSelected ? SelectedForeColor : ForeColor, flags);
+            }
+            else
+            {
+                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect,
+                     isSelected ? SelectedForeColor : ForeColor);
+            }
         }
     }
 }

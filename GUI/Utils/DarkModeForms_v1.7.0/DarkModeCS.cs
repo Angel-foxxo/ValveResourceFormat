@@ -7,6 +7,7 @@ using GUI.Controls;
 using GUI.Types.Renderer;
 using OpenTK;
 using GUI.Forms;
+using System.ComponentModel.Design;
 
 namespace BlueMystic
 {
@@ -302,10 +303,10 @@ namespace BlueMystic
                 ThemeControl(e.Control);
             };
 
-            if (control is TextBox tb)
-            {
-                //SetRoundBorders(tb, 4, OScolors.SurfaceDark, 1);
-            }
+            //if (control is TextBox tb)
+            //{
+            //    //SetRoundBorders(tb, 4, OScolors.SurfaceDark, 1);
+            //}
             if (control is Panel panel)
             {
                 // Process the panel within the container
@@ -323,7 +324,7 @@ namespace BlueMystic
             if (control is GroupBox group)
             {
                 group.BackColor = group.Parent.BackColor;
-                group.ForeColor = OScolors.TextInactive;
+                group.ForeColor = OScolors.TextActive;
             }
             if (control is TableLayoutPanel table)
             {
@@ -379,7 +380,7 @@ namespace BlueMystic
                 fTab.SelectTabColor = OScolors.Control;
                 fTab.SelectedForeColor = OScolors.TextActive;
                 fTab.BorderColor = OScolors.Background;
-                fTab.ForeColor = OScolors.TextInactive;
+                fTab.ForeColor = OScolors.TextActive;
                 fTab.LineColor = OScolors.Background;
             }
             if (control is PictureBox pic)
@@ -470,6 +471,7 @@ namespace BlueMystic
             {
                 combo.FlatStyle = FStyle;
                 combo.BackColor = OScolors.Control;
+                combo.ForeColor = OScolors.TextActive;
                 control.GetType().GetProperty("ButtonColor")?.SetValue(control, OScolors.Surface);
                 combo.Invalidate();
             }
@@ -507,7 +509,6 @@ namespace BlueMystic
                 grid.ColumnHeadersDefaultCellStyle.ForeColor = OScolors.TextActive;
                 grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = OScolors.AccentOpaque;
                 grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-                grid.ColumnHeadersHeight = 140;
 
                 grid.RowHeadersDefaultCellStyle.BackColor = OScolors.Surface;
                 grid.RowHeadersDefaultCellStyle.ForeColor = OScolors.TextActive;
@@ -567,6 +568,12 @@ namespace BlueMystic
                 col.ExpandMarkerBorderColor = ControlPaint.Dark(control.Parent.ForeColor, 110);
                 col.CollapseMarkerBorderColor = ControlPaint.Dark(control.Parent.ForeColor, 90);
                 console.ServiceColors = col;
+                console.ForeColor = OScolors.TextActive;
+            }
+            if (control is ByteViewer hexViewer)
+            {
+                hexViewer.BackColor = ControlPaint.Dark(control.Parent.BackColor, -10);
+                hexViewer.ForeColor = OScolors.TextActive;
             }
             if (control.ContextMenuStrip != null)
             {
@@ -576,6 +583,18 @@ namespace BlueMystic
             {
                 control.BackColor = control.Parent.BackColor;
                 control.ForeColor = control.Parent.ForeColor;
+                var parent = control.Parent;
+                control.Bounds = parent.Bounds;
+            }
+            if(control is GLViewerMultiSelectionControl multiSelection)
+            {
+                multiSelection.BackColor = control.Parent.BackColor;
+                multiSelection.ForeColor = control.Parent.ForeColor;
+            }
+            if(control is ControlPanelView controlPanelView)
+            {
+                controlPanelView.BackColor = Color.Transparent;
+                controlPanelView.Invalidate();
             }
 
             foreach (Control childControl in control.Controls)
