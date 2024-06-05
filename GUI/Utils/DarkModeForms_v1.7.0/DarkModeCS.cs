@@ -13,14 +13,13 @@ namespace BlueMystic
 {
     /// <summary>This tries to automatically apply Windows Dark Mode (if enabled) to a Form.
     /// <para>Author: BlueMystic (bluemystic.play@gmail.com)  2024</para></summary>
-    public class DarkModeCS
+    public partial class DarkModeCS
     {
         #region Win32 API Declarations
 
-
         public struct DWMCOLORIZATIONcolors
         {
-            public uint ColorizationColor,
+            internal uint ColorizationColor,
                 ColorizationAfterglow,
                 ColorizationColorBalance,
                 ColorizationAfterglowBalance,
@@ -29,8 +28,7 @@ namespace BlueMystic
                 ColorizationOpaqueBlend;
         }
 
-        [Flags]
-        public enum DWMWINDOWATTRIBUTE : uint
+        public enum DWMWINDOWATTRIBUTE
         {
             /// <summary>
             /// Use with DwmGetWindowAttribute. Discovers whether non-client rendering is enabled. The retrieved value is of type BOOL. TRUE if non-client rendering is enabled; otherwise, FALSE.
@@ -179,24 +177,31 @@ namespace BlueMystic
 
         public const int EM_SETCUEBANNER = 5377;
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public extern static IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
 
+        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        public static partial IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
 
-        [DllImport("DwmApi")]
-        public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+        [LibraryImport("DwmApi")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        public static partial int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
 
-        [DllImport("dwmapi.dll")]
-        public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
+        [LibraryImport("dwmapi.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        public static partial int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
-        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+        [LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static partial int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
 
-        [DllImport("dwmapi.dll", EntryPoint = "#127")]
-        public static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+        [LibraryImport("dwmapi.dll", EntryPoint = "#127")]
+#pragma warning disable CA5392 // Use DefaultDllImportSearchPaths attribute for P/Invokes
+        public static partial void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+#pragma warning restore CA5392 // Use DefaultDllImportSearchPaths attribute for P/Invokes
 
-        [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
-        private static extern IntPtr CreateRoundRectRgn
+        [LibraryImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static partial IntPtr CreateRoundRectRgn
         (
             int nLeftRect,     // x-coordinate of upper-left corner
             int nTopRect,      // y-coordinate of upper-left corner
@@ -206,11 +211,13 @@ namespace BlueMystic
             int nHeightEllipse // width of ellipse
         );
 
-        [DllImport("user32")]
-        private static extern IntPtr GetDC(IntPtr hwnd);
+        [LibraryImport("user32")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static partial IntPtr GetDC(IntPtr hwnd);
 
-        [DllImport("user32")]
-        private static extern IntPtr ReleaseDC(IntPtr hwnd, IntPtr hdc);
+        [LibraryImport("user32")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static partial IntPtr ReleaseDC(IntPtr hwnd, IntPtr hdc);
 
         public static IntPtr GetHeaderControl(ListView list)
         {
@@ -223,13 +230,13 @@ namespace BlueMystic
         #region Public Members
 
         /// <summary>'true' if Dark Mode Color is set in Windows's Settings.</summary>
-        public bool IsDarkMode { get; set; } = false;
+        public bool IsDarkMode { get; set; }
 
         /// <summary>Option to re-colorize all Icons in Toolbars and Menus.</summary>
-        public bool ColorizeIcons { get; set; } = true;
+        public bool ColorizeIcons { get; set; }
 
         /// <summary>Option to make all Panels Borders Rounded</summary>
-        public bool RoundedPanels { get; set; } = false;
+        public bool RoundedPanels { get; set; }
 
         /// <summary>The PArent form for them all.</summary>
         public Form OwnerForm { get; set; }
@@ -811,14 +818,6 @@ namespace BlueMystic
                 float tG = c.G / 255f;
                 float tB = c.B / 255f;
 
-                //System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][]
-                //{
-                //	new float[] { 0,    0,  0,  0,  0 },
-                //	new float[] { 0,    0,  0,  0,  0 },
-                //	new float[] { 0,    0,  0,  0,  0 },
-                //	new float[] { 0,    0,  0,  1,  0 },  //<- not changing alpha
-                //	new float[] { tR,   tG, tB, 0,  1 }
-                //});
                 System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][]
                 {
                 new float[] { 1,    0,  0,  0,  0 },
@@ -833,6 +832,8 @@ namespace BlueMystic
 
                 g.DrawImage(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height),
                     0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel, attributes);
+
+                attributes.Dispose();
             }
             return bmp2;
         }
@@ -860,10 +861,10 @@ namespace BlueMystic
 			 */
             int[] DarkModeOn = new[] { 0x01 }; //<- 1=True, 0=False
 
-            SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+            _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
 
             if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0)
-                DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
+                _ = DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
 
             foreach (Control child in control.Controls)
             {
@@ -888,7 +889,10 @@ namespace BlueMystic
             {
                 var reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
                 string[] productName = reg.GetValue("ProductName").ToString().Split((char)32);
-                int.TryParse(productName[1], out result);
+                if (!(int.TryParse(productName[1], out result)))
+                {
+                    throw new InvalidOperationException();
+                }
             }
             catch (Exception)
             {
@@ -995,44 +999,6 @@ namespace BlueMystic
             ColorizeIcons = pColorizeIcons;
         }
 
-        private void DrawTitleBar(Graphics g, Rectangle rect)
-        {
-            // Assign the image for the grip.
-            //Image titlebarGrip = titleBarGripBmp;
-
-            // Fill the titlebar.
-            // This produces the gradient and the rounded-corner effect.
-            //g.DrawLine(new Pen(titlebarColor1), rect.X, rect.Y, rect.X + rect.Width, rect.Y);
-            //g.DrawLine(new Pen(titlebarColor2), rect.X, rect.Y + 1, rect.X + rect.Width, rect.Y + 1);
-            //g.DrawLine(new Pen(titlebarColor3), rect.X, rect.Y + 2, rect.X + rect.Width, rect.Y + 2);
-            //g.DrawLine(new Pen(titlebarColor4), rect.X, rect.Y + 3, rect.X + rect.Width, rect.Y + 3);
-            //g.DrawLine(new Pen(titlebarColor5), rect.X, rect.Y + 4, rect.X + rect.Width, rect.Y + 4);
-            //g.DrawLine(new Pen(titlebarColor6), rect.X, rect.Y + 5, rect.X + rect.Width, rect.Y + 5);
-            //g.DrawLine(new Pen(titlebarColor7), rect.X, rect.Y + 6, rect.X + rect.Width, rect.Y + 6);
-
-            // Center the titlebar grip.
-            //g.DrawImage(
-            //	titlebarGrip,
-            //	new Point(rect.X + ((rect.Width / 2) - (titlebarGrip.Width / 2)),
-            //	rect.Y + 1));
-        }
-
-        // This method handles the RenderGrip event.
-        protected override void OnRenderGrip(ToolStripGripRenderEventArgs e)
-        {
-            DrawTitleBar(
-                e.Graphics,
-                new Rectangle(0, 0, e.ToolStrip.Width, 7));
-        }
-
-        // This method handles the RenderToolStripBorder event.
-        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
-        {
-            DrawTitleBar(
-                e.Graphics,
-                new Rectangle(0, 0, e.ToolStrip.Width, 7));
-        }
-
         // Background of the whole ToolBar Or MenuBar:
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
@@ -1101,6 +1067,8 @@ namespace BlueMystic
                     bounds.X + bounds.Width - 1,
                     bounds.Height - 1);
             }
+
+            BordersPencil.Dispose();
         }
 
         // For DropDown Buttons on a ToolBar:
@@ -1135,6 +1103,7 @@ namespace BlueMystic
                 e.Graphics.FillRectangle(b, bounds);
             }
 
+            BordersPencil.Dispose();
 
             //3. Draws the Chevron:
             #region Chevron
@@ -1194,6 +1163,8 @@ namespace BlueMystic
             e.Graphics.DrawLine(ChevronPen, P1, P3);
             e.Graphics.DrawLine(ChevronPen, P2, P3);
 
+            ChevronPen.Dispose();
+
             #endregion
         }
 
@@ -1215,12 +1186,12 @@ namespace BlueMystic
         {
             base.OnRenderItemBackground(e);
 
-            // Only draw border for ComboBox items
-            if (e.Item is ComboBox)
-            {
-                Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
-                e.Graphics.DrawRectangle(new Pen(MyColors.ControlLight, 1), rect);
-            }
+            //// Only draw border for ComboBox items
+            //if (e.Item is ComboBox)
+            //{
+            //    Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
+            //    e.Graphics.DrawRectangle(new Pen(MyColors.ControlLight, 1), rect);
+            //}
         }
 
         // For Menu Items BackColor:

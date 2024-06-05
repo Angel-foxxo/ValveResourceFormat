@@ -166,16 +166,24 @@ namespace BlueMystic
             Color HeaderColor = isSelected ? SelectTabColor : BackColor;
             using (Brush brush = new SolidBrush(HeaderColor))
             {
+                var headerPen = new Pen(HeaderColor);
+                var headerUnderlinePen1 = new Pen(BackColor);
+                var headerUnderlinePen2 = new Pen(Color.DodgerBlue, 2);
+
                 g.FillPolygon(brush, points);
-                g.DrawPolygon(new Pen(HeaderColor), points);
+                g.DrawPolygon(headerPen, points);
 
                 if (isSelected)
                 {
-                    g.DrawLine(new Pen(BackColor),
+                    g.DrawLine(headerUnderlinePen1,
                         new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left, tabRect.Top));
-                    g.DrawLine(new Pen(Color.DodgerBlue, 2),
+                    g.DrawLine(headerUnderlinePen2,
                         new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Left + tabRect.Width + 1, tabRect.Bottom));
                 }
+
+                headerPen.Dispose();
+                headerUnderlinePen1.Dispose();
+                headerUnderlinePen2.Dispose();
             }
 
             Rectangle imageRect = tabRect;

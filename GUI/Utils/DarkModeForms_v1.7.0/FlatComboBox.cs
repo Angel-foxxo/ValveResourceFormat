@@ -87,12 +87,12 @@ namespace DarkModeForms
                 }
                 var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top,
                     innerInnerBorder.Right, innerInnerBorder.Bottom);
-                SelectClipRgn(dc, rgn);
+                _ = SelectClipRgn(dc, rgn);
                 DefWndProc(ref m);
                 DeleteObject(rgn);
                 rgn = CreateRectRgn(clientRect.Left, clientRect.Top,
                     clientRect.Right, clientRect.Bottom);
-                SelectClipRgn(dc, rgn);
+                _ = SelectClipRgn(dc, rgn);
 
                 using (var g = Graphics.FromHdc(dc))
                 {
@@ -181,17 +181,21 @@ namespace DarkModeForms
             public int reserved8;
         }
         [DllImport("user32.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
         private static extern IntPtr BeginPaint(IntPtr hWnd,
             [In, Out] ref PAINTSTRUCT lpPaint);
 
         [DllImport("user32.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
         private static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT lpPaint);
 
         [DllImport("gdi32.dll")]
-        public static extern int SelectClipRgn(IntPtr hDC, IntPtr hRgn);
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static extern int SelectClipRgn(IntPtr hDC, IntPtr hRgn);
 
         [DllImport("user32.dll")]
-        public static extern int GetUpdateRgn(IntPtr hwnd, IntPtr hrgn, bool fErase);
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+        private static extern int GetUpdateRgn(IntPtr hwnd, IntPtr hrgn, bool fErase);
         public enum RegionFlags
         {
             ERROR = 0,
@@ -200,9 +204,11 @@ namespace DarkModeForms
             COMPLEXREGION = 3,
         }
         [DllImport("gdi32.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
         internal static extern bool DeleteObject(IntPtr hObject);
 
         [DllImport("gdi32.dll")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
         private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
     }
 }
