@@ -104,6 +104,18 @@ namespace GUI.Controls
             TextBox.Text = kv.ToString();
         }
 
+        private void InitializeComponent()
+        {
+            SuspendLayout();
+            // 
+            // ChoreoViewer
+            // 
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            Name = "ChoreoViewer";
+            Size = new System.Drawing.Size(1281, 704);
+            ResumeLayout(false);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

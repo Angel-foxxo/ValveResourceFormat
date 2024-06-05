@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using BlueMystic;
 using GUI.Controls;
 using GUI.Types.Renderer.UniformBuffers;
 using GUI.Utils;
@@ -521,6 +522,8 @@ namespace GUI.Types.Renderer
         {
             var comboBox = (ComboBox)sender;
 
+            var darkModeCS = new DarkModeCS(null, false, false);
+
             if (e.Index < 0)
             {
                 return;
@@ -530,8 +533,14 @@ namespace GUI.Types.Renderer
 
             if (mode.IsHeader)
             {
-                e.Graphics.FillRectangle(SystemBrushes.Window, e.Bounds);
-                e.Graphics.DrawString(mode.Name, renderModeBoldFont, SystemBrushes.WindowText, e.Bounds);
+                var headerBrush = new SolidBrush(darkModeCS.OScolors.Surface);
+                var textBrush = new SolidBrush(darkModeCS.OScolors.TextActive);
+
+                e.Graphics.FillRectangle(headerBrush, e.Bounds);
+                e.Graphics.DrawString(mode.Name, renderModeBoldFont, textBrush, e.Bounds);
+
+                headerBrush.Dispose();
+                textBrush.Dispose();
             }
             else
             {
@@ -545,8 +554,14 @@ namespace GUI.Types.Renderer
                 }
 
                 var isSelected = (e.State & DrawItemState.Selected) > 0;
-                var brush = isSelected ? SystemBrushes.HighlightText : SystemBrushes.WindowText;
+                var textActiveBrush = new SolidBrush(darkModeCS.OScolors.TextActive);
+                var textInactiveBrush = new SolidBrush(darkModeCS.OScolors.TextInactive);
+
+                var brush = isSelected ? textInactiveBrush : textActiveBrush;
                 e.Graphics.DrawString(mode.Name, comboBox.Font, brush, bounds);
+
+                textActiveBrush.Dispose();
+                textInactiveBrush.Dispose();
 
                 e.DrawFocusRectangle();
             }

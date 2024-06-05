@@ -1,3 +1,5 @@
+using DarkModeForms;
+
 namespace GUI.Forms
 {
     partial class SearchForm
@@ -32,7 +34,7 @@ namespace GUI.Forms
             cancelButton = new System.Windows.Forms.Button();
             findTextBox = new System.Windows.Forms.TextBox();
             findLabel = new System.Windows.Forms.Label();
-            searchTypeComboBox = new System.Windows.Forms.ComboBox();
+            searchTypeComboBox = new FlatComboBox();
             SuspendLayout();
             // 
             // findButton
@@ -117,6 +119,6 @@ namespace GUI.Forms
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.TextBox findTextBox;
         private System.Windows.Forms.Label findLabel;
-        private System.Windows.Forms.ComboBox searchTypeComboBox;
+        private FlatComboBox searchTypeComboBox;
     }
 }

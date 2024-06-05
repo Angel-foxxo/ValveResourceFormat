@@ -1,3 +1,4 @@
+using BlueMystic;
 using System.Windows.Forms;
 
 namespace GUI.Forms
@@ -21,6 +22,8 @@ namespace GUI.Forms
         public SearchForm()
         {
             InitializeComponent();
+
+            _ = new DarkModeCS(this, false, false);
 
             searchTypeComboBox.ValueMember = "Id";
             searchTypeComboBox.DisplayMember = "Name";

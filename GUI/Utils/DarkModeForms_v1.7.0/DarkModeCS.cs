@@ -584,14 +584,15 @@ namespace BlueMystic
                 control.BackColor = control.Parent.BackColor;
                 control.ForeColor = control.Parent.ForeColor;
                 var parent = control.Parent;
-                control.Bounds = parent.Bounds;
+                //bullshit needed to hide the border
+                control.Bounds = new Rectangle(parent.Bounds.X - 250, parent.Bounds.Y - 250, parent.Bounds.Width + 500, parent.Bounds.Height + 500);
             }
-            if(control is GLViewerMultiSelectionControl multiSelection)
+            if (control is GLViewerMultiSelectionControl multiSelection)
             {
                 multiSelection.BackColor = control.Parent.BackColor;
                 multiSelection.ForeColor = control.Parent.ForeColor;
             }
-            if(control is ControlPanelView controlPanelView)
+            if (control is ControlPanelView controlPanelView)
             {
                 controlPanelView.BackColor = Color.Transparent;
                 controlPanelView.Invalidate();

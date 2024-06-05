@@ -77,7 +77,6 @@ namespace GUI.Forms
             tabPageProperties.Controls.Add(dataGridProperties);
             tabPageProperties.Location = new System.Drawing.Point(4, 27);
             tabPageProperties.Name = "tabPageProperties";
-            tabPageProperties.Padding = new Padding(3);
             tabPageProperties.Size = new System.Drawing.Size(792, 419);
             tabPageProperties.TabIndex = 0;
             tabPageProperties.Text = "Properties";
@@ -91,17 +90,17 @@ namespace GUI.Forms
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Window;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Cascadia Mono", 10F);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.GrayText;
             dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
             dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             dataGridProperties.DefaultCellStyle = dataGridViewCellStyle1;
             dataGridProperties.Dock = DockStyle.Fill;
-            dataGridProperties.Location = new System.Drawing.Point(3, 3);
+            dataGridProperties.Location = new System.Drawing.Point(0, 0);
             dataGridProperties.Name = "dataGridProperties";
             dataGridProperties.ReadOnly = true;
             dataGridProperties.RowHeadersVisible = false;
-            dataGridProperties.Size = new System.Drawing.Size(786, 413);
+            dataGridProperties.Size = new System.Drawing.Size(792, 419);
             dataGridProperties.TabIndex = 1;
             // 
             // ColumnName
@@ -124,7 +123,6 @@ namespace GUI.Forms
             tabPageOutputs.Controls.Add(dataGridOutputs);
             tabPageOutputs.Location = new System.Drawing.Point(4, 27);
             tabPageOutputs.Name = "tabPageOutputs";
-            tabPageOutputs.Padding = new Padding(3);
             tabPageOutputs.Size = new System.Drawing.Size(792, 419);
             tabPageOutputs.TabIndex = 1;
             tabPageOutputs.Text = "Outputs";
@@ -138,17 +136,17 @@ namespace GUI.Forms
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
             dataGridViewCellStyle2.Font = new System.Drawing.Font("Cascadia Mono", 10F);
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.GrayText;
             dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
             dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dataGridOutputs.DefaultCellStyle = dataGridViewCellStyle2;
             dataGridOutputs.Dock = DockStyle.Fill;
-            dataGridOutputs.Location = new System.Drawing.Point(3, 3);
+            dataGridOutputs.Location = new System.Drawing.Point(0, 0);
             dataGridOutputs.Name = "dataGridOutputs";
             dataGridOutputs.ReadOnly = true;
             dataGridOutputs.RowHeadersVisible = false;
-            dataGridOutputs.Size = new System.Drawing.Size(786, 413);
+            dataGridOutputs.Size = new System.Drawing.Size(792, 419);
             dataGridOutputs.TabIndex = 0;
             // 
             // Output

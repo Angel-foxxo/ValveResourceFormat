@@ -1,3 +1,4 @@
+using BlueMystic;
 using System.Windows.Forms;
 
 namespace GUI.Forms
@@ -9,6 +10,8 @@ namespace GUI.Forms
         public PromptForm(string title)
         {
             InitializeComponent();
+
+            _ = new DarkModeCS(this, false, false);
 
             Text = title;
             textLabel.Text = string.Concat(title, ":");

@@ -50,7 +50,7 @@ namespace GUI.Controls
             glControlContainer.Location = new System.Drawing.Point(0, 0);
             glControlContainer.Margin = new Padding(4, 50, 4, 3);
             glControlContainer.Name = "glControlContainer";
-            glControlContainer.Size = new System.Drawing.Size(25, 0);
+            glControlContainer.Size = new System.Drawing.Size(1273, 967);
             glControlContainer.TabIndex = 0;
             // 
             // controlsPanel
@@ -62,14 +62,14 @@ namespace GUI.Controls
             controlsPanel.Margin = new Padding(0);
             controlsPanel.Name = "controlsPanel";
             controlsPanel.Padding = new Padding(5, 5, 5, 0);
-            controlsPanel.Size = new System.Drawing.Size(25, 0);
+            controlsPanel.Size = new System.Drawing.Size(220, 967);
             controlsPanel.TabIndex = 4;
             // 
             // moveSpeed
             // 
             moveSpeed.AutoSize = true;
             moveSpeed.Dock = DockStyle.Bottom;
-            moveSpeed.Location = new System.Drawing.Point(5, -345);
+            moveSpeed.Location = new System.Drawing.Point(5, 952);
             moveSpeed.Name = "moveSpeed";
             moveSpeed.Size = new System.Drawing.Size(193, 15);
             moveSpeed.TabIndex = 5;
@@ -90,8 +90,8 @@ namespace GUI.Controls
             // splitContainer.Panel2
             // 
             splitContainer.Panel2.Controls.Add(glControlContainer);
-            splitContainer.Size = new System.Drawing.Size(0, 0);
-            splitContainer.SplitterDistance = 25;
+            splitContainer.Size = new System.Drawing.Size(1497, 967);
+            splitContainer.SplitterDistance = 220;
             splitContainer.TabIndex = 5;
             // 
             // GLViewerControl
@@ -101,7 +101,7 @@ namespace GUI.Controls
             Controls.Add(splitContainer);
             Margin = new Padding(0);
             Name = "GLViewerControl";
-            Size = new System.Drawing.Size(0, 0);
+            Size = new System.Drawing.Size(1497, 967);
             controlsPanel.ResumeLayout(false);
             controlsPanel.PerformLayout();
             splitContainer.Panel1.ResumeLayout(false);

@@ -13,26 +13,28 @@ namespace BlueMystic
     {
         #region Public Properties
 
+        static private DarkModeCS darkModeCS = new DarkModeCS(null, false, false);
+
         [Description("Color for a decorative line"), Category("Appearance")]
-        public Color LineColor { get; set; } = SystemColors.Highlight;
+        public Color LineColor { get; set; } = darkModeCS.OScolors.Accent;
 
         [Description("Color for all Borders"), Category("Appearance")]
-        public Color BorderColor { get; set; } = SystemColors.ControlDark;
+        public Color BorderColor { get; set; } = darkModeCS.OScolors.TextInactive;
 
         [Description("Back color for selected Tab"), Category("Appearance")]
-        public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
+        public Color SelectTabColor { get; set; } = darkModeCS.OScolors.Surface;
 
         [Description("Fore Color for Selected Tab"), Category("Appearance")]
-        public Color SelectedForeColor { get; set; } = SystemColors.HighlightText;
+        public Color SelectedForeColor { get; set; } = darkModeCS.OScolors.TextActive;
 
         [Description("Back Color for un-selected tabs"), Category("Appearance")]
-        public Color TabColor { get; set; } = SystemColors.ControlLight;
+        public Color TabColor { get; set; } = darkModeCS.OScolors.Control;
 
         [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]
-        public override Color BackColor { get; set; } = SystemColors.Control;
+        public override Color BackColor { get; set; } = darkModeCS.OScolors.Control;
 
         [Description("Fore Color for all Texts"), Category("Appearance")]
-        public override Color ForeColor { get; set; } = SystemColors.ControlText;
+        public override Color ForeColor { get; set; } = darkModeCS.OScolors.TextInactive;
 
         #endregion
 
@@ -170,9 +172,9 @@ namespace BlueMystic
                 if (isSelected)
                 {
                     g.DrawLine(new Pen(BackColor),
-                        new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left + 3, tabRect.Top));
+                        new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left, tabRect.Top));
                     g.DrawLine(new Pen(Color.DodgerBlue, 2),
-                        new Point(tabRect.Left + 3, tabRect.Bottom), new Point(tabRect.Left + tabRect.Width, tabRect.Bottom));
+                        new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Left + tabRect.Width + 1, tabRect.Bottom));
                 }
             }
 

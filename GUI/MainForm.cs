@@ -909,5 +909,23 @@ namespace GUI
                 form.ShowDialog(this);
             });
         }
+
+        private void vpkContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            var darkFormCS = new DarkModeCS(null, false, false);
+            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+        }
+
+        private void tabContextMenuStrip_Opening(object sender, CancelEventArgs e)
+        {
+            var darkFormCS = new DarkModeCS(null, false, false);
+            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+        }
+
+        private void vpkEditingContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            var darkFormCS = new DarkModeCS(null, false, false);
+            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+        }
     }
 }
