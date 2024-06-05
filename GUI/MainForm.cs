@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using BlueMystic;
+using DarkModeForms;
 using GUI.Controls;
 using GUI.Forms;
 using GUI.Types.Exporter;

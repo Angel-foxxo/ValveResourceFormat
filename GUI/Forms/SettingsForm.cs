@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
-using BlueMystic;
+using DarkModeForms;
 using GUI.Utils;
 using Microsoft.Win32;
 

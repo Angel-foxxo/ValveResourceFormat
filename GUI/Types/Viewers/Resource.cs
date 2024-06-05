@@ -10,7 +10,7 @@ using ValveResourceFormat;
 using ValveResourceFormat.Blocks;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.ResourceTypes;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

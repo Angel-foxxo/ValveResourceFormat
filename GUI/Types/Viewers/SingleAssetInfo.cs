@@ -7,7 +7,7 @@ using GUI.Controls;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
 using ValveKeyValue;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

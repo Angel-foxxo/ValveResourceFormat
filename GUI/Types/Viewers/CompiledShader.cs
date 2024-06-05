@@ -11,7 +11,7 @@ using ValveResourceFormat.IO;
 using Vortice.SpirvCross;
 using static ValveResourceFormat.CompiledShader.ShaderUtilHelpers;
 using VrfPackage = SteamDatabase.ValvePak.Package;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

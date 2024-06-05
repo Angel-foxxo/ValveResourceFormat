@@ -2,7 +2,7 @@ using System.IO;
 using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Utils;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

@@ -1,5 +1,5 @@
 using System.Windows.Forms;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI
 {

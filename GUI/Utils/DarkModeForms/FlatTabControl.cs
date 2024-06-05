@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace BlueMystic
+namespace DarkModeForms
 {
     public class FlatTabControl : TabControl
     {
@@ -40,13 +40,6 @@ namespace BlueMystic
 
         public FlatTabControl()
         {
-            try
-            {
-                Appearance = TabAppearance.Buttons;
-                DrawMode = TabDrawMode.Normal;
-                SizeMode = TabSizeMode.Normal;
-            }
-            catch { }
         }
 
         protected override void InitLayout()

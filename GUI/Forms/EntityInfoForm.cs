@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Windows.Forms;
-using BlueMystic;
+using DarkModeForms;
 using GUI.Types.Viewers;
 using GUI.Utils;
 using ValveResourceFormat.Serialization;

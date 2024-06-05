@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using GUI.Forms;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.PackageViewer
 {

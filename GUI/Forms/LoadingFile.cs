@@ -1,4 +1,4 @@
-using BlueMystic;
+using DarkModeForms;
 using System.Windows.Forms;
 
 namespace GUI.Forms

@@ -4,7 +4,7 @@ using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Utils;
 using ValveResourceFormat.ClosedCaptions;
-using BlueMystic;
+using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

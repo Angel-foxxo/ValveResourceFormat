@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Forms;
-using BlueMystic;
+using DarkModeForms;
 using GUI.Utils;
 
 namespace GUI.Forms

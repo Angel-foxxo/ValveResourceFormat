@@ -9,10 +9,10 @@ using OpenTK;
 using GUI.Forms;
 using System.ComponentModel.Design;
 
-namespace BlueMystic
+namespace DarkModeForms
 {
     /// <summary>This tries to automatically apply Windows Dark Mode (if enabled) to a Form.
-    /// <para>Author: BlueMystic (bluemystic.play@gmail.com)  2024</para></summary>
+    /// <para>Author: DarkModeForms (DarkModeForms.play@gmail.com)  2024</para></summary>
     public partial class DarkModeCS
     {
         #region Win32 API Declarations
