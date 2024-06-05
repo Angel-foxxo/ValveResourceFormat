@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using BlueMystic;
 using GUI.Controls;
 using GUI.Forms;
 using GUI.Types.Exporter;
@@ -59,6 +60,8 @@ namespace GUI
         public MainForm(string[] args)
         {
             InitializeComponent();
+
+            _ = new DarkModeCS(this, false, true);
 
             mainTabs.ImageList = ImageList;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Forms;
+using BlueMystic;
 using GUI.Utils;
 
 namespace GUI.Forms
@@ -9,6 +10,8 @@ namespace GUI.Forms
         public UpdateAvailableForm()
         {
             InitializeComponent();
+
+            _ = new DarkModeCS(this, false, true);
 
             var version = Application.ProductVersion;
             var versionPlus = version.IndexOf('+', StringComparison.InvariantCulture); // Drop the git commit

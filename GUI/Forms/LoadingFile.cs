@@ -1,3 +1,4 @@
+using BlueMystic;
 using System.Windows.Forms;
 
 namespace GUI.Forms

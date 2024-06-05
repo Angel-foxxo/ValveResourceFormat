@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Utils;
 using ValveResourceFormat.ClosedCaptions;
+using BlueMystic;
 
 namespace GUI.Types.Viewers
 {
@@ -17,7 +18,7 @@ namespace GUI.Types.Viewers
         public TabPage Create(VrfGuiContext vrfGuiContext, Stream stream)
         {
             var tabOuterPage = new TabPage();
-            var tabControl = new TabControl
+            var tabControl = new FlatTabControl
             {
                 Dock = DockStyle.Fill,
             };

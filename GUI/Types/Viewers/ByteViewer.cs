@@ -2,6 +2,7 @@ using System.IO;
 using System.Windows.Forms;
 using GUI.Controls;
 using GUI.Utils;
+using BlueMystic;
 
 namespace GUI.Types.Viewers
 {
@@ -12,7 +13,7 @@ namespace GUI.Types.Viewers
         public TabPage Create(VrfGuiContext vrfGuiContext, Stream stream)
         {
             var tab = new TabPage();
-            var resTabs = new TabControl
+            var resTabs = new FlatTabControl
             {
                 Dock = DockStyle.Fill,
             };

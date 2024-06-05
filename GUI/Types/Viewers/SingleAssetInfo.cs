@@ -7,6 +7,7 @@ using GUI.Controls;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
 using ValveKeyValue;
+using BlueMystic;
 
 namespace GUI.Types.Viewers
 {
@@ -42,7 +43,7 @@ namespace GUI.Types.Viewers
                 }
             }
 
-            var resTabs = new TabControl
+            var resTabs = new FlatTabControl
             {
                 Dock = DockStyle.Fill,
             };

@@ -49,14 +49,14 @@ namespace GUI.Forms
             tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             groupBox3 = new System.Windows.Forms.GroupBox();
             tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
+            openExplorerOnStartLabel = new System.Windows.Forms.Label();
             groupBox4 = new System.Windows.Forms.GroupBox();
             tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             quickPreviewLabel = new System.Windows.Forms.Label();
             quickPreviewSoundsLabel = new System.Windows.Forms.Label();
             quickPreviewCheckbox = new System.Windows.Forms.CheckBox();
             quickPreviewSoundsCheckbox = new System.Windows.Forms.CheckBox();
-            openExplorerOnStartLabel = new System.Windows.Forms.Label();
-            openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)maxTextureSizeInput).BeginInit();
             ((System.ComponentModel.ISupportInitialize)fovInput).BeginInit();
             groupBox1.SuspendLayout();
@@ -207,12 +207,13 @@ namespace GUI.Forms
             // vsyncCheckBox
             // 
             vsyncCheckBox.AutoSize = true;
+            vsyncCheckBox.BackColor = System.Drawing.SystemColors.Control;
             vsyncCheckBox.Dock = System.Windows.Forms.DockStyle.Fill;
             vsyncCheckBox.Location = new System.Drawing.Point(213, 123);
             vsyncCheckBox.Name = "vsyncCheckBox";
             vsyncCheckBox.Size = new System.Drawing.Size(204, 34);
             vsyncCheckBox.TabIndex = 8;
-            vsyncCheckBox.UseVisualStyleBackColor = true;
+            vsyncCheckBox.UseVisualStyleBackColor = false;
             vsyncCheckBox.CheckedChanged += OnVsyncValueChanged;
             // 
             // displayFpsCheckBox
@@ -340,6 +341,27 @@ namespace GUI.Forms
             tableLayoutPanel4.Size = new System.Drawing.Size(420, 90);
             tableLayoutPanel4.TabIndex = 11;
             // 
+            // openExplorerOnStartCheckbox
+            // 
+            openExplorerOnStartCheckbox.AutoSize = true;
+            openExplorerOnStartCheckbox.Dock = System.Windows.Forms.DockStyle.Fill;
+            openExplorerOnStartCheckbox.Location = new System.Drawing.Point(213, 3);
+            openExplorerOnStartCheckbox.Name = "openExplorerOnStartCheckbox";
+            openExplorerOnStartCheckbox.Size = new System.Drawing.Size(204, 34);
+            openExplorerOnStartCheckbox.TabIndex = 12;
+            openExplorerOnStartCheckbox.UseVisualStyleBackColor = true;
+            openExplorerOnStartCheckbox.CheckedChanged += OnOpenExplorerOnStartValueChanged;
+            // 
+            // openExplorerOnStartLabel
+            // 
+            openExplorerOnStartLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            openExplorerOnStartLabel.AutoSize = true;
+            openExplorerOnStartLabel.Location = new System.Drawing.Point(3, 12);
+            openExplorerOnStartLabel.Name = "openExplorerOnStartLabel";
+            openExplorerOnStartLabel.Size = new System.Drawing.Size(128, 15);
+            openExplorerOnStartLabel.TabIndex = 11;
+            openExplorerOnStartLabel.Text = "Open explorer on start:";
+            // 
             // groupBox4
             // 
             groupBox4.Controls.Add(tableLayoutPanel3);
@@ -413,27 +435,6 @@ namespace GUI.Forms
             quickPreviewSoundsCheckbox.TabIndex = 3;
             quickPreviewSoundsCheckbox.UseVisualStyleBackColor = true;
             quickPreviewSoundsCheckbox.CheckedChanged += OnQuickPreviewSoundsCheckboxChanged;
-            // 
-            // openExplorerOnStartLabel
-            // 
-            openExplorerOnStartLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            openExplorerOnStartLabel.AutoSize = true;
-            openExplorerOnStartLabel.Location = new System.Drawing.Point(3, 12);
-            openExplorerOnStartLabel.Name = "openExplorerOnStartLabel";
-            openExplorerOnStartLabel.Size = new System.Drawing.Size(128, 15);
-            openExplorerOnStartLabel.TabIndex = 11;
-            openExplorerOnStartLabel.Text = "Open explorer on start:";
-            // 
-            // openExplorerOnStartCheckbox
-            // 
-            openExplorerOnStartCheckbox.AutoSize = true;
-            openExplorerOnStartCheckbox.Dock = System.Windows.Forms.DockStyle.Fill;
-            openExplorerOnStartCheckbox.Location = new System.Drawing.Point(213, 3);
-            openExplorerOnStartCheckbox.Name = "openExplorerOnStartCheckbox";
-            openExplorerOnStartCheckbox.Size = new System.Drawing.Size(204, 34);
-            openExplorerOnStartCheckbox.TabIndex = 12;
-            openExplorerOnStartCheckbox.UseVisualStyleBackColor = true;
-            openExplorerOnStartCheckbox.CheckedChanged += OnOpenExplorerOnStartValueChanged;
             // 
             // SettingsForm
             // 

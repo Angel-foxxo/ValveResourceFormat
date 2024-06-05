@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using BlueMystic;
 
 namespace GUI
 {
@@ -53,7 +54,7 @@ namespace GUI
             newVersionAvailableToolStripMenuItem = new ToolStripMenuItem();
             checkForUpdatesToolStripMenuItem = new ToolStripMenuItem();
             recoverDeletedToolStripMenuItem = new ToolStripMenuItem();
-            mainTabs = new TabControl();
+            mainTabs = new FlatTabControl();
             tabContextMenuStrip = new ContextMenuStrip(components);
             closeToolStripMenuItem = new ToolStripMenuItem();
             closeToolStripMenuItems = new ToolStripMenuItem();
@@ -452,7 +453,7 @@ namespace GUI
         #endregion
 
         private MenuStrip menuStrip;
-        private TabControl mainTabs;
+        private FlatTabControl mainTabs;
         private ContextMenuStrip tabContextMenuStrip;
         private ToolStripMenuItem closeToolStripMenuItem;
         private ContextMenuStrip vpkContextMenu;

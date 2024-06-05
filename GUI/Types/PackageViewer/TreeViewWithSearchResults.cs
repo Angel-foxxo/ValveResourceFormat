@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using GUI.Forms;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
+using BlueMystic;
 
 namespace GUI.Types.PackageViewer
 {
@@ -771,7 +772,7 @@ namespace GUI.Types.PackageViewer
         {
             mainListView.Visible = false;
 
-            var tabs = new TabControl
+            var tabs = new FlatTabControl
             {
                 ImageList = MainForm.ImageList,
                 Dock = DockStyle.Fill

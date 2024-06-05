@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows.Forms;
+using BlueMystic;
 using GUI.Types.Viewers;
 using GUI.Utils;
 using ValveResourceFormat.Serialization;
@@ -14,6 +15,7 @@ namespace GUI.Forms
         public EntityInfoForm(AdvancedGuiFileLoader guiFileLoader)
         {
             InitializeComponent();
+            _ = new DarkModeCS(this, false, true);
 
             Icon = Program.MainForm.Icon;
 

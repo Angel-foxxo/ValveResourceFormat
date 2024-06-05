@@ -11,6 +11,7 @@ using ValveResourceFormat.IO;
 using Vortice.SpirvCross;
 using static ValveResourceFormat.CompiledShader.ShaderUtilHelpers;
 using VrfPackage = SteamDatabase.ValvePak.Package;
+using BlueMystic;
 
 namespace GUI.Types.Viewers
 {
@@ -484,7 +485,7 @@ namespace GUI.Types.Viewers
                         {
                             Text = gpuSourceTabTitle
                         };
-                        var resTabs = new TabControl
+                        var resTabs = new FlatTabControl
                         {
                             Dock = DockStyle.Fill,
                         };

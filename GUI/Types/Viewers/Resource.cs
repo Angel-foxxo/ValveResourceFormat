@@ -10,6 +10,7 @@ using ValveResourceFormat;
 using ValveResourceFormat.Blocks;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.ResourceTypes;
+using BlueMystic;
 
 namespace GUI.Types.Viewers
 {
@@ -52,7 +53,7 @@ namespace GUI.Types.Viewers
                 resourceTemp?.Dispose();
             }
 
-            var resTabs = new TabControl
+            var resTabs = new FlatTabControl
             {
                 Dock = DockStyle.Fill,
             };

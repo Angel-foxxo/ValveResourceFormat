@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using BlueMystic;
 using GUI.Utils;
 using Microsoft.Win32;
 
@@ -14,6 +15,8 @@ namespace GUI.Forms
         public SettingsForm()
         {
             InitializeComponent();
+            _ = new DarkModeCS(this, false, true);
+
         }
 
         protected override void OnClosing(CancelEventArgs e)
