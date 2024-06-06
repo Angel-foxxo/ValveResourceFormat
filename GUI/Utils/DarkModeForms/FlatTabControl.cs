@@ -40,6 +40,13 @@ namespace DarkModeForms
 
         public FlatTabControl()
         {
+            try
+            {
+                Appearance = TabAppearance.Buttons;
+                DrawMode = TabDrawMode.Normal;
+                SizeMode = TabSizeMode.Normal;
+            }
+            catch { }
         }
 
         protected override void InitLayout()
@@ -101,21 +108,6 @@ namespace DarkModeForms
                         g.DrawRectangle(border, clientRectangle);
                     }
                 }
-
-                // a decorative line on top of pages:
-                //using (Brush bLineColor = new SolidBrush(LineColor))
-                //{
-                //	Rectangle rectangle = ClientRectangle;
-                //	rectangle.Height = 1;
-                //	rectangle.Y = 25;
-                //	g.FillRectangle(bLineColor, rectangle);
-
-                //	rectangle = ClientRectangle;
-                //	rectangle.Height = 1;
-                //	rectangle.Y = 26;
-                //	g.FillRectangle(bLineColor, rectangle);
-                //}
-
             }
             catch { }
         }
@@ -124,36 +116,6 @@ namespace DarkModeForms
         {
             Rectangle tabRect = GetTabRect(nIndex);
             bool isSelected = (SelectedIndex == nIndex);
-            Point[] points;
-
-            customTabPage.Padding = new Padding(0, 0, 0, 0);
-
-            if (Alignment == TabAlignment.Top)
-            {
-                points = new[]
-                {
-                    new Point(tabRect.Left, tabRect.Bottom),
-                    new Point(tabRect.Left, tabRect.Top + 0),
-                    new Point(tabRect.Left + 0, tabRect.Top),
-                    new Point(tabRect.Right - 0, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Top + 0),
-                    new Point(tabRect.Right, tabRect.Bottom),
-                    new Point(tabRect.Left, tabRect.Bottom)
-                };
-            }
-            else
-            {
-                points = new[]
-                {
-                    new Point(tabRect.Left, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Bottom - 0),
-                    new Point(tabRect.Right - 0, tabRect.Bottom),
-                    new Point(tabRect.Left + 0, tabRect.Bottom),
-                    new Point(tabRect.Left, tabRect.Bottom - 0),
-                    new Point(tabRect.Left, tabRect.Top)
-                };
-            }
 
             // Draws the Tab Header:
             Color HeaderColor = isSelected ? SelectTabColor : BackColor;
@@ -163,8 +125,7 @@ namespace DarkModeForms
                 var headerUnderlinePen1 = new Pen(BackColor);
                 var headerUnderlinePen2 = new Pen(Color.DodgerBlue, 2);
 
-                g.FillPolygon(brush, points);
-                g.DrawPolygon(headerPen, points);
+                g.DrawRectangle(headerPen, tabRect);
 
                 if (isSelected)
                 {
