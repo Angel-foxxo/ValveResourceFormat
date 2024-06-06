@@ -13,7 +13,7 @@ namespace GUI.Forms
         {
             InitializeComponent();
 
-            _ = new DarkModeCS(this);
+            MainForm.DarkModeCS.Colorise(this);
 
             // Start the decoder thread so that it fetches the opengl version and is ready for the version copy
             if (Settings.GpuRendererAndDriver == null && HardwareAcceleratedTextureDecoder.Decoder is GLTextureDecoder decoder)

@@ -11,7 +11,7 @@ namespace GUI.Forms
         {
             InitializeComponent();
 
-            _ = new DarkModeCS(this, false, true);
+            MainForm.DarkModeCS.Colorise(this);
 
             var version = Application.ProductVersion;
             var versionPlus = version.IndexOf('+', StringComparison.InvariantCulture); // Drop the git commit

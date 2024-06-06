@@ -15,8 +15,7 @@ namespace GUI.Forms
         public SettingsForm()
         {
             InitializeComponent();
-            _ = new DarkModeCS(this, false, true);
-
+            MainForm.DarkModeCS.Colorise(this);
         }
 
         protected override void OnClosing(CancelEventArgs e)

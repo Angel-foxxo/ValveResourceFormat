@@ -522,8 +522,6 @@ namespace GUI.Types.Renderer
         {
             var comboBox = (ComboBox)sender;
 
-            var darkModeCS = new DarkModeCS(null, false, false);
-
             if (e.Index < 0)
             {
                 return;
@@ -533,8 +531,8 @@ namespace GUI.Types.Renderer
 
             if (mode.IsHeader)
             {
-                var headerBrush = new SolidBrush(darkModeCS.OScolors.Surface);
-                var textBrush = new SolidBrush(darkModeCS.OScolors.TextActive);
+                var headerBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.Surface);
+                var textBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive);
 
                 e.Graphics.FillRectangle(headerBrush, e.Bounds);
                 e.Graphics.DrawString(mode.Name, renderModeBoldFont, textBrush, e.Bounds);
@@ -554,8 +552,8 @@ namespace GUI.Types.Renderer
                 }
 
                 var isSelected = (e.State & DrawItemState.Selected) > 0;
-                var textActiveBrush = new SolidBrush(darkModeCS.OScolors.TextActive);
-                var textInactiveBrush = new SolidBrush(darkModeCS.OScolors.TextInactive);
+                var textActiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive);
+                var textInactiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextInactive);
 
                 var brush = isSelected ? textInactiveBrush : textActiveBrush;
                 e.Graphics.DrawString(mode.Name, comboBox.Font, brush, bounds);

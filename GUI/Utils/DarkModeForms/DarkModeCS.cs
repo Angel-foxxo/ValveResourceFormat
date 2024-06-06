@@ -4,8 +4,6 @@ using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using GUI.Controls;
-using GUI.Types.Renderer;
-using OpenTK;
 using GUI.Forms;
 using System.ComponentModel.Design;
 
@@ -254,10 +252,16 @@ namespace DarkModeForms
         /// <param name="_RoundedPanels">[OPTIONAL] make all Panels Borders Rounded</param>
         public DarkModeCS(Form _Form, bool _ColorizeIcons = true, bool _RoundedPanels = false)
         {
+            Colorise(_Form);
             //Sets the Properties:
-            OwnerForm = _Form;
             ColorizeIcons = _ColorizeIcons;
             RoundedPanels = _RoundedPanels;
+
+        }
+
+        public void Colorise(Form _Form)
+        {
+            OwnerForm = _Form;
             IsDarkMode = GetWindowsColorMode() <= 0 ? true : false;
             OScolors = GetSystemColors(OwnerForm);
 

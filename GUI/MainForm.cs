@@ -31,6 +31,8 @@ namespace GUI
 
         private SearchForm searchForm;
 
+        static public DarkModeCS DarkModeCS { get; set; }
+
         static MainForm()
         {
             ImageList = new ImageList
@@ -59,9 +61,8 @@ namespace GUI
 
         public MainForm(string[] args)
         {
+            DarkModeCS = new DarkModeCS(this, false, false);
             InitializeComponent();
-
-            _ = new DarkModeCS(this, false, false);
 
             mainTabs.ImageList = ImageList;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
@@ -912,20 +913,17 @@ namespace GUI
 
         private void vpkContextMenu_Opening(object sender, CancelEventArgs e)
         {
-            var darkFormCS = new DarkModeCS(null, false, false);
-            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
         }
 
         private void tabContextMenuStrip_Opening(object sender, CancelEventArgs e)
         {
-            var darkFormCS = new DarkModeCS(null, false, false);
-            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
         }
 
         private void vpkEditingContextMenu_Opening(object sender, CancelEventArgs e)
         {
-            var darkFormCS = new DarkModeCS(null, false, false);
-            darkFormCS.ThemeControl((ContextMenuStrip)sender);
+            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
         }
     }
 }

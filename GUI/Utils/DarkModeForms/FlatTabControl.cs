@@ -1,3 +1,4 @@
+using GUI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,28 +14,26 @@ namespace DarkModeForms
     {
         #region Public Properties
 
-        static private DarkModeCS darkModeCS = new DarkModeCS(null, false, false);
-
         [Description("Color for a decorative line"), Category("Appearance")]
-        public Color LineColor { get; set; } = darkModeCS.OScolors.Accent;
+        public Color LineColor { get; set; } = MainForm.DarkModeCS.OScolors.Accent;
 
         [Description("Color for all Borders"), Category("Appearance")]
-        public Color BorderColor { get; set; } = darkModeCS.OScolors.TextInactive;
+        public Color BorderColor { get; set; } = MainForm.DarkModeCS.OScolors.TextInactive;
 
         [Description("Back color for selected Tab"), Category("Appearance")]
-        public Color SelectTabColor { get; set; } = darkModeCS.OScolors.Surface;
+        public Color SelectTabColor { get; set; } = MainForm.DarkModeCS.OScolors.Surface;
 
         [Description("Fore Color for Selected Tab"), Category("Appearance")]
-        public Color SelectedForeColor { get; set; } = darkModeCS.OScolors.TextActive;
+        public Color SelectedForeColor { get; set; } = MainForm.DarkModeCS.OScolors.TextActive;
 
         [Description("Back Color for un-selected tabs"), Category("Appearance")]
-        public Color TabColor { get; set; } = darkModeCS.OScolors.Control;
+        public Color TabColor { get; set; } = MainForm.DarkModeCS.OScolors.Control;
 
         [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]
-        public override Color BackColor { get; set; } = darkModeCS.OScolors.Control;
+        public override Color BackColor { get; set; } = MainForm.DarkModeCS.OScolors.Control;
 
         [Description("Fore Color for all Texts"), Category("Appearance")]
-        public override Color ForeColor { get; set; } = darkModeCS.OScolors.TextInactive;
+        public override Color ForeColor { get; set; } = MainForm.DarkModeCS.OScolors.TextInactive;
 
         #endregion
 
