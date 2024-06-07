@@ -18,6 +18,8 @@ namespace GUI.Controls
 
             var fileName = Path.GetFileNameWithoutExtension(resource.FileName) + ".vcdlist";
             AddList(fileName);
+
+            MainForm.DarkModeCS.ThemeControl(this);
         }
 
         private void AddList(string vcdListName)
@@ -102,6 +104,18 @@ namespace GUI.Controls
             var scene = choreoDataList.Scenes[index];
             var kv = new KV3File(scene.ToKeyValues());
             TextBox.Text = kv.ToString();
+        }
+
+        private void InitializeComponent()
+        {
+            SuspendLayout();
+            // 
+            // ChoreoViewer
+            // 
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            Name = "ChoreoViewer";
+            Size = new System.Drawing.Size(1149, 692);
+            ResumeLayout(false);
         }
 
         protected override void Dispose(bool disposing)

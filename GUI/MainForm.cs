@@ -61,7 +61,7 @@ namespace GUI
 
         public MainForm(string[] args)
         {
-            DarkModeCS = new DarkModeCS(true);
+            DarkModeCS = new DarkModeCS(false);
             DarkModeCS.Style(this);
             InitializeComponent();
 

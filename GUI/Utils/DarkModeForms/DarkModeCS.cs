@@ -557,6 +557,11 @@ namespace DarkModeForms
             {
                 tabPage.Padding = new Padding(-10, 0, 0, 0);
             }
+            if(control is ProgressBar pgBar)
+            {
+                pgBar.BackColor = OScolors.Control;
+                pgBar.ForeColor = Color.DodgerBlue;
+            }
 
             foreach (Control childControl in control.Controls)
             {
