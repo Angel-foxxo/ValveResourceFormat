@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -124,14 +125,12 @@ namespace DarkModeForms
                 var headerUnderlinePen1 = new Pen(BackColor);
                 var headerUnderlinePen2 = new Pen(Color.DodgerBlue, 2);
 
-                g.DrawRectangle(headerPen, tabRect);
+                g.FillRectangle(brush, tabRect);
 
                 if (isSelected)
                 {
-                    g.DrawLine(headerUnderlinePen1,
-                        new Point(tabRect.Left, tabRect.Top), new Point(tabRect.Left, tabRect.Top));
                     g.DrawLine(headerUnderlinePen2,
-                        new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Left + tabRect.Width + 1, tabRect.Bottom));
+                        new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
                 }
 
                 headerPen.Dispose();

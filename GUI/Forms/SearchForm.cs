@@ -23,7 +23,7 @@ namespace GUI.Forms
         {
             InitializeComponent();
 
-            MainForm.DarkModeCS.Colorise(this);
+            MainForm.DarkModeCS.Style(this);
 
             searchTypeComboBox.ValueMember = "Id";
             searchTypeComboBox.DisplayMember = "Name";

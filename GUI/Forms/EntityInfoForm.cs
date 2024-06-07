@@ -15,7 +15,7 @@ namespace GUI.Forms
         public EntityInfoForm(AdvancedGuiFileLoader guiFileLoader)
         {
             InitializeComponent();
-            MainForm.DarkModeCS.Colorise(this);
+            MainForm.DarkModeCS.Style(this);
 
             Icon = Program.MainForm.Icon;
 

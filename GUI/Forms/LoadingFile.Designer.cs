@@ -58,12 +58,13 @@ namespace GUI.Forms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            BackColor = System.Drawing.SystemColors.ControlLightLight;
+            BackColor = System.Drawing.SystemColors.Control;
             Controls.Add(label1);
             Controls.Add(progressBar1);
             Margin = new System.Windows.Forms.Padding(0);
             Name = "LoadingFile";
             Size = new System.Drawing.Size(1189, 704);
+            Load += LoadingFile_Load;
             ResumeLayout(false);
             PerformLayout();
         }

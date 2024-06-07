@@ -11,7 +11,7 @@ namespace GUI.Forms
         {
             InitializeComponent();
 
-            MainForm.DarkModeCS.Colorise(this);
+            MainForm.DarkModeCS.Style(this);
 
             Text = title;
             textLabel.Text = string.Concat(title, ":");

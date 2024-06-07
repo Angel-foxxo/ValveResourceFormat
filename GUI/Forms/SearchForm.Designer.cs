@@ -1,4 +1,5 @@
 using DarkModeForms;
+using System.Windows.Forms;
 
 namespace GUI.Forms
 {
@@ -34,7 +35,7 @@ namespace GUI.Forms
             cancelButton = new System.Windows.Forms.Button();
             findTextBox = new System.Windows.Forms.TextBox();
             findLabel = new System.Windows.Forms.Label();
-            searchTypeComboBox = new FlatComboBox();
+            searchTypeComboBox = new ComboBox();
             SuspendLayout();
             // 
             // findButton
@@ -119,6 +120,6 @@ namespace GUI.Forms
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.TextBox findTextBox;
         private System.Windows.Forms.Label findLabel;
-        private FlatComboBox searchTypeComboBox;
+        private ComboBox searchTypeComboBox;
     }
 }
