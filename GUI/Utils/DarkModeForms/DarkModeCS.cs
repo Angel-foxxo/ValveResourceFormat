@@ -654,7 +654,8 @@ namespace DarkModeForms
             OSThemeColors _ret = new OSThemeColors();
 
             bool IsDarkMode = (IsWindowsDarkThemed());
-            if (IsDarkMode && !DebugTheme)
+
+            if (IsDarkMode)
             {
                 _ret.Background = Color.FromArgb(32, 32, 32);
                 _ret.BackgroundDark = Color.FromArgb(18, 18, 18);
@@ -675,7 +676,8 @@ namespace DarkModeForms
                 _ret.Primary = Color.FromArgb(3, 218, 198);
                 _ret.Secondary = Color.MediumSlateBlue;
             }
-            else
+
+            if (DebugTheme)
             {
                 _ret.Background = Color.FromArgb(91, 206, 250);
                 _ret.BackgroundDark = Color.FromArgb(21, 136, 180);

@@ -551,15 +551,14 @@ namespace GUI.Types.Renderer
                 }
 
                 var isSelected = (e.State & DrawItemState.Selected) > 0;
-                var textActiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive);
-                var textInactiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextInactive);
-
-                var brush = isSelected ? textInactiveBrush : textActiveBrush;
-                e.Graphics.DrawString(mode.Name, comboBox.Font, brush, bounds);
-
-                textActiveBrush.Dispose();
-                textInactiveBrush.Dispose();
-
+                using (var textActiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive))
+                {
+                    using (var textInactiveBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextInactive))
+                    {
+                        var brush = isSelected ? textInactiveBrush : textActiveBrush;
+                        e.Graphics.DrawString(mode.Name, comboBox.Font, brush, bounds);
+                    }
+                }
                 e.DrawFocusRectangle();
             }
         }
