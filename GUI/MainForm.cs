@@ -58,15 +58,38 @@ namespace GUI
                 Debug.Assert(index >= 0);
             }
         }
-
         public MainForm(string[] args)
         {
-            DarkModeCS = new DarkModeCS(false);
+            DarkModeCS = new DarkModeCS();
             DarkModeCS.Style(this);
-            InitializeComponent();
 
+            var size = AdjustForDPI(16f);
+            ImageList.ImageSize = new Size(size, size);
+
+            mainTabs = new FlatTabControl();
+            mainTabs.Appearance = TabAppearance.Buttons;
+            mainTabs.BorderColor = System.Drawing.SystemColors.GrayText;
+            mainTabs.Dock = DockStyle.Fill;
+            mainTabs.Font = new System.Drawing.Font("Segoe UI", 9F);
+            mainTabs.LineColor = System.Drawing.Color.FromArgb(136, 54, 82, 113);
+            mainTabs.Location = new System.Drawing.Point(0, 24);
+            mainTabs.Margin = new Padding(0);
+            mainTabs.Name = "mainTabs";
+            mainTabs.Padding = new System.Drawing.Point(0, 0);
+            mainTabs.SelectedForeColor = System.Drawing.SystemColors.ControlText;
+            mainTabs.SelectedIndex = 0;
+            mainTabs.SelectTabColor = System.Drawing.SystemColors.ControlLightLight;
+            mainTabs.Size = new System.Drawing.Size(1300, 776);
+            mainTabs.TabColor = System.Drawing.SystemColors.ButtonFace;
+            mainTabs.TabIndex = 1;
+            mainTabs.MouseClick += OnTabClick;
             mainTabs.ImageList = ImageList;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
+            Controls.Add(mainTabs);
+
+            AutoScaleDimensions = new Size(4,16);
+
+            InitializeComponent();
 
             var consoleTab = new ConsoleTab();
             Log.SetConsoleTab(consoleTab);
@@ -888,6 +911,11 @@ namespace GUI
         {
             using var form = new UpdateAvailableForm();
             form.ShowDialog(this);
+        }
+
+        private int AdjustForDPI(float value)
+        {
+            return (int)(value * DeviceDpi / 96f);
         }
 
         private async Task CheckForUpdates()

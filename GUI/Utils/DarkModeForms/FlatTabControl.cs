@@ -1,17 +1,11 @@
 using GUI;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace DarkModeForms
 {
-    public class FlatTabControl : TabControl
+    public partial class FlatTabControl : TabControl
     {
         #region Public Properties
 
@@ -57,6 +51,7 @@ namespace DarkModeForms
             SetStyle(ControlStyles.SupportsTransparentBackColor, true);
             SetStyle(ControlStyles.UserPaint, true);
             base.InitLayout();
+
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -65,7 +60,7 @@ namespace DarkModeForms
             DrawControl(e.Graphics);
         }
 
-        internal void DrawControl(Graphics g)
+        public void DrawControl(Graphics g)
         {
             try
             {
@@ -112,8 +107,25 @@ namespace DarkModeForms
             catch { }
         }
 
-        internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
+        protected override void OnCreateControl()
         {
+            // Necessary to give tabs the correct width
+            base.OnCreateControl();
+            OnFontChanged(EventArgs.Empty);
+        }
+
+        protected override void OnFontChanged(EventArgs e)
+        {
+            // Necessary to give tabs the correct width
+            base.OnFontChanged(e);
+            IntPtr hFont = Font.ToHfont();
+
+            UpdateStyles();
+        }
+
+        public void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
+        {
+
             Rectangle tabRect = GetTabRect(nIndex);
             bool isSelected = (SelectedIndex == nIndex);
 
@@ -121,45 +133,44 @@ namespace DarkModeForms
             Color HeaderColor = isSelected ? SelectTabColor : BackColor;
             using (Brush brush = new SolidBrush(HeaderColor))
             {
-                var headerPen = new Pen(HeaderColor);
-                var headerUnderlinePen1 = new Pen(BackColor);
-                var headerUnderlinePen2 = new Pen(Color.DodgerBlue, 2);
-
-                g.FillRectangle(brush, tabRect);
-
-                if (isSelected)
+                using (var headerPen = new Pen(HeaderColor))
                 {
-                    g.DrawLine(headerUnderlinePen2,
-                        new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
-                }
+                    using (var headerUnderlinePen = new Pen(Color.DodgerBlue, tabRect.Height / 11))
+                    {
+                        g.FillRectangle(brush, tabRect);
 
-                headerPen.Dispose();
-                headerUnderlinePen1.Dispose();
-                headerUnderlinePen2.Dispose();
+                        if (isSelected)
+                        {
+                            g.DrawLine(headerUnderlinePen,
+                                new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
+                        }
+                    }
+                }
             }
 
-            Rectangle imageRect = tabRect;
-            imageRect.Height = (int)(imageRect.Height * 0.7);
-            var imagePadding = 7;
-            var textPadding = 3;
+            var imageScaleFactor = 0.7;
+            var imageSize = (int)(tabRect.Height * imageScaleFactor);
+            var imageHorizontalPadding = (int)(imageSize * 0.2);
 
-            Rectangle textRect = tabRect;
+            //center image by adding half of the difference between the tab height and the image height
+            var imageCenteringOffset = (tabRect.Height - imageSize) / 2;
+            var imageHorizontalPositioning = (int)(tabRect.X + imageCenteringOffset) + imageHorizontalPadding;
+            var imageVerticalPositioning = (int)(tabRect.Y + imageCenteringOffset);
+            Rectangle imageRect = new Rectangle(imageHorizontalPositioning, imageVerticalPositioning, imageSize, imageSize);
 
+            var textFlags = new TextFormatFlags() | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
             if (customTabPage.ImageIndex >= 0 && ImageList != null && ImageList.Images.Count > customTabPage.ImageIndex)
             {
+                Rectangle textRect = new Rectangle(imageHorizontalPositioning + imageSize, tabRect.Y, (tabRect.Width - (imageCenteringOffset + imageSize) - imageHorizontalPadding), tabRect.Height);
+
                 var image = ImageList.Images[customTabPage.ImageIndex];
-                g.DrawImage(image, imageRect.Left + imagePadding, imageRect.Top + 4, imageRect.Height, imageRect.Height);
+                g.DrawImage(image, imageRect.Left, imageRect.Top, imageRect.Height, imageRect.Height);
 
-                textRect.Offset(image.Width + imagePadding + textPadding, 0);
-
-                var flags = new TextFormatFlags() | TextFormatFlags.Left | TextFormatFlags.VerticalCenter;
-                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect,
-                     isSelected ? SelectedForeColor : ForeColor, flags);
+                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, isSelected ? SelectedForeColor : ForeColor, textFlags);
             }
             else
             {
-                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect,
-                     isSelected ? SelectedForeColor : ForeColor);
+                TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, textFlags);
             }
         }
     }

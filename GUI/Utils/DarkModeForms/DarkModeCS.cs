@@ -316,7 +316,7 @@ namespace DarkModeForms
                 fTab.SelectTabColor = OScolors.ControlLight;
                 fTab.SelectedForeColor = OScolors.TextActive;
                 fTab.BorderColor = OScolors.Background;
-                fTab.ForeColor = OScolors.TextActive;
+                fTab.ForeColor = OScolors.TextInactive;
                 fTab.LineColor = OScolors.Background;
                 fTab.Margin = new Padding(-10, 0, 0, 0);
             }
