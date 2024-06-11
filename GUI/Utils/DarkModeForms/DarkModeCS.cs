@@ -186,16 +186,6 @@ namespace DarkModeForms
             BorderStyle BStyle = BorderStyle.FixedSingle;
             FlatStyle FStyle = FlatStyle.Flat;
 
-            //Change the Colors only if its the default ones, this allows the user to set own colors:
-            if (control.BackColor == SystemColors.Control || control.BackColor == SystemColors.Window)
-            {
-                control.GetType().GetProperty("BackColor")?.SetValue(control, ThemeColors.Control);
-            }
-            if (control.ForeColor == SystemColors.ControlText || control.ForeColor == SystemColors.WindowText)
-            {
-                control.GetType().GetProperty("ForeColor")?.SetValue(control, ThemeColors.Text);
-            }
-
             var borderStyleInfo = control.GetType().GetProperty("BorderStyle");
             if (borderStyleInfo != null)
             {
@@ -214,13 +204,13 @@ namespace DarkModeForms
             }
             if (control is GroupBox group)
             {
-                group.BackColor = ThemeColors.Control;
+                group.BackColor = ThemeColors.Window;
                 group.ForeColor = ThemeColors.Text;
             }
             if (control is TableLayoutPanel table)
             {
                 // Process the panel within the container
-                table.BackColor = ThemeColors.Control;
+                table.BackColor = ThemeColors.Window;
                 table.BorderStyle = BorderStyle.None;
             }
             if (control is FlatTabControl fTab)
@@ -275,7 +265,7 @@ namespace DarkModeForms
                 button.FlatStyle = FStyle;
                 button.FlatAppearance.CheckedBackColor = ThemeColors.Control;
                 button.BackColor = ThemeColors.Control;
-                button.FlatAppearance.BorderColor = ThemeColors.WindowBorder;
+                button.FlatAppearance.BorderColor = ThemeColors.ControlBorder;
                 button.ForeColor = ThemeColors.Text;
             }
             if (control is Label label)
@@ -291,7 +281,7 @@ namespace DarkModeForms
             }
             if (control is CheckBox chk)
             {
-                chk.BackColor = ThemeColors.Control;
+                chk.BackColor = Color.Transparent;
                 chk.ForeColor = ThemeColors.Text;
                 chk.UseVisualStyleBackColor = true;
             }
@@ -302,7 +292,7 @@ namespace DarkModeForms
             if (control is ComboBox combo)
             {
                 combo.ForeColor = ThemeColors.Text;
-                combo.BackColor = ThemeColors.Control;
+                combo.BackColor = ThemeColors.Window;
             }
             if (control is MenuStrip menu)
             {
@@ -327,8 +317,8 @@ namespace DarkModeForms
             {
                 grid.EnableHeadersVisualStyles = false;
                 grid.BorderStyle = BorderStyle.FixedSingle;
-                grid.BackgroundColor = ThemeColors.Control;
-                grid.GridColor = ThemeColors.Control;
+                grid.BackgroundColor = ThemeColors.Window;
+                grid.GridColor = ThemeColors.Window;
 
                 grid.DefaultCellStyle.BackColor = ThemeColors.Window;
                 grid.DefaultCellStyle.ForeColor = ThemeColors.Text;
@@ -346,8 +336,8 @@ namespace DarkModeForms
             }
             if (control is PropertyGrid pGrid)
             {
-                pGrid.BackColor = ThemeColors.Control;
-                pGrid.ViewBackColor = ThemeColors.Control;
+                pGrid.BackColor = ThemeColors.Window;
+                pGrid.ViewBackColor = ThemeColors.Window;
                 pGrid.LineColor = ThemeColors.Window;
                 pGrid.ViewForeColor = ThemeColors.Text;
                 pGrid.ViewBorderColor = ThemeColors.ContainerBorder;
@@ -357,7 +347,7 @@ namespace DarkModeForms
             if (control is TreeView tree)
             {
                 tree.BorderStyle = BorderStyle.None;
-                tree.BackColor = ThemeColors.Control;
+                tree.BackColor = ThemeColors.Window;
             }
             if (control is TrackBar slider)
             {
@@ -366,15 +356,9 @@ namespace DarkModeForms
             if (control is CodeTextBox console)
             {
                 var dimmingFactor = 0.9;
-                var dimmedBackground = Color.FromArgb(
-                    (int)(ThemeColors.Control.A * dimmingFactor),
-                    (int)(ThemeColors.Control.R * dimmingFactor),
-                    (int)(ThemeColors.Control.G * dimmingFactor),
-                    (int)(ThemeColors.Control.B * dimmingFactor));
-
-                console.IndentBackColor = ThemeColors.Control;
-                console.ServiceLinesColor = ThemeColors.Control;
-                console.BackColor = dimmedBackground;
+                console.IndentBackColor = ThemeColors.Window;
+                console.ServiceLinesColor = ThemeColors.Window;
+                console.BackColor = ThemeColors.ContainerBorder;
                 console.FoldingIndicatorColor = ThemeColors.Control;
                 var col = new FastColoredTextBoxNS.ServiceColors();
                 col.ExpandMarkerBackColor = ThemeColors.Control;
@@ -408,7 +392,7 @@ namespace DarkModeForms
             if (control is ListBox listBox)
             {
                 listBox.ForeColor = ThemeColors.Text;
-                listBox.BackColor = ThemeColors.Control;
+                listBox.BackColor = ThemeColors.Window;
             }
             if (control is NumericUpDown numeric)
             {
@@ -418,17 +402,17 @@ namespace DarkModeForms
             if (control is TextBox textBox)
             {
                 textBox.ForeColor = ThemeColors.Text;
-                textBox.BackColor = ThemeColors.WindowBorder;
+                textBox.BackColor = ThemeColors.ContainerBorder;
                 textBox.BorderStyle = BorderStyle.None;
             }
             if (control is BetterListView listView)
             {
-                listView.BackColor = ThemeColors.Control;
+                listView.BackColor = ThemeColors.Window;
                 listView.ForeColor = ThemeColors.Text;
             }
             if (control is TreeView treeView)
             {
-                treeView.BackColor = ThemeColors.Control;
+                treeView.BackColor = ThemeColors.Window;
                 treeView.ForeColor = ThemeColors.Text;
                 treeView.LineColor = ThemeColors.Window;
             }
@@ -440,7 +424,7 @@ namespace DarkModeForms
             }
             if (control is ProgressBar pgBar)
             {
-                pgBar.BackColor = ThemeColors.Control;
+                pgBar.BackColor = ThemeColors.Window;
                 pgBar.ForeColor = ThemeColors.Accent;
             }
 
@@ -483,41 +467,41 @@ namespace DarkModeForms
 
             if (IsDarkMode)
             {
-                themeColors.Window = Color.FromArgb(32, 32, 32);
+                themeColors.Window = Color.FromArgb(42, 42, 42);
                 themeColors.WindowBorder = Color.FromArgb(18, 18, 18);
-                themeColors.WindowHighlight = Color.FromArgb(87, 87, 87);
+                themeColors.WindowHighlight = Color.FromArgb(57, 57, 57);
 
                 themeColors.Container = Color.FromArgb(43, 43, 43);
-                themeColors.ContainerBorder = Color.FromArgb(50, 50, 50);
-                themeColors.ContainerHighlight = Color.FromArgb(29, 29, 29);
+                themeColors.ContainerBorder = Color.FromArgb(30, 30, 30);
+                themeColors.ContainerHighlight = Color.FromArgb(59, 59, 59);
 
                 themeColors.Text = Color.White;
                 themeColors.TextInactive = Color.FromArgb(176, 176, 176);
                 themeColors.TextHighlight = Color.DodgerBlue;
 
                 themeColors.Control = Color.FromArgb(55, 55, 55);
-                themeColors.ControlBorder = Color.FromArgb(18, 18, 18);
+                themeColors.ControlBorder = Color.FromArgb(28, 28, 28);
                 themeColors.ControlHighlight = Color.FromArgb(67, 67, 67);
 
                 themeColors.Accent = Color.DodgerBlue;
             }
             else
             {
-                themeColors.Window = Color.FromArgb(200, 200, 200);
-                themeColors.WindowBorder = Color.FromArgb(180, 180, 180);
-                themeColors.WindowHighlight = Color.FromArgb(230, 230, 230);
+                themeColors.Window = Color.FromArgb(240, 240, 240);
+                themeColors.WindowBorder = Color.FromArgb(200, 200, 200);
+                themeColors.WindowHighlight = Color.FromArgb(255, 255, 255);
 
-                themeColors.Container = Color.FromArgb(220, 220, 220);
-                themeColors.ContainerBorder = Color.FromArgb(200, 200, 200);
-                themeColors.ContainerHighlight = Color.FromArgb(240, 240, 240);
+                themeColors.Container = Color.FromArgb(245, 245, 245);
+                themeColors.ContainerBorder = Color.FromArgb(215, 215, 215);
+                themeColors.ContainerHighlight = Color.FromArgb(255, 255, 255);
 
                 themeColors.Text = Color.Black;
                 themeColors.TextInactive = Color.FromArgb(100, 100, 100);
                 themeColors.TextHighlight = Color.DodgerBlue;
 
-                themeColors.Control = Color.FromArgb(240, 240, 240);
-                themeColors.ControlBorder = Color.FromArgb(220, 220, 220);
-                themeColors.ControlHighlight = Color.FromArgb(255, 255, 255);
+                themeColors.Control = Color.FromArgb(220, 220, 220);
+                themeColors.ControlBorder = Color.FromArgb(190, 190, 190);
+                themeColors.ControlHighlight = Color.FromArgb(235, 235, 235);
 
                 themeColors.Accent = Color.DodgerBlue;
             }
@@ -768,7 +752,7 @@ namespace DarkModeForms
         // Background of the whole ToolBar Or MenuBar:
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
-            e.ToolStrip.BackColor = themeColors.Container;
+            e.ToolStrip.BackColor = themeColors.Window;
             base.OnRenderToolStripBackground(e);
         }
 
@@ -1023,15 +1007,15 @@ namespace DarkModeForms
 
         public override Color ImageMarginGradientBegin
         {
-            get { return Colors.Control; }
+            get { return Colors.Container; }
         }
         public override Color ImageMarginGradientMiddle
         {
-            get { return Colors.Control; }
+            get { return Colors.Container; }
         }
         public override Color ImageMarginGradientEnd
         {
-            get { return Colors.Control; }
+            get { return Colors.Container; }
         }
     }
 }
