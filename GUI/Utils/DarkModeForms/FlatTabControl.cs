@@ -55,13 +55,13 @@ namespace DarkModeForms
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            this.Refresh();  // Forces the control to be redrawn
+            this.Invalidate();  // Forces the control to be redrawn
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            this.Refresh();  // Forces the control to be redrawn
+            this.Invalidate();  // Forces the control to be redrawn
         }
 
         protected override void OnPaint(PaintEventArgs e)

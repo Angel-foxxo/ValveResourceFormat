@@ -70,7 +70,7 @@ class NativeMethods
     public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
 
     [DllImport("dwmapi.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
 
     [Serializable, StructLayout(LayoutKind.Sequential)]
@@ -88,7 +88,7 @@ class NativeMethods
     }
 
     [DllImport("dwmapi.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
     public struct DWM_COLORIZATION_PARAMS
