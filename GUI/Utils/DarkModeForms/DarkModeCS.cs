@@ -183,13 +183,13 @@ namespace DarkModeForms
         /// <param name="control">Can be a Form or any Winforms Control.</param>
         public void ThemeControl(Control control)
         {
-            BorderStyle BStyle = BorderStyle.FixedSingle;
-            FlatStyle FStyle = FlatStyle.Flat;
+            var BStyle = BorderStyle.FixedSingle;
+            var FStyle = FlatStyle.Flat;
 
             var borderStyleInfo = control.GetType().GetProperty("BorderStyle");
             if (borderStyleInfo != null)
             {
-                BorderStyle borderStyle = (BorderStyle)borderStyleInfo.GetValue(control);
+                var borderStyle = (BorderStyle)borderStyleInfo.GetValue(control);
                 if ((BorderStyle)borderStyle != BorderStyle.None)
                 {
                     borderStyleInfo.SetValue(control, BStyle);
@@ -237,8 +237,8 @@ namespace DarkModeForms
                     lView.OwnerDraw = true;
                     void DrawColumn(object sender, DrawListViewColumnHeaderEventArgs e)
                     {
-                        using SolidBrush backBrush = new SolidBrush(ThemeColors.ContainerHighlight);
-                        using SolidBrush foreBrush = new SolidBrush(ThemeColors.Text);
+                        using var backBrush = new SolidBrush(ThemeColors.ContainerHighlight);
+                        using var foreBrush = new SolidBrush(ThemeColors.Text);
                         using var sf = new StringFormat();
                         sf.Alignment = StringAlignment.Center;
                         e.Graphics.FillRectangle(backBrush, e.Bounds);
@@ -355,18 +355,19 @@ namespace DarkModeForms
             }
             if (control is CodeTextBox console)
             {
-                var dimmingFactor = 0.9;
                 console.IndentBackColor = ThemeColors.Window;
                 console.ServiceLinesColor = ThemeColors.Window;
                 console.BackColor = ThemeColors.ContainerBorder;
                 console.FoldingIndicatorColor = ThemeColors.Control;
-                var col = new FastColoredTextBoxNS.ServiceColors();
-                col.ExpandMarkerBackColor = ThemeColors.Control;
-                col.ExpandMarkerForeColor = ThemeColors.Text;
-                col.CollapseMarkerForeColor = ThemeColors.Text;
-                col.CollapseMarkerBackColor = ThemeColors.Control;
-                col.ExpandMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 110);
-                col.CollapseMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 90);
+                var col = new FastColoredTextBoxNS.ServiceColors
+                {
+                    ExpandMarkerBackColor = ThemeColors.Control,
+                    ExpandMarkerForeColor = ThemeColors.Text,
+                    CollapseMarkerForeColor = ThemeColors.Text,
+                    CollapseMarkerBackColor = ThemeColors.Control,
+                    ExpandMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 110),
+                    CollapseMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 90)
+                };
                 console.ServiceColors = col;
                 console.ForeColor = ThemeColors.Text;
             }
@@ -456,14 +457,14 @@ namespace DarkModeForms
                 intResult = 1;
             }
 
-            return intResult <= 0 ? true : false;
+            return intResult <= 0;
         }
 
         public static ThemeColors GetAppTheme(Form Window = null)
         {
             var themeColors = new ThemeColors();
 
-            bool IsDarkMode = (IsWindowsDarkThemed());
+            var IsDarkMode = (IsWindowsDarkThemed());
 
             if (IsDarkMode)
             {
@@ -543,27 +544,27 @@ namespace DarkModeForms
         /// <param name="c">Color</param>
         public static Bitmap ChangeToColor(Bitmap bmp, Color c)
         {
-            Bitmap bmp2 = new Bitmap(bmp.Width, bmp.Height);
-            using (Graphics g = Graphics.FromImage(bmp2))
+            var bmp2 = new Bitmap(bmp.Width, bmp.Height);
+            using (var g = Graphics.FromImage(bmp2))
             {
                 g.InterpolationMode = InterpolationMode.HighQualityBilinear;
                 g.CompositingQuality = CompositingQuality.HighQuality;
                 g.SmoothingMode = SmoothingMode.HighQuality;
 
-                float tR = c.R / 255f;
-                float tG = c.G / 255f;
-                float tB = c.B / 255f;
+                var tR = c.R / 255f;
+                var tG = c.G / 255f;
+                var tB = c.B / 255f;
 
-                System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(new float[][]
-                {
-                new float[] { 1,    0,  0,  0,  0 },
-                new float[] { 0,    1,  0,  0,  0 },
-                new float[] { 0,    0,  1,  0,  0 },
-                new float[] { 0,    0,  0,  1,  0 },  //<- not changing alpha
-				new float[] { tR,   tG, tB, 0,  1 }
-                });
+                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(
+                [
+                [1,    0,  0,  0,  0],
+                [0,    1,  0,  0,  0],
+                [0,    0,  1,  0,  0],
+                [0,    0,  0,  1,  0],  //<- not changing alpha
+				[tR,   tG, tB, 0,  1]
+                ]);
 
-                System.Drawing.Imaging.ImageAttributes attributes = new System.Drawing.Imaging.ImageAttributes();
+                var attributes = new System.Drawing.Imaging.ImageAttributes();
                 attributes.SetColorMatrix(colorMatrix);
 
                 g.DrawImage(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height),
@@ -645,20 +646,20 @@ namespace DarkModeForms
 				SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
 				Causes a window to use a different set of visual style information than its class normally uses.
 			 */
-            int[] DarkModeOn = new[] { 0 }; //<- 1=True, 0=False
+            var DarkModeOn = new[] { 0 }; //<- 1=True, 0=False
 
-            string windowsTheme = "Explorer";
-            string windowsThemeCombo = "Explorer";
+            var windowsTheme = "Explorer";
+            var windowsThemeCombo = "Explorer";
 
             if (IsWindowsDarkThemed())
             {
                 windowsTheme = "DarkMode_Explorer";
                 windowsThemeCombo = "DarkMode_CFD";
-                DarkModeOn = new[] { 1 };
+                DarkModeOn = [1];
             }
             else
             {
-                DarkModeOn = new[] { 0 };
+                DarkModeOn = [0];
             }
 
 
@@ -677,27 +678,17 @@ namespace DarkModeForms
             }
 
             if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0)
+            {
                 _ = DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
+            }
 
             foreach (Control child in control.Controls)
             {
                 if (child.Controls.Count != 0)
+                {
                     ApplySystemTheme(child);
+                }
             }
-        }
-
-        private static Color GetReadableColor(Color backgroundColor)
-        {
-            // Calculate the relative luminance of the background color.
-            // Normalize values to 0-1 range first.
-            double normalizedR = backgroundColor.R / 255.0;
-            double normalizedG = backgroundColor.G / 255.0;
-            double normalizedB = backgroundColor.B / 255.0;
-            double luminance = 0.299 * normalizedR + 0.587 * normalizedG + 0.114 * normalizedB;
-
-            // Choose a contrasting foreground color based on the luminance,
-            // with a slight bias towards lighter colors for better readability.
-            return luminance < 0.5 ? Color.FromArgb(182, 180, 215) : Color.FromArgb(34, 34, 34); // Dark gray for light backgrounds
         }
         #endregion
     }
@@ -759,15 +750,15 @@ namespace DarkModeForms
         // For Normal Buttons on a ToolBar:
         protected override void OnRenderButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var g = e.Graphics;
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
-            Color gradientBegin = themeColors.Container;
-            Color gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.Container;
+            var gradientEnd = themeColors.Container;
 
-            Pen BordersPencil = new Pen(themeColors.Container);
+            var BordersPencil = new Pen(themeColors.Container);
 
-            ToolStripButton button = e.Item as ToolStripButton;
+            var button = e.Item as ToolStripButton;
             if (button.Pressed || button.Checked)
             {
                 gradientBegin = themeColors.Control;
@@ -805,9 +796,9 @@ namespace DarkModeForms
                 bounds.X,
                 bounds.Height - 1);
 
-            ToolStrip toolStrip = button.Owner;
+            var toolStrip = button.Owner;
 
-            if (!(button.Owner.GetItemAt(button.Bounds.X, button.Bounds.Bottom + 1) is ToolStripButton nextItem))
+            if (button.Owner.GetItemAt(button.Bounds.X, button.Bounds.Bottom + 1) is not ToolStripButton nextItem)
             {
                 g.DrawLine(
                     BordersPencil,
@@ -823,12 +814,12 @@ namespace DarkModeForms
         // For DropDown Buttons on a ToolBar:
         protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
-            Color gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
-            Color gradientEnd = themeColors.Container;
+            var g = e.Graphics;
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
+            var gradientEnd = themeColors.Container;
 
-            using Pen BordersPencil = new Pen(themeColors.Container);
+            using var BordersPencil = new Pen(themeColors.Container);
 
             //1. Determine the colors to use:
             if (e.Item.Pressed)
@@ -869,9 +860,9 @@ namespace DarkModeForms
         // For SplitButtons on a ToolBar:
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
-            Color gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
-            Color gradientEnd = themeColors.Container;
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
+            var gradientEnd = themeColors.Container;
 
             //1. Determine the colors to use:
             if (e.Item.Pressed)
@@ -896,12 +887,12 @@ namespace DarkModeForms
             //3. Draws the Chevron:
             #region Chevron
 
-            int Padding = 2; //<- From the right side
-            Size cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
-            Pen ChevronPen = new Pen(themeColors.TextInactive, 2); //<- Color and Border Width
-            Point P1 = new Point(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
-            Point P2 = new Point(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
-            Point P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
+            var Padding = 2; //<- From the right side
+            var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
+            var ChevronPen = new Pen(themeColors.TextInactive, 2); //<- Color and Border Width
+            var P1 = new Point(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
+            var P2 = new Point(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
+            var P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
 
             e.Graphics.DrawLine(ChevronPen, P1, P3);
             e.Graphics.DrawLine(ChevronPen, P2, P3);
@@ -940,13 +931,13 @@ namespace DarkModeForms
         // For Menu Items BackColor:
         protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
         {
-            Graphics g = e.Graphics;
-            Rectangle bounds = new Rectangle(Point.Empty, e.Item.Size);
+            var g = e.Graphics;
+            var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
-            Color gradientBegin = themeColors.Container;
-            Color gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.Container;
+            var gradientEnd = themeColors.Container;
 
-            bool DrawIt = false;
+            var DrawIt = false;
             var _menu = e.Item as ToolStripItem;
             if (_menu.Pressed)
             {
@@ -978,11 +969,11 @@ namespace DarkModeForms
             if (ColorizeIcons && e.Image != null)
             {
                 // Get the current icon
-                Image image = e.Image;
-                Color _ClearColor = e.Item.Enabled ? themeColors.Text : themeColors.WindowBorder;
+                var image = e.Image;
+                var _ClearColor = e.Item.Enabled ? themeColors.Text : themeColors.WindowBorder;
 
                 // Create a new image with the desired color adjustments
-                using Image adjustedImage = DarkModeCS.ChangeToColor(image, _ClearColor);
+                using var adjustedImage = DarkModeCS.ChangeToColor(image, _ClearColor);
                 e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
                 e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
                 e.Graphics.SmoothingMode = SmoothingMode.HighQuality;

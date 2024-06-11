@@ -55,13 +55,13 @@ namespace DarkModeForms
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            this.Invalidate();  // Forces the control to be redrawn
+            Invalidate();  // Forces the control to be redrawn
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            this.Invalidate();  // Forces the control to be redrawn
+            Invalidate();  // Forces the control to be redrawn
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -77,16 +77,16 @@ namespace DarkModeForms
                 return;
             }
 
-            Rectangle clientRectangle = ClientRectangle;
+            var clientRectangle = ClientRectangle;
             clientRectangle.Inflate(2, 2);
 
             // Whole Control Background:
             using Brush bBackColor = new SolidBrush(BackColor);
             g.FillRectangle(bBackColor, ClientRectangle);
 
-            Region region = g.Clip;
+            var region = g.Clip;
 
-            for (int i = 0; i < TabCount; i++)
+            for (var i = 0; i < TabCount; i++)
             {
                 DrawTab(g, TabPages[i], i);
                 TabPages[i].BackColor = TabColor;
@@ -94,7 +94,7 @@ namespace DarkModeForms
 
             g.Clip = region;
 
-            using Pen border = new Pen(BorderColor);
+            using var border = new Pen(BorderColor);
             g.DrawRectangle(border, clientRectangle);
 
             if (SelectedTab != null)
@@ -120,24 +120,24 @@ namespace DarkModeForms
         {
             // Necessary to give tabs the correct width
             base.OnFontChanged(e);
-            IntPtr hFont = Font.ToHfont();
+            var hFont = Font.ToHfont();
 
             UpdateStyles();
         }
 
         public void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
         {
-            bool isHovered = false;
-            bool isSelected = (SelectedIndex == nIndex);
+            var isHovered = false;
+            var isSelected = (SelectedIndex == nIndex);
 
-            Rectangle tabRect = GetTabRect(nIndex);
-            if (tabRect.Contains(this.PointToClient(Cursor.Position)))
+            var tabRect = GetTabRect(nIndex);
+            if (tabRect.Contains(PointToClient(Cursor.Position)))
             {
                 isHovered = true;
             }
 
             // Draws the Tab Header:
-            Color HeaderColor = isSelected ? SelectTabColor : isHovered ? HoverColor : BackColor;
+            var HeaderColor = isSelected ? SelectTabColor : isHovered ? HoverColor : BackColor;
             using Brush brush = new SolidBrush(HeaderColor);
             using var headerPen = new Pen(HeaderColor);
             using var headerUnderlinePen = new Pen(Color.DodgerBlue, tabRect.Height / 11);
@@ -158,12 +158,12 @@ namespace DarkModeForms
             var imageCenteringOffset = (tabRect.Height - imageSize) / 2;
             var imageHorizontalPositioning = (int)(tabRect.X + imageCenteringOffset) + imageHorizontalPadding;
             var imageVerticalPositioning = (int)(tabRect.Y + imageCenteringOffset);
-            Rectangle imageRect = new Rectangle(imageHorizontalPositioning, imageVerticalPositioning, imageSize, imageSize);
+            var imageRect = new Rectangle(imageHorizontalPositioning, imageVerticalPositioning, imageSize, imageSize);
 
             var textFlags = new TextFormatFlags() | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
             if (customTabPage.ImageIndex >= 0 && ImageList != null && ImageList.Images.Count > customTabPage.ImageIndex)
             {
-                Rectangle textRect = new Rectangle(imageHorizontalPositioning + imageSize, tabRect.Y, (tabRect.Width - (imageCenteringOffset + imageSize) - imageHorizontalPadding), tabRect.Height);
+                var textRect = new Rectangle(imageHorizontalPositioning + imageSize, tabRect.Y, (tabRect.Width - (imageCenteringOffset + imageSize) - imageHorizontalPadding), tabRect.Height);
 
                 var image = ImageList.Images[customTabPage.ImageIndex];
                 g.DrawImage(image, imageRect.Left, imageRect.Top, imageRect.Height, imageRect.Height);
