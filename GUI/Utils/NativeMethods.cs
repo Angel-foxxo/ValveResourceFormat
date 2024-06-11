@@ -91,20 +91,6 @@ class NativeMethods
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
-    public struct DWM_COLORIZATION_PARAMS
-    {
-        public uint clrColor;
-        public uint clrAfterGlow;
-        public uint nIntensity;
-        public uint clrAfterGlowBalance;
-        public uint clrBlurBalance;
-        public uint clrGlassReflectionIntensity;
-        public bool fOpaque;
-    }
-    [DllImport("dwmapi.dll", EntryPoint = "#127", PreserveSig = false)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern void DwmGetColorizationParameters(out DWM_COLORIZATION_PARAMS parameters);
-
     [DllImport("Gdi32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
     public static extern IntPtr CreateRoundRectRgn
