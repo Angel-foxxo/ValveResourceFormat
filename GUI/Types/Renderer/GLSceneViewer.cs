@@ -530,14 +530,11 @@ namespace GUI.Types.Renderer
 
             if (mode.IsHeader)
             {
-                var headerBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.Surface);
-                var textBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive);
+                using var headerBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.Surface);
+                using var textBrush = new SolidBrush(MainForm.DarkModeCS.OScolors.TextActive);
 
                 e.Graphics.FillRectangle(headerBrush, e.Bounds);
                 e.Graphics.DrawString(mode.Name, renderModeBoldFont, textBrush, e.Bounds);
-
-                headerBrush.Dispose();
-                textBrush.Dispose();
             }
             else
             {

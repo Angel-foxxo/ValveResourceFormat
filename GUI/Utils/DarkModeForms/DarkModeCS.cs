@@ -1,13 +1,10 @@
 using Microsoft.Win32;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using GUI.Controls;
-using System;
 using System.ComponentModel.Design;
 using static GUI.Utils.NativeMethods;
-using GUI;
 using GUI.Types.PackageViewer;
 
 namespace DarkModeForms
@@ -250,18 +247,12 @@ namespace DarkModeForms
                     lView.OwnerDraw = true;
                     void DrawColumn(object sender, DrawListViewColumnHeaderEventArgs e)
                     {
-                        using (SolidBrush backBrush = new SolidBrush(OScolors.ControlLight))
-                        {
-                            using (SolidBrush foreBrush = new SolidBrush(OScolors.TextActive))
-                            {
-                                using (var sf = new StringFormat())
-                                {
-                                    sf.Alignment = StringAlignment.Center;
-                                    e.Graphics.FillRectangle(backBrush, e.Bounds);
-                                    e.Graphics.DrawString(e.Header.Text, lView.Font, foreBrush, e.Bounds, sf);
-                                }
-                            }
-                        }
+                        using SolidBrush backBrush = new SolidBrush(OScolors.ControlLight);
+                        using SolidBrush foreBrush = new SolidBrush(OScolors.TextActive);
+                        using var sf = new StringFormat();
+                        sf.Alignment = StringAlignment.Center;
+                        e.Graphics.FillRectangle(backBrush, e.Bounds);
+                        e.Graphics.DrawString(e.Header.Text, lView.Font, foreBrush, e.Bounds, sf);
 
                     };
                     void Dispose(object sender, EventArgs e)
@@ -397,8 +388,8 @@ namespace DarkModeForms
             }
             if (control is ByteViewer hexViewer)
             {
-                hexViewer.BackColor = ControlPaint.Dark(OScolors.Control, -10);
-                hexViewer.ForeColor = OScolors.TextActive;
+                //hexViewer.BackColor = ControlPaint.Dark(OScolors.Control, -10);
+                //hexViewer.ForeColor = OScolors.TextActive;
             }
             if (control.ContextMenuStrip != null)
             {
@@ -669,6 +660,10 @@ namespace DarkModeForms
         /// <param name="control"></param>
         private static void ApplySystemTheme(Control control = null)
         {
+            if(control is ByteViewer)
+            {
+                return;
+            }
             /* 			    
 				DWMWA_USE_IMMERSIVE_DARK_MODE:   https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
 
@@ -829,14 +824,13 @@ namespace DarkModeForms
                 gradientEnd = MyColors.Accent;
             }
 
-            using (Brush b = new LinearGradientBrush(
+            using Brush b = new LinearGradientBrush(
                 bounds,
                 gradientBegin,
                 gradientEnd,
-                LinearGradientMode.Vertical))
-            {
-                g.FillRectangle(b, bounds);
-            }
+                LinearGradientMode.Vertical);
+
+            g.FillRectangle(b, bounds);
 
             e.Graphics.DrawRectangle(
                 BordersPencil,
@@ -879,7 +873,7 @@ namespace DarkModeForms
             Color gradientBegin = MyColors.Background; // Color.FromArgb(203, 225, 252);
             Color gradientEnd = MyColors.Background;
 
-            Pen BordersPencil = new Pen(MyColors.Background);
+            using Pen BordersPencil = new Pen(MyColors.Background);
 
             //1. Determine the colors to use:
             if (e.Item.Pressed)
@@ -894,16 +888,12 @@ namespace DarkModeForms
             }
 
             //2. Draw the Box around the Control
-            using (Brush b = new LinearGradientBrush(
+            using Brush b = new LinearGradientBrush(
                 bounds,
                 gradientBegin,
                 gradientEnd,
-                LinearGradientMode.Vertical))
-            {
-                e.Graphics.FillRectangle(b, bounds);
-            }
-
-            BordersPencil.Dispose();
+                LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(b, bounds);
 
             //3. Draws the Chevron:
             #region Chevron
@@ -941,14 +931,12 @@ namespace DarkModeForms
             }
 
             //2. Draw the Box around the Control
-            using (Brush b = new LinearGradientBrush(
+            using Brush b = new LinearGradientBrush(
                 bounds,
                 gradientBegin,
                 gradientEnd,
-                LinearGradientMode.Vertical))
-            {
-                e.Graphics.FillRectangle(b, bounds);
-            }
+                LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(b, bounds);
 
             //3. Draws the Chevron:
             #region Chevron
@@ -1020,14 +1008,12 @@ namespace DarkModeForms
 
             if (DrawIt)
             {
-                using (Brush b = new LinearGradientBrush(
+                using Brush b = new LinearGradientBrush(
                 bounds,
                 gradientBegin,
                 gradientEnd,
-                LinearGradientMode.Vertical))
-                {
-                    g.FillRectangle(b, bounds);
-                }
+                LinearGradientMode.Vertical);
+                g.FillRectangle(b, bounds);
             }
         }
 
@@ -1041,13 +1027,11 @@ namespace DarkModeForms
                 Color _ClearColor = e.Item.Enabled ? MyColors.TextInactive : MyColors.SurfaceDark;
 
                 // Create a new image with the desired color adjustments
-                using (Image adjustedImage = DarkModeCS.ChangeToColor(image, _ClearColor))
-                {
-                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
-                }
+                using Image adjustedImage = DarkModeCS.ChangeToColor(image, _ClearColor);
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
             }
             else
             {
