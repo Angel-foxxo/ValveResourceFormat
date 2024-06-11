@@ -778,6 +778,7 @@ namespace GUI.Types.PackageViewer
                 Dock = DockStyle.Fill
             };
             tabs.Controls.Add(tab);
+            MainForm.DarkModeCS.ThemeControl(tabs);
 
             rightPanel.Controls.Add(tabs);
 

@@ -167,6 +167,7 @@ namespace GUI.Utils
 
             var tab = new TabPage(CONSOLE);
             tab.Controls.Add(control);
+            MainForm.DarkModeCS.ThemeControl(control);
 
             loggerOut = new MyLogger((message) => WriteLine(Log.Category.INFO, CONSOLE, message));
             Console.SetOut(loggerOut);

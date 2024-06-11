@@ -68,7 +68,6 @@ namespace GUI.Types.Renderer
 
                 SetEnabledLayers(new HashSet<string>(worldLayers));
             });
-            worldLayersComboBox.BorderStyle = BorderStyle.FixedSingle;
 
             physicsGroupsComboBox = AddMultiSelection("Physics Groups", null, (physicsGroups) =>
             {
@@ -79,7 +78,6 @@ namespace GUI.Types.Renderer
 
                 SetEnabledPhysicsGroups(new HashSet<string>(physicsGroups));
             });
-            physicsGroupsComboBox.BorderStyle = BorderStyle.FixedSingle;
 
             savedCameraPositionsControl = new SavedCameraPositionsControl();
             savedCameraPositionsControl.SaveCameraRequest += OnSaveCameraRequest;

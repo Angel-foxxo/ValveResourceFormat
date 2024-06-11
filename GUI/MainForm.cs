@@ -19,6 +19,7 @@ using GUI.Utils;
 using SteamDatabase.ValvePak;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.Utils;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace GUI
 {
@@ -63,33 +64,15 @@ namespace GUI
             DarkModeCS = new DarkModeCS();
             DarkModeCS.Style(this);
 
+            InitializeComponent();
+
+            DarkModeCS.ThemeControl(tabContextMenuStrip);
+            DarkModeCS.ThemeControl(vpkContextMenu);
+            DarkModeCS.ThemeControl(vpkEditingContextMenu);
+
+            mainTabs.ImageList = ImageList;
             var size = AdjustForDPI(16f);
             ImageList.ImageSize = new Size(size, size);
-
-            mainTabs = new FlatTabControl();
-            mainTabs.Appearance = TabAppearance.Buttons;
-            mainTabs.BorderColor = System.Drawing.SystemColors.GrayText;
-            mainTabs.Dock = DockStyle.Fill;
-            mainTabs.Font = new System.Drawing.Font("Segoe UI", 9F);
-            mainTabs.LineColor = System.Drawing.Color.FromArgb(136, 54, 82, 113);
-            mainTabs.Location = new System.Drawing.Point(0, 24);
-            mainTabs.Margin = new Padding(0);
-            mainTabs.Name = "mainTabs";
-            mainTabs.Padding = new System.Drawing.Point(0, 0);
-            mainTabs.SelectedForeColor = System.Drawing.SystemColors.ControlText;
-            mainTabs.SelectedIndex = 0;
-            mainTabs.SelectTabColor = System.Drawing.SystemColors.ControlLightLight;
-            mainTabs.Size = new System.Drawing.Size(1300, 776);
-            mainTabs.TabColor = System.Drawing.SystemColors.ButtonFace;
-            mainTabs.TabIndex = 1;
-            mainTabs.MouseClick += OnTabClick;
-            mainTabs.ImageList = ImageList;
-            mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
-            Controls.Add(mainTabs);
-
-            AutoScaleDimensions = new Size(4,16);
-
-            InitializeComponent();
 
             var consoleTab = new ConsoleTab();
             Log.SetConsoleTab(consoleTab);
@@ -629,6 +612,7 @@ namespace GUI
                         var control = new CodeTextBox(ex.ToString());
 
                         tab.Controls.Add(control);
+                        DarkModeCS.ThemeControl(control);
 
                         return false;
                     });
@@ -643,6 +627,7 @@ namespace GUI
                     Cursor.Current = Cursors.WaitCursor;
 
                     tab.SuspendLayout();
+                    DarkModeCS.ThemeControl(tab);
 
                     try
                     {
@@ -654,6 +639,7 @@ namespace GUI
                                 continue;
                             }
 
+                            DarkModeCS.ThemeControl(c);
                             tab.Controls.Add(c);
                         }
                     }
@@ -854,6 +840,7 @@ namespace GUI
                 {
                     loadingFile.Dispose();
                     explorerTabRef.Controls.Add(explorer);
+                    MainForm.DarkModeCS.ThemeControl(explorer);
                 });
             }).ContinueWith(t =>
             {
@@ -938,21 +925,6 @@ namespace GUI
                 using var form = new UpdateAvailableForm();
                 form.ShowDialog(this);
             });
-        }
-
-        private void vpkContextMenu_Opening(object sender, CancelEventArgs e)
-        {
-            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
-        }
-
-        private void tabContextMenuStrip_Opening(object sender, CancelEventArgs e)
-        {
-            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
-        }
-
-        private void vpkEditingContextMenu_Opening(object sender, CancelEventArgs e)
-        {
-            DarkModeCS.ThemeControl((ContextMenuStrip)sender);
         }
     }
 }

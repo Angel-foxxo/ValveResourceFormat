@@ -22,7 +22,7 @@ namespace GUI.Types.Viewers
             return magic == ShaderFile.MAGIC;
         }
 
-        public class ShaderTabControl : TabControl
+        public class ShaderTabControl : FlatTabControl
         {
             public ShaderTabControl() : base() { }
             protected override void OnKeyDown(KeyEventArgs ke)

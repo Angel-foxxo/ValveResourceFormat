@@ -71,6 +71,8 @@ namespace GUI.Controls
                 }));
             };
 
+            selectionControl.BorderStyle = BorderStyle.FixedSingle;
+
             return selectionControl.CheckedListBox;
         }
 

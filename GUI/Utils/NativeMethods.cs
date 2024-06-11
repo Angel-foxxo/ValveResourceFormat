@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace GUI.Utils;
@@ -60,7 +61,67 @@ class NativeMethods
         }
     };
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern bool GetComboBoxInfo(IntPtr hwnd, [In, Out] ref NativeMethods.COMBOBOXINFO cbInfo);
+    public static extern bool GetComboBoxInfo(IntPtr hwnd, [In, Out] ref NativeMethods.COMBOBOXINFO cbInfo);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPWStr)] string lParam);
+
+    [DllImport("dwmapi.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+
+    [Serializable, StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+
+        public Rectangle ToRectangle()
+        {
+            return Rectangle.FromLTRB(Left, Top, Right, Bottom);
+        }
+    }
+
+    [DllImport("dwmapi.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
+
+    public struct DWM_COLORIZATION_PARAMS
+    {
+        public uint clrColor;
+        public uint clrAfterGlow;
+        public uint nIntensity;
+        public uint clrAfterGlowBalance;
+        public uint clrBlurBalance;
+        public uint clrGlassReflectionIntensity;
+        public bool fOpaque;
+    }
+    [DllImport("dwmapi.dll", EntryPoint = "#127", PreserveSig = false)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static extern void DwmGetColorizationParameters(out DWM_COLORIZATION_PARAMS parameters);
+
+    [DllImport("Gdi32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern IntPtr CreateRoundRectRgn
+    (
+        int nLeftRect,     // x-coordinate of upper-left corner
+        int nTopRect,      // y-coordinate of upper-left corner
+        int nRightRect,    // x-coordinate of lower-right corner
+        int nBottomRect,   // y-coordinate of lower-right corner
+        int nWidthEllipse, // height of ellipse
+        int nHeightEllipse // width of ellipse
+    );
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern IntPtr GetDC(IntPtr hwnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    public static extern IntPtr ReleaseDC(IntPtr hwnd, IntPtr hdc);
 }

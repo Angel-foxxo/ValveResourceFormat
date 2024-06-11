@@ -79,6 +79,7 @@ namespace GUI
             vpkEditRemoveThisFolderToolStripMenuItem = new ToolStripMenuItem();
             vpkEditRemoveThisFileToolStripMenuItem = new ToolStripMenuItem();
             vpkEditSaveToDiskToolStripMenuItem = new ToolStripMenuItem();
+            mainTabs = new FlatTabControl();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
             vpkContextMenu.SuspendLayout();
@@ -92,7 +93,7 @@ namespace GUI
             menuStrip.Location = new System.Drawing.Point(0, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new System.Drawing.Size(1300, 24);
+            menuStrip.Size = new System.Drawing.Size(750, 24);
             menuStrip.TabIndex = 0;
             menuStrip.Text = "menuStrip1";
             // 
@@ -212,7 +213,6 @@ namespace GUI
             tabContextMenuStrip.LayoutStyle = ToolStripLayoutStyle.Table;
             tabContextMenuStrip.Name = "contextMenuStrip1";
             tabContextMenuStrip.Size = new System.Drawing.Size(234, 214);
-            tabContextMenuStrip.Opening += tabContextMenuStrip_Opening;
             // 
             // closeToolStripMenuItem
             // 
@@ -278,7 +278,6 @@ namespace GUI
             vpkContextMenu.Items.AddRange(new ToolStripItem[] { extractToolStripMenuItem, decompileToolStripMenuItem, toolStripSeparator1, copyFileNameToolStripMenuItem, copyFileNameOnDiskToolStripMenuItem, toolStripSeparator3, openWithDefaultAppToolStripMenuItem, viewAssetInfoToolStripMenuItem, verifyPackageContentsToolStripMenuItem, recoverDeletedToolStripMenuItem });
             vpkContextMenu.Name = "vpkContextMenu";
             vpkContextMenu.Size = new System.Drawing.Size(209, 192);
-            vpkContextMenu.Opening += vpkContextMenu_Opening;
             // 
             // extractToolStripMenuItem
             // 
@@ -351,7 +350,6 @@ namespace GUI
             vpkEditingContextMenu.Items.AddRange(new ToolStripItem[] { vpkEditCreateFolderToolStripMenuItem, vpkEditAddExistingFolderToolStripMenuItem, vpkEditAddExistingFilesToolStripMenuItem, vpkEditRemoveThisFolderToolStripMenuItem, vpkEditRemoveThisFileToolStripMenuItem, vpkEditSaveToDiskToolStripMenuItem });
             vpkEditingContextMenu.Name = "vpkEditingContextMenu";
             vpkEditingContextMenu.Size = new System.Drawing.Size(175, 136);
-            vpkEditingContextMenu.Opening += vpkEditingContextMenu_Opening;
             // 
             // vpkEditCreateFolderToolStripMenuItem
             // 
@@ -401,12 +399,33 @@ namespace GUI
             vpkEditSaveToDiskToolStripMenuItem.Text = "&Save VPK to disk";
             vpkEditSaveToDiskToolStripMenuItem.Click += OnSaveVPKToDiskToolStripMenuItem_Click;
             // 
+            // mainTabs
+            // 
+            mainTabs.Appearance = TabAppearance.Buttons;
+            mainTabs.BorderColor = System.Drawing.SystemColors.GrayText;
+            mainTabs.Dock = DockStyle.Fill;
+            mainTabs.Font = new System.Drawing.Font("Segoe UI", 9F);
+            mainTabs.LineColor = System.Drawing.Color.FromArgb(136, 54, 82, 113);
+            mainTabs.Location = new System.Drawing.Point(0, 24);
+            mainTabs.Margin = new Padding(0);
+            mainTabs.Name = "mainTabs";
+            mainTabs.Padding = new System.Drawing.Point(0, 0);
+            mainTabs.SelectedForeColor = System.Drawing.SystemColors.ControlText;
+            mainTabs.SelectedIndex = 0;
+            mainTabs.SelectTabColor = System.Drawing.SystemColors.ControlLightLight;
+            mainTabs.Size = new System.Drawing.Size(750, 386);
+            mainTabs.TabColor = System.Drawing.SystemColors.ButtonFace;
+            mainTabs.TabIndex = 1;
+            mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
+            mainTabs.MouseClick += OnTabClick;
+            // 
             // MainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(1300, 800);
+            ClientSize = new System.Drawing.Size(750, 410);
+            Controls.Add(mainTabs);
             Controls.Add(menuStrip);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip;

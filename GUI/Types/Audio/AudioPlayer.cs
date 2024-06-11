@@ -31,17 +31,17 @@ namespace GUI.Types.Audio
                     Sound.AudioFileType.AAC => new StreamMediaFoundationReader(stream),
                     _ => throw new UnexpectedMagicException("Dont know how to play", (int)soundData.SoundType, nameof(soundData.SoundType)),
                 };
-                using (var audio = new AudioPlaybackPanel(waveStream))
+                var audio = new AudioPlaybackPanel(waveStream);
+
+                tab.Controls.Add(audio);
+
+                MainForm.DarkModeCS.ThemeControl(audio);
+
+                if (autoPlay)
                 {
-                    MainForm.DarkModeCS.ThemeControl(audio);
-
-                    tab.Controls.Add(audio);
-
-                    if (autoPlay)
-                    {
-                        audio.HandleCreated += OnHandleCreated;
-                    }
+                    audio.HandleCreated += OnHandleCreated;
                 }
+
             }
             catch (Exception e)
             {
