@@ -6,6 +6,7 @@ using GUI.Controls;
 using System.ComponentModel.Design;
 using static GUI.Utils.NativeMethods;
 using GUI.Types.PackageViewer;
+using System.Windows.Forms.VisualStyles;
 
 namespace DarkModeForms
 {

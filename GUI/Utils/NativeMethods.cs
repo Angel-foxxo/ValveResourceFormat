@@ -81,7 +81,7 @@ class NativeMethods
         public int Right;
         public int Bottom;
 
-        public Rectangle ToRectangle()
+        public readonly Rectangle ToRectangle()
         {
             return Rectangle.FromLTRB(Left, Top, Right, Bottom);
         }
