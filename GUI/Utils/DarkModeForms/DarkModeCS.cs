@@ -4,9 +4,9 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using GUI.Controls;
 using System.ComponentModel.Design;
-using static GUI.Utils.NativeMethods;
 using GUI.Types.PackageViewer;
-using System.Windows.Forms.VisualStyles;
+using System.Runtime.InteropServices;
+using Windows.Win32.UI.Controls;
 
 namespace DarkModeForms
 {
@@ -153,7 +153,7 @@ namespace DarkModeForms
         public static IntPtr GetHeaderControl(ListView list)
         {
             const int LVM_GETHEADER = 0x1000 + 31;
-            return SendMessage(list.Handle, LVM_GETHEADER, IntPtr.Zero, "");
+            return Windows.Win32.PInvoke.SendMessage((Windows.Win32.Foundation.HWND)list.Handle, LVM_GETHEADER, 0, 0);
         }
 
         #endregion
@@ -581,6 +581,49 @@ namespace DarkModeForms
 
         #region Private Methods
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct COMBOBOXINFO
+        {
+            internal int cbSize;
+            internal Win32Rect rcItem;
+            internal Win32Rect rcButton;
+            internal int stateButton;
+            internal IntPtr hwndCombo;
+            internal IntPtr hwndItem;
+            internal IntPtr hwndList;
+
+            internal COMBOBOXINFO(int size)
+            {
+                cbSize = size;
+                rcItem = Win32Rect.Empty;
+                rcButton = Win32Rect.Empty;
+                stateButton = 0;
+                hwndCombo = IntPtr.Zero;
+                hwndItem = IntPtr.Zero;
+                hwndList = IntPtr.Zero;
+            }
+        };
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Win32Rect
+        {
+            internal int left;
+            internal int top;
+            internal int right;
+            internal int bottom;
+            static internal Win32Rect Empty
+            {
+                get
+                {
+                    return new Win32Rect(0, 0, 0, 0);
+                }
+            }
+
+            internal Win32Rect(int _left, int _top, int _right, int _bottom)
+            {
+                left = _left; top = _top; right = _right; bottom = _bottom;
+            }
+        }
+
         private static bool DebugTheme;
 
         private void ApplyTheme(Form _Form)
@@ -647,7 +690,7 @@ namespace DarkModeForms
 				SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
 				Causes a window to use a different set of visual style information than its class normally uses.
 			 */
-            var DarkModeOn = new[] { 0 }; //<- 1=True, 0=False
+            int DarkModeOn = 0; //<- 1=True, 0=False
 
             var windowsTheme = "Explorer";
             var windowsThemeCombo = "Explorer";
@@ -656,31 +699,33 @@ namespace DarkModeForms
             {
                 windowsTheme = "DarkMode_Explorer";
                 windowsThemeCombo = "DarkMode_CFD";
-                DarkModeOn = [1];
+                DarkModeOn = 1;
             }
             else
             {
-                DarkModeOn = [0];
+                DarkModeOn = 0;
             }
 
 
-            if (control is ComboBox comboBox)
+            if (control is System.Windows.Forms.ComboBox comboBox)
             {
-                _ = SetWindowTheme(comboBox.Handle, windowsThemeCombo, null);
+                _ = Windows.Win32.PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)comboBox.Handle, windowsThemeCombo, null);
 
                 // Style the ComboBox drop-down (including its ScrollBar(s)):
-                COMBOBOXINFO cInfo = default;
-                var result = GetComboBoxInfo(comboBox.Handle, ref cInfo);
-                _ = SetWindowTheme(cInfo.hwndList, windowsThemeCombo, null);
+                Windows.Win32.UI.Controls.COMBOBOXINFO cInfo = default;
+                var result = Windows.Win32.PInvoke.GetComboBoxInfo((Windows.Win32.Foundation.HWND)comboBox.Handle, ref cInfo);
+                _ = Windows.Win32.PInvoke.SetWindowTheme(cInfo.hwndList, windowsThemeCombo, null);
             }
             else
             {
-                _ = SetWindowTheme(control.Handle, windowsTheme, null);
+                _ = Windows.Win32.PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)control.Handle, windowsTheme, null);
             }
-
-            if (DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, DarkModeOn, 4) != 0)
+            unsafe
             {
-                _ = DwmSetWindowAttribute(control.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
+                if (Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &DarkModeOn, sizeof(bool)) != 0)
+                {
+                    _ = Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(bool));
+                }
             }
 
             foreach (Control child in control.Controls)

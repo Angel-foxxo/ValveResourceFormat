@@ -1,2 +1,5 @@
 SHChangeNotify
 SetWindowTheme
+SendMessage
+GetComboBoxInfo
+DwmSetWindowAttribute

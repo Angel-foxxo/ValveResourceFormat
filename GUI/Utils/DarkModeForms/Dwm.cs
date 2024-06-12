@@ -9,7 +9,7 @@ namespace GUI.Utils
     /// <summary>
     /// DWM related code
     /// </summary>
-    public class Dwm
+    public static class Dwm
     {
         [StructLayout(LayoutKind.Explicit)]
         public struct RECT

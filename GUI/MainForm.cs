@@ -90,8 +90,8 @@ namespace GUI
         {
             if (Environment.OSVersion.Version.Major >= 6)
             {
-                int enabled = 0;
-                int response = Dwm.DwmIsCompositionEnabled(ref enabled);
+                var enabled = 0;
+                var response = Dwm.DwmIsCompositionEnabled(ref enabled);
 
                 _aeroEnabled = enabled == 1;
             }
@@ -122,7 +122,7 @@ namespace GUI
         {
             base.OnResize(e);
 
-            if(menuStrip != null)
+            if (menuStrip != null)
             {
                 menuStrip.MaximumSize = new Size(Width - 150 - menuStrip.Left, 0);
             }
@@ -137,7 +137,7 @@ namespace GUI
                 dwmMargins.cyTopHeight = menuStrip.Bottom;
             }
 
-            Dwm.DwmExtendFrameIntoClientArea(this.Handle, ref dwmMargins);
+            _ = Dwm.DwmExtendFrameIntoClientArea(Handle, ref dwmMargins);
         }
 
         protected override void OnPaint(PaintEventArgs e)
