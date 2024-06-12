@@ -690,7 +690,7 @@ namespace DarkModeForms
 				SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
 				Causes a window to use a different set of visual style information than its class normally uses.
 			 */
-            int DarkModeOn = 0; //<- 1=True, 0=False
+            IntPtr DarkModeOn = 0; //<- 1=True, 0=False
 
             var windowsTheme = "Explorer";
             var windowsThemeCombo = "Explorer";
@@ -722,9 +722,9 @@ namespace DarkModeForms
             }
             unsafe
             {
-                if (Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &DarkModeOn, sizeof(bool)) != 0)
+                if (Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &DarkModeOn, sizeof(int)) != 0)
                 {
-                    _ = Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(bool));
+                    _ = Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(int));
                 }
             }
 
