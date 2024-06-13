@@ -74,17 +74,17 @@ partial class MainForm
             var frameY = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CYFRAME, (uint)DeviceDpi);
             var padding = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
 
-            var nccsp = (NCCALCSIZE_PARAMS)Marshal.PtrToStructure(m.LParam, typeof(NCCALCSIZE_PARAMS));
-            nccsp.rect0.Bottom -= frameY + padding;
-            nccsp.rect0.Right -= frameX + padding;
-            nccsp.rect0.Left += frameX + padding;
+            var nccsp = Marshal.PtrToStructure<Windows.Win32.UI.WindowsAndMessaging.NCCALCSIZE_PARAMS>(m.LParam);
+            nccsp.rgrc._0.bottom -= frameY + padding;
+            nccsp.rgrc._0.right -= frameX + padding;
+            nccsp.rgrc._0.left += frameX + padding;
 
             Windows.Win32.UI.WindowsAndMessaging.WINDOWPLACEMENT placement = default;
             PInvoke.GetWindowPlacement((Windows.Win32.Foundation.HWND)Handle, ref placement);
 
             if (placement.showCmd == Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
             {
-                nccsp.rect0.Top += padding;
+                nccsp.rgrc._0.top += padding;
             }
 
             Marshal.StructureToPtr(nccsp, m.LParam, false);
@@ -122,6 +122,7 @@ partial class MainForm
         }
     }
 
+#if false
     private IntPtr HitTestNCA(IntPtr hwnd, IntPtr wparam, IntPtr lparam)
     {
         var HTNOWHERE = 0;
@@ -213,4 +214,5 @@ partial class MainForm
 
         return new IntPtr(HTCLIENT);
     }
+#endif
 }
