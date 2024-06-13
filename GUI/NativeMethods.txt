@@ -2,4 +2,11 @@ SHChangeNotify
 SetWindowTheme
 SendMessage
 GetComboBoxInfo
+DwmDefWindowProc
 DwmSetWindowAttribute
+DwmExtendFrameIntoClientArea
+GetSystemMetricsForDpi
+WM_NCHITTEST
+WM_NCCALCSIZE
+HTCAPTION
+GetWindowPlacement
