@@ -97,6 +97,7 @@ namespace GUI
             menuStrip.Size = new System.Drawing.Size(750, 24);
             menuStrip.TabIndex = 0;
             menuStrip.Text = "menuStrip1";
+            menuStrip.ItemClicked += menuStrip_ItemClicked;
             // 
             // fileToolStripMenuItem
             // 
@@ -406,6 +407,7 @@ namespace GUI
             mainTabs.BorderColor = System.Drawing.SystemColors.GrayText;
             mainTabs.Dock = DockStyle.Fill;
             mainTabs.Font = new System.Drawing.Font("Segoe UI", 9F);
+            mainTabs.HoverColor = System.Drawing.SystemColors.Highlight;
             mainTabs.LineColor = System.Drawing.Color.FromArgb(136, 54, 82, 113);
             mainTabs.Location = new System.Drawing.Point(0, 24);
             mainTabs.Margin = new Padding(0);

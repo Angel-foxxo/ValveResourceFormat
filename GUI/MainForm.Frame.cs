@@ -44,7 +44,7 @@ partial class MainForm
 
         var margins = new Windows.Win32.UI.Controls.MARGINS
         {
-            cyTopHeight = 24, // TODO menuStrip.Size.Height is 0 on startup
+            cyTopHeight = 35, // TODO menuStrip.Size.Height is 0 on startup
         };
 
         _ = PInvoke.DwmExtendFrameIntoClientArea((Windows.Win32.Foundation.HWND)Handle, margins);
@@ -84,7 +84,7 @@ partial class MainForm
 
             if (placement.showCmd == Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
             {
-                nccsp.rgrc._0.top += padding;
+                menuStrip.Padding = new Padding(0, 10, 0, 10);
             }
 
             Marshal.StructureToPtr(nccsp, m.LParam, false);
