@@ -34,7 +34,7 @@ partial class MainForm
 
         if (menuStrip != null)
         {
-            menuStrip.MaximumSize = new Size(Width - 150 - menuStrip.Left, 0);
+            menuStrip.MaximumSize = new Size(Width - 170 - menuStrip.Left, 0);
         }
     }
 
@@ -84,7 +84,14 @@ partial class MainForm
 
             if (placement.showCmd == Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
             {
-                menuStrip.Padding = new Padding(0, 10, 0, 10);
+                menuStrip.Padding = new Padding(0, 12, 0, 5);
+            }
+            else
+            {
+                if(menuStrip != null)
+                {
+                    menuStrip.Padding = new Padding(0, 5, 0, 5);
+                }
             }
 
             Marshal.StructureToPtr(nccsp, m.LParam, false);
