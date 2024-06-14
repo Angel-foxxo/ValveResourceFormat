@@ -11,17 +11,3 @@ WM_NCCALCSIZE
 HTCAPTION
 GetWindowPlacement
 NCCALCSIZE_PARAMS
-GetDpiForWindow
-WINDOWPLACEMENT
-ShowWindow
-GetWindowRect
-SetWindowPos
-OpenThemeData
-GetThemePartSize
-CloseThemeData
-GetClientRect
-InvalidateRect
-WM_CREATE
-WM_ACTIVATE
-WM_NCHITTEST
-DefWindowProc
