@@ -1,5 +1,6 @@
 using System.Windows.Forms;
 using DarkModeForms;
+using GUI.Controls;
 
 namespace GUI
 {
@@ -40,7 +41,7 @@ namespace GUI
         {
             components = new System.ComponentModel.Container();
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            menuStrip = new MenuStrip();
+            menuStrip = new NonThiefMenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
@@ -451,7 +452,7 @@ namespace GUI
 
         #endregion
 
-        private MenuStrip menuStrip;
+        private NonThiefMenuStrip menuStrip;
         private FlatTabControl mainTabs;
         private ContextMenuStrip tabContextMenuStrip;
         private ToolStripMenuItem closeToolStripMenuItem;
