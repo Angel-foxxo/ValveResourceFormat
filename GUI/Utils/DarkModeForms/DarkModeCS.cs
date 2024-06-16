@@ -169,6 +169,8 @@ namespace DarkModeForms
         {
             DebugTheme = debugTheme;
             SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(OnUserPreferenceChanged);
+            IsDarkMode = IsWindowsDarkThemed();
+            ThemeColors = GetAppTheme();
         }
 
         #region Public Methods
@@ -178,6 +180,7 @@ namespace DarkModeForms
         public void Style(Form _Form)
         {
             ApplyTheme(_Form);
+            ApplySystemTheme(_Form);
         }
 
         /// <summary>Recursively apply the Colors from 'ThemeColors' to the Control and all its childs.</summary>
@@ -295,7 +298,7 @@ namespace DarkModeForms
                 combo.ForeColor = ThemeColors.Text;
                 combo.BackColor = ThemeColors.Window;
             }
-            if (control is MenuStrip menu)
+            if (control is TransparentMenuStrip menu)
             {
                 menu.RenderMode = ToolStripRenderMode.Professional;
                 menu.Renderer = new MyRenderer(new CustomColorTable(ThemeColors), false)
@@ -461,11 +464,11 @@ namespace DarkModeForms
             return intResult <= 0;
         }
 
-        public static ThemeColors GetAppTheme(Form Window = null)
+        public static ThemeColors GetAppTheme()
         {
             var themeColors = new ThemeColors();
 
-            var IsDarkMode = (IsWindowsDarkThemed());
+            var IsDarkMode = IsWindowsDarkThemed();
 
             if (IsDarkMode)
             {
@@ -527,14 +530,6 @@ namespace DarkModeForms
                 themeColors.ControlHighlight = Color.FromArgb(255, 179, 194);
 
                 themeColors.Accent = Color.DodgerBlue;
-            }
-
-            if (Window != null)
-            {
-                ApplySystemTheme(Window);
-
-                Window.BackColor = themeColors.Window;
-                Window.ForeColor = themeColors.Text;
             }
 
             return themeColors;
@@ -628,13 +623,13 @@ namespace DarkModeForms
 
         private void ApplyTheme(Form _Form)
         {
-            IsDarkMode = IsWindowsDarkThemed();
-            ThemeColors = GetAppTheme(_Form);
-
             if (ThemeColors != null)
             {
                 if (_Form != null && _Form.Controls != null)
                 {
+                    _Form.BackColor = ThemeColors.Window;
+                    _Form.ForeColor = ThemeColors.Text;
+
                     foreach (Control _control in _Form.Controls)
                     {
                         ThemeControl(_control);
@@ -660,11 +655,13 @@ namespace DarkModeForms
             var currentTheme = IsWindowsDarkThemed();
             if (IsDarkMode != currentTheme)
             {
-                IsDarkMode = IsWindowsDarkThemed();
+                IsDarkMode = currentTheme;
 
                 foreach (Form form in Application.OpenForms)
                 {
+                    ThemeColors = GetAppTheme();
                     ApplyTheme(form);
+                    ApplySystemTheme(form);
                     form.Invalidate();
                 }
             }
@@ -672,7 +669,7 @@ namespace DarkModeForms
 
         /// <summary>Attemps to apply Window's Dark Style to the Control and all its childs.</summary>
         /// <param name="control"></param>
-        private static void ApplySystemTheme(Control control = null)
+        private void ApplySystemTheme(Control control = null)
         {
             if (control is ByteViewer)
             {
@@ -695,7 +692,7 @@ namespace DarkModeForms
             var windowsTheme = "Explorer";
             var windowsThemeCombo = "Explorer";
 
-            if (IsWindowsDarkThemed())
+            if (IsDarkMode)
             {
                 windowsTheme = "DarkMode_Explorer";
                 windowsThemeCombo = "DarkMode_CFD";

@@ -11,7 +11,7 @@ using Windows.Win32.Foundation;
 
 namespace GUI.Controls
 {
-    internal class NonThiefMenuStrip : MenuStrip
+    internal class TransparentMenuStrip : MenuStrip
     {
         /// <summary>
         /// Equivalent to the LoWord C Macro
@@ -40,9 +40,10 @@ namespace GUI.Controls
 
             if (m.Msg == WM_NCHITTEST)
             {
-                foreach(ToolStripMenuItem item in this.Items)
+                var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+
+                foreach (ToolStripMenuItem item in this.Items)
                 {
-                    var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
                     if (item.Bounds.Contains(point))
                     {
                         base.WndProc(ref m);

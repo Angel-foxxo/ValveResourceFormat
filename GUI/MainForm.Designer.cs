@@ -41,7 +41,7 @@ namespace GUI
         {
             components = new System.ComponentModel.Container();
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            menuStrip = new NonThiefMenuStrip();
+            menuStrip = new TransparentMenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             openToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
@@ -452,7 +452,7 @@ namespace GUI
 
         #endregion
 
-        private NonThiefMenuStrip menuStrip;
+        private TransparentMenuStrip menuStrip;
         private FlatTabControl mainTabs;
         private ContextMenuStrip tabContextMenuStrip;
         private ToolStripMenuItem closeToolStripMenuItem;
