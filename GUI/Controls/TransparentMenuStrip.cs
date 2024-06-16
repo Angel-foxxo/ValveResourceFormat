@@ -42,7 +42,7 @@ namespace GUI.Controls
             {
                 var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
 
-                foreach (ToolStripMenuItem item in this.Items)
+                foreach (ToolStripMenuItem item in Items)
                 {
                     if (item.Bounds.Contains(point))
                     {

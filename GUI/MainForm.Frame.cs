@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+#pragma warning disable CA1416 // Validate platform compatibility
 
 // !!!!! BEWARE !!!!!
 // This file contains some *pristine* bullshit, it handles all the windows API messages to extend
@@ -15,10 +16,11 @@ namespace GUI;
 
 partial class MainForm
 {
+
     // these are DPI compensated
-    private static int BaseTitleBarHeight = 32;
-    private static int BaseMenuStripHeight = 24;
-    private static int GapBetweenMenuStripAndControlBox = 8;
+    private readonly int BaseTitleBarHeight = 32;
+    private readonly int BaseMenuStripHeight = 24;
+    private readonly int GapBetweenMenuStripAndControlBox = 8;
 
     /// Equivalent to the LoWord C Macro
     public static int LoWord(int dwValue)
@@ -88,7 +90,7 @@ partial class MainForm
 
             // No particular reason for using 11 here, it's just what makes it looks good when maximised
             // this should be fine since it's DPI compensated but might need to be tweaked when layout changes happen
-            if(IsWindowMaximised())
+            if (IsWindowMaximised())
             {
                 sizeDifference += AdjustForDPI(11);
             }
