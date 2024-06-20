@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Windows.Win32;
 using Windows.Win32.Foundation;
-using Windows.Win32.UI.Controls;
 using Windows.Win32.UI.WindowsAndMessaging;
 #pragma warning disable CA1416 // Validate platform compatibility
 
@@ -89,21 +88,6 @@ partial class MainForm
     public static int HiWord(int dwValue)
     {
         return (dwValue >> 16) & 0xFFFF;
-    }
-
-    private void ScaleMenuStrip()
-    {
-        if (menuStrip != null)
-        {
-            var titleBarRect = GetTitleBarRect();
-
-            menuStrip.MaximumSize = new Size(titleBarRect.Width - (AdjustForDPI(TitleBarButtonWidth * 3)), AdjustForDPI(titleBarRect.Height));
-
-            var sizeDifference = titleBarRect.Height - AdjustForDPI(22);
-
-            // This tries to center the menuStrip to the control box
-            menuStrip.Padding = new Padding(0, sizeDifference / 2, 0, sizeDifference / 2);
-        }
     }
 
     private CustomTitleBarHoveredButton CurrentHoveredButton;
@@ -215,12 +199,6 @@ partial class MainForm
         else if (m.Msg == PInvoke.WM_NCMOUSEMOVE)
         {
             CheckControlBoxHoverState();
-
-            base.WndProc(ref m);
-        }
-        else if (m.Msg == PInvoke.WM_SIZE)
-        {
-            ScaleMenuStrip();
 
             base.WndProc(ref m);
         }

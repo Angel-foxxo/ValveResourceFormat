@@ -1,22 +1,32 @@
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Windows.Win32;
-using Windows.Win32.Foundation;
 
 namespace GUI.Controls
 {
+    internal class TransparentPanel : Panel
+    {
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_NCHITTEST = 0x0084; // TODO: PInvoke
+            const int HTTRANSPARENT = (-1); // TODO: PInvoke
+
+            if (m.Msg == WM_NCHITTEST)
+            {
+                m.Result = HTTRANSPARENT;
+            }
+            else
+            {
+                base.WndProc(ref m);
+            }
+        }
+    }
+
     internal class TransparentMenuStrip : MenuStrip
     {
         protected override void WndProc(ref Message m)
         {
-            const int WM_NCHITTEST = 0x0084;
-            const int HTTRANSPARENT = (-1);
+            const int WM_NCHITTEST = 0x0084; // TODO: PInvoke
+            const int HTTRANSPARENT = (-1); // TODO: PInvoke
 
             if (m.Msg == WM_NCHITTEST)
             {
@@ -38,6 +48,5 @@ namespace GUI.Controls
                 base.WndProc(ref m);
             }
         }
-
     }
 }
