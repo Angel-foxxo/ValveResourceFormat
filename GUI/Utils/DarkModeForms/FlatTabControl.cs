@@ -66,7 +66,6 @@ namespace DarkModeForms
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
             DrawControl(e.Graphics);
         }
 
@@ -138,6 +137,7 @@ namespace DarkModeForms
 
             // Draws the Tab Header:
             var HeaderColor = isSelected ? SelectTabColor : isHovered ? HoverColor : BackColor;
+            var TextColor = SelectedForeColor;
             using Brush brush = new SolidBrush(HeaderColor);
             using var headerPen = new Pen(HeaderColor);
             using var headerUnderlinePen = new Pen(Color.DodgerBlue, tabRect.Height / 11);
@@ -148,6 +148,12 @@ namespace DarkModeForms
             {
                 g.DrawLine(headerUnderlinePen,
                     new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
+
+                TextColor = SelectedForeColor;
+            }
+            else if (!isHovered)
+            {
+                TextColor = ForeColor;
             }
 
             var imageScaleFactor = 0.7;
@@ -168,11 +174,11 @@ namespace DarkModeForms
                 var image = ImageList.Images[customTabPage.ImageIndex];
                 g.DrawImage(image, imageRect.Left, imageRect.Top, imageRect.Height, imageRect.Height);
 
-                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, isSelected ? SelectedForeColor : ForeColor, textFlags);
+                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, TextColor, textFlags);
             }
             else
             {
-                TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, textFlags);
+                TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, TextColor, textFlags);
             }
         }
     }

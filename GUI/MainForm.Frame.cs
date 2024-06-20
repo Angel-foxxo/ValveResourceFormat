@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.Controls;
+using Windows.Win32.UI.WindowsAndMessaging;
 #pragma warning disable CA1416 // Validate platform compatibility
 
 // !!!!! BEWARE !!!!!
@@ -16,30 +18,60 @@ namespace GUI;
 
 partial class MainForm
 {
+    // These are DPI compensated.
+    private readonly int ControlBoxInconSize = 10;
+    private readonly int TitleBarHeight = 35;
+    private readonly int TitleBarButtonWidth = 45;
 
-    // these are DPI compensated
-    private readonly int BaseTitleBarHeight = 32;
-    private readonly int BaseMenuStripHeight = 24;
-    private readonly int GapBetweenMenuStripAndControlBox = 8;
-
-    /// Equivalent to the LoWord C Macro
-    public static int LoWord(int dwValue)
+    private enum CustomTitleBarHoveredButton
     {
-        return dwValue & 0xFFFF;
+        None,
+        Minimize,
+        Maximize,
+        Close,
     }
 
-    /// Equivalent to the HiWord C Macro
-    public static int HiWord(int dwValue)
+    private struct CustomTitleBarButtonRects
     {
-        return (dwValue >> 16) & 0xFFFF;
+        internal Rectangle Close;
+        internal Rectangle Maximize;
+        internal Rectangle Minimize;
+    }
+
+    private Rectangle GetTitleBarRect()
+    {
+        var titleBarRect = ClientRectangle;
+        titleBarRect.Height = titleBarRect.Top + AdjustForDPI(TitleBarHeight);
+
+        return titleBarRect;
+    }
+
+    private CustomTitleBarButtonRects GetCustomTitleBarButtonRects()
+    {
+        CustomTitleBarButtonRects titleBarButtonRects;
+
+        var titleBarButtonWidth = AdjustForDPI(TitleBarButtonWidth);
+
+        // Calculate the size of the title bar buttons
+        titleBarButtonRects.Close = GetTitleBarRect();
+        titleBarButtonRects.Close.X = titleBarButtonRects.Close.Width - titleBarButtonWidth;
+        titleBarButtonRects.Close.Width = titleBarButtonWidth;
+
+        titleBarButtonRects.Maximize = titleBarButtonRects.Close;
+        titleBarButtonRects.Maximize.X -= titleBarButtonWidth;
+
+        titleBarButtonRects.Minimize = titleBarButtonRects.Maximize;
+        titleBarButtonRects.Minimize.X -= titleBarButtonWidth;
+
+        return titleBarButtonRects;
     }
 
     private bool IsWindowMaximised()
     {
-        Windows.Win32.UI.WindowsAndMessaging.WINDOWPLACEMENT placement = default;
-        PInvoke.GetWindowPlacement((Windows.Win32.Foundation.HWND)Handle, ref placement);
+        WINDOWPLACEMENT placement = default;
+        PInvoke.GetWindowPlacement((HWND)Handle, ref placement);
 
-        if (placement.showCmd == Windows.Win32.UI.WindowsAndMessaging.SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
+        if (placement.showCmd == SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
         {
             return true;
         }
@@ -47,88 +79,56 @@ partial class MainForm
         return false;
     }
 
-    private int GetAdjustedTitleBarHeight()
+    // Equivalent to the LoWord C Macro.
+    public static int LoWord(int dwValue)
     {
-        if (IsWindowMaximised())
-        {
-            // Padding is the border around the window where you can resize the window.
-            // Need to add this to the top when the window is maximised because when windows maximises a window it tries to hide its borders beyond
-            // the edge of the screen, but since our borders are inside the frame and not outsidem it means it hides the top of the window
-            // so extending by the amount of the border will make it remain visible.
-            var padding = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
-
-            return AdjustForDPI(BaseTitleBarHeight) + padding;
-        }
-
-        return AdjustForDPI(BaseTitleBarHeight);
+        return dwValue & 0xFFFF;
     }
 
-    private void ExtendFrameIntoClientArea()
+    // Equivalent to the HiWord C Macro.
+    public static int HiWord(int dwValue)
     {
-        var margins = new Windows.Win32.UI.Controls.MARGINS
-        {
-            cyTopHeight = GetAdjustedTitleBarHeight()
-        };
-
-        _ = PInvoke.DwmExtendFrameIntoClientArea((Windows.Win32.Foundation.HWND)Handle, margins);
+        return (dwValue >> 16) & 0xFFFF;
     }
 
     private void ScaleMenuStrip()
     {
         if (menuStrip != null)
         {
-            RECT controlBoxSize;
-            unsafe
-            {
-                _ = PInvoke.DwmGetWindowAttribute((HWND)Handle, Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE.DWMWA_CAPTION_BUTTON_BOUNDS, &controlBoxSize, (uint)Marshal.SizeOf(typeof(RECT)));
-            }
+            var titleBarRect = GetTitleBarRect();
 
-            // Scale the length of the menuStrip so it doesn't crash into the control box buttons.
-            menuStrip.MaximumSize = new Size(controlBoxSize.left - AdjustForDPI(GapBetweenMenuStripAndControlBox), 0);
+            menuStrip.MaximumSize = new Size(titleBarRect.Width - (AdjustForDPI(TitleBarButtonWidth * 3)), AdjustForDPI(titleBarRect.Height));
 
-            var sizeDifference = GetAdjustedTitleBarHeight() - AdjustForDPI(BaseMenuStripHeight);
-
-            // No particular reason for using 11 here, it's just what makes it looks good when maximised
-            // this should be fine since it's DPI compensated but might need to be tweaked when layout changes happen
-            if (IsWindowMaximised())
-            {
-                sizeDifference += AdjustForDPI(11);
-            }
+            var sizeDifference = titleBarRect.Height - AdjustForDPI(22);
 
             // This tries to center the menuStrip to the control box
             menuStrip.Padding = new Padding(0, sizeDifference / 2, 0, sizeDifference / 2);
         }
     }
 
-    protected override void OnResize(EventArgs e)
-    {
-        base.OnResize(e);
-
-        ExtendFrameIntoClientArea();
-        ScaleMenuStrip();
-    }
-
-    protected override void OnActivated(EventArgs e)
-    {
-        base.OnActivated(e);
-
-        ExtendFrameIntoClientArea();
-        ScaleMenuStrip();
-    }
+    private CustomTitleBarHoveredButton CurrentHoveredButton;
 
     protected override void WndProc(ref Message m)
     {
-        var padding = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
+        var padding = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
 
         if (m.Msg == PInvoke.WM_NCCALCSIZE && (int)m.WParam == 1)
         {
-            var frameX = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CXFRAME, (uint)DeviceDpi);
-            var frameY = PInvoke.GetSystemMetricsForDpi(Windows.Win32.UI.WindowsAndMessaging.SYSTEM_METRICS_INDEX.SM_CYFRAME, (uint)DeviceDpi);
+            var frameX = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXFRAME, (uint)DeviceDpi);
+            var frameY = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CYFRAME, (uint)DeviceDpi);
 
-            var nccsp = Marshal.PtrToStructure<Windows.Win32.UI.WindowsAndMessaging.NCCALCSIZE_PARAMS>(m.LParam);
-            nccsp.rgrc._0.bottom -= frameY + padding;
-            nccsp.rgrc._0.right -= frameX + padding;
-            nccsp.rgrc._0.left += frameX + padding;
+            var nccsp = Marshal.PtrToStructure<NCCALCSIZE_PARAMS>(m.LParam);
+            nccsp.rgrc._0.bottom -= frameY;
+            nccsp.rgrc._0.right -= frameX;
+            nccsp.rgrc._0.left += frameX;
+
+            if (IsWindowMaximised())
+            {
+                nccsp.rgrc._0.bottom -= padding;
+                nccsp.rgrc._0.right -= padding;
+                nccsp.rgrc._0.left += padding;
+                nccsp.rgrc._0.top += padding;
+            }
 
             Marshal.StructureToPtr(nccsp, m.LParam, false);
 
@@ -136,7 +136,7 @@ partial class MainForm
         }
         else if (m.Msg == PInvoke.WM_NCHITTEST)
         {
-            var dwmHandled = PInvoke.DwmDefWindowProc((Windows.Win32.Foundation.HWND)m.HWnd, (uint)m.Msg, new Windows.Win32.Foundation.WPARAM((nuint)m.WParam), new Windows.Win32.Foundation.LPARAM(m.LParam), out var result);
+            var dwmHandled = PInvoke.DwmDefWindowProc((HWND)m.HWnd, (uint)m.Msg, new WPARAM((nuint)m.WParam), new LPARAM(m.LParam), out var result);
 
             if (dwmHandled == 1)
             {
@@ -147,6 +147,8 @@ partial class MainForm
             // Convert to client coordinates
             // TODO: easier word conversion?
             var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+
+            CheckControlBoxHoverState();
 
             if (point.Y - padding <= menuStrip.Top)
             {
@@ -160,7 +162,66 @@ partial class MainForm
                 return;
             }
 
-            //m.Result = HitTestNCA(m.HWnd, m.WParam, m.LParam);
+            // Check if hover button is on maximize to support SnapLayout on Windows 11.
+            if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
+            {
+                m.Result = new IntPtr(PInvoke.HTMAXBUTTON);
+                return;
+            }
+
+            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_NCLBUTTONDOWN)
+        {
+            if (CurrentHoveredButton != CustomTitleBarHoveredButton.None)
+            {
+                m.Result = 0;
+                return;
+            }
+
+            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_NCLBUTTONUP)
+        {
+            if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
+            {
+                // Magic number for close message because I don't think the PInvoke source generator offers it?
+                PInvoke.PostMessage((HWND)Handle, (uint)0x0010, 0, 0);
+                m.Result = 0;
+                return;
+            }
+            else if (CurrentHoveredButton == CustomTitleBarHoveredButton.Minimize)
+            {
+                PInvoke.ShowWindow((HWND)Handle, SHOW_WINDOW_CMD.SW_MINIMIZE);
+                m.Result = 0;
+                return;
+            }
+            else if (CurrentHoveredButton == CustomTitleBarHoveredButton.Maximize)
+            {
+                var mode = IsWindowMaximised() ? SHOW_WINDOW_CMD.SW_NORMAL : SHOW_WINDOW_CMD.SW_MAXIMIZE;
+                PInvoke.ShowWindow((HWND)Handle, mode);
+                m.Result = 0;
+                return;
+            }
+
+            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_MOUSEMOVE)
+        {
+            CheckControlBoxHoverState();
+
+            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_NCMOUSEMOVE)
+        {
+            CheckControlBoxHoverState();
+
+            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_SIZE)
+        {
+            ScaleMenuStrip();
+
             base.WndProc(ref m);
         }
         else
@@ -168,4 +229,125 @@ partial class MainForm
             base.WndProc(ref m);
         }
     }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        using var controlBoxPen = new Pen(MainForm.DarkModeCS.ThemeColors.Text);
+        controlBoxPen.Width = AdjustForDPI(1);
+
+        // This needs to always be white to contrast with the red.
+        using var controlBoxPenCloseButtonHighlighted = new Pen(Color.White);
+        controlBoxPen.Width = AdjustForDPI(1);
+
+        // Setting all the drawing settings to high in order to get nice looking caption buttons.
+        // Not setting SmoothingMode to AntiAlias because it makes the X button appear darker.
+        e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+        e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+        e.Graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+        // High quality here seems to make the lines oddly thick and non-crisp? idk it's just weird
+        // But that can be an advantage for stuff like the X button which otherwise seems thinner
+        e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+        var titleBarButtonRects = GetCustomTitleBarButtonRects();
+
+        var controlBoxIconSize = AdjustForDPI(ControlBoxInconSize);
+
+        var closeIconRect = new Rectangle
+        {
+            Width = controlBoxIconSize,
+            Height = controlBoxIconSize
+        };
+        closeIconRect.X = titleBarButtonRects.Close.X + ((titleBarButtonRects.Close.Width - closeIconRect.Width) / 2);
+        closeIconRect.Y = titleBarButtonRects.Close.Y + ((titleBarButtonRects.Close.Height - closeIconRect.Height) / 2);
+
+        var maximiseIconRect = new Rectangle
+        {
+            Width = controlBoxIconSize,
+            Height = controlBoxIconSize
+        };
+        maximiseIconRect.X = titleBarButtonRects.Maximize.X + ((titleBarButtonRects.Maximize.Width - maximiseIconRect.Width) / 2);
+        maximiseIconRect.Y = titleBarButtonRects.Maximize.Y + ((titleBarButtonRects.Maximize.Height - maximiseIconRect.Height) / 2);
+
+        var minimiseIconRect3 = new Rectangle
+        {
+            Width = controlBoxIconSize,
+            Height = controlBoxIconSize
+        };
+        minimiseIconRect3.X = titleBarButtonRects.Minimize.X + ((titleBarButtonRects.Minimize.Width - minimiseIconRect3.Width) / 2);
+        minimiseIconRect3.Y = titleBarButtonRects.Minimize.Y + ((titleBarButtonRects.Minimize.Height) / 2);
+
+        // Draw the button rectangle if the mouse is hovering over the button,
+        using var controlBoxButtonBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.ControlBoxHighlightCloseButton);
+        using var closeButtonBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.ControlBoxHighlight);
+
+        if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
+        {
+            e.Graphics.FillRectangle(controlBoxButtonBrush, titleBarButtonRects.Close);
+        }
+        else if (CurrentHoveredButton == CustomTitleBarHoveredButton.Maximize)
+        {
+            e.Graphics.FillRectangle(closeButtonBrush, titleBarButtonRects.Maximize);
+        }
+        else if (CurrentHoveredButton == CustomTitleBarHoveredButton.Minimize)
+        {
+            e.Graphics.FillRectangle(closeButtonBrush, titleBarButtonRects.Minimize);
+        }
+
+        // Draws the horizontal line for the minimise icon.
+        e.Graphics.DrawLine(controlBoxPen, minimiseIconRect3.X, minimiseIconRect3.Y, minimiseIconRect3.X + minimiseIconRect3.Width, minimiseIconRect3.Y);
+
+        // Draws the square for the maximise icon.
+        e.Graphics.DrawRectangle(controlBoxPen, maximiseIconRect);
+
+        // Draws the X for the close icon.
+        // Drawing this last so it can use high quality PixelOffsetMode which makes the line have a
+        // more consistent thickness in relation to the other caption buttons
+        e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+        if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
+        {
+            e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, closeIconRect.X, closeIconRect.Y, closeIconRect.Right, closeIconRect.Bottom);
+            e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, closeIconRect.X, closeIconRect.Bottom, closeIconRect.Right, closeIconRect.Top);
+        }
+        else
+        {
+            e.Graphics.DrawLine(controlBoxPen, closeIconRect.X, closeIconRect.Y, closeIconRect.Right, closeIconRect.Bottom);
+            e.Graphics.DrawLine(controlBoxPen, closeIconRect.X, closeIconRect.Bottom, closeIconRect.Right, closeIconRect.Top);
+        }
+
+    }
+
+    private void CheckControlBoxHoverState()
+    {
+        var titleBarButtonRects = GetCustomTitleBarButtonRects();
+
+        var lastHoveredButton = CurrentHoveredButton;
+
+        var point = PointToClient(Cursor.Position);
+
+        if (titleBarButtonRects.Close.Contains(point))
+        {
+            CurrentHoveredButton = CustomTitleBarHoveredButton.Close;
+        }
+        else if (titleBarButtonRects.Maximize.Contains(point))
+        {
+            CurrentHoveredButton = CustomTitleBarHoveredButton.Maximize;
+        }
+        else if (titleBarButtonRects.Minimize.Contains(point))
+        {
+            CurrentHoveredButton = CustomTitleBarHoveredButton.Minimize;
+        }
+        else
+        {
+            CurrentHoveredButton = CustomTitleBarHoveredButton.None;
+        }
+
+        if (lastHoveredButton != CurrentHoveredButton)
+        {
+            Invalidate();
+        }
+    }
 }
+

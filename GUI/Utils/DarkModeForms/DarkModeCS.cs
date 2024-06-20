@@ -488,6 +488,10 @@ namespace DarkModeForms
                 themeColors.ControlBorder = Color.FromArgb(28, 28, 28);
                 themeColors.ControlHighlight = Color.FromArgb(67, 67, 67);
 
+                themeColors.ControlBoxHighlight = Color.FromArgb(67, 67, 67);
+                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
+
+
                 themeColors.Accent = Color.DodgerBlue;
             }
             else
@@ -507,6 +511,9 @@ namespace DarkModeForms
                 themeColors.Control = Color.FromArgb(220, 220, 220);
                 themeColors.ControlBorder = Color.FromArgb(190, 190, 190);
                 themeColors.ControlHighlight = Color.FromArgb(235, 235, 235);
+
+                themeColors.ControlBoxHighlight = Color.FromArgb(190, 190, 190);
+                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
                 themeColors.Accent = Color.DodgerBlue;
             }
@@ -528,6 +535,9 @@ namespace DarkModeForms
                 themeColors.Control = Color.FromArgb(245, 169, 184);
                 themeColors.ControlBorder = Color.FromArgb(245, 169, 184);
                 themeColors.ControlHighlight = Color.FromArgb(255, 179, 194);
+
+                themeColors.ControlBoxHighlight = Color.FromArgb(255, 179, 194);
+                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
                 themeColors.Accent = Color.DodgerBlue;
             }
@@ -677,21 +687,21 @@ namespace DarkModeForms
             }
             /* 			    
 				DWMWA_USE_IMMERSIVE_DARK_MODE:   https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
-
+            
 				Use with DwmSetWindowAttribute. Allows the window frame for this window to be drawn in dark mode colors when the dark mode system setting is enabled. 
 				For compatibility reasons, all windows default to light mode regardless of the system setting. 
 				The pvAttribute parameter points to a value of type BOOL. TRUE to honor dark mode for the window, FALSE to always use light mode.
-
+            
 				This value is supported starting with Windows 11 Build 22000.
-
+            
 				SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
 				Causes a window to use a different set of visual style information than its class normally uses.
 			 */
             IntPtr DarkModeOn = 0; //<- 1=True, 0=False
-
+            
             var windowsTheme = "Explorer";
             var windowsThemeCombo = "Explorer";
-
+            
             if (IsDarkMode)
             {
                 windowsTheme = "DarkMode_Explorer";
@@ -702,12 +712,12 @@ namespace DarkModeForms
             {
                 DarkModeOn = 0;
             }
-
-
+            
+            
             if (control is System.Windows.Forms.ComboBox comboBox)
             {
                 _ = Windows.Win32.PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)comboBox.Handle, windowsThemeCombo, null);
-
+            
                 // Style the ComboBox drop-down (including its ScrollBar(s)):
                 Windows.Win32.UI.Controls.COMBOBOXINFO cInfo = default;
                 var result = Windows.Win32.PInvoke.GetComboBoxInfo((Windows.Win32.Foundation.HWND)comboBox.Handle, ref cInfo);
@@ -724,7 +734,7 @@ namespace DarkModeForms
                     _ = Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(int));
                 }
             }
-
+            
             foreach (Control child in control.Controls)
             {
                 if (child.Controls.Count != 0)
@@ -768,6 +778,10 @@ namespace DarkModeForms
         /// <summary>For Highlight elements in a Control</summary>
         public System.Drawing.Color ControlHighlight { get; set; }
 
+        /// <summary>For the control box</summary>
+        public System.Drawing.Color ControlBoxHighlight { get; set; }
+        public System.Drawing.Color ControlBoxHighlightCloseButton { get; set; }
+
         /// <summary>For anything that accented like hovering over a tab</summary>
         public System.Drawing.Color Accent { get; set; }
     }
@@ -788,6 +802,7 @@ namespace DarkModeForms
         {
             e.ToolStrip.BackColor = themeColors.Window;
             base.OnRenderToolStripBackground(e);
+            //e.Graphics.FillRectangle(new SolidBrush(themeColors.Window), e.AffectedBounds);
         }
 
         // For Normal Buttons on a ToolBar:
@@ -956,6 +971,12 @@ namespace DarkModeForms
             {
                 e.TextColor = themeColors.TextInactive;
             }
+
+            var text = e.Text.Replace("&", "");
+
+            using var textBrush = new SolidBrush(e.TextColor);
+            //e.Graphics.DrawString(text, e.TextFont, textBrush, e.TextRectangle);
+
             base.OnRenderItemText(e);
         }
 
@@ -969,6 +990,8 @@ namespace DarkModeForms
             //    Rectangle rect = new Rectangle(Point.Empty, e.Item.Size);
             //    e.Graphics.DrawRectangle(new Pen(MyColors.ControlLight, 1), rect);
             //}
+            //base.OnRenderToolStripBackground(e);
+            //e.Graphics.FillRectangle(new SolidBrush(themeColors.Window), e.Item.Bounds);
         }
 
         // For Menu Items BackColor:
