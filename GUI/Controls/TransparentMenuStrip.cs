@@ -1,18 +1,31 @@
 using System.Drawing;
 using System.Windows.Forms;
+using Windows.Win32;
 
 namespace GUI.Controls
 {
+    internal class SysMenuLogoButton : Button
+    {
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == PInvoke.WM_NCHITTEST)
+            {
+                m.Result = new IntPtr(PInvoke.HTSYSMENU);
+            }
+            else
+            {
+                base.WndProc(ref m);
+            }
+        }
+    }
+
     internal class TransparentPanel : Panel
     {
         protected override void WndProc(ref Message m)
         {
-            const int WM_NCHITTEST = 0x0084; // TODO: PInvoke
-            const int HTTRANSPARENT = (-1); // TODO: PInvoke
-
-            if (m.Msg == WM_NCHITTEST)
+            if (m.Msg == PInvoke.WM_NCHITTEST)
             {
-                m.Result = HTTRANSPARENT;
+                m.Result = PInvoke.HTTRANSPARENT;
             }
             else
             {
@@ -25,10 +38,7 @@ namespace GUI.Controls
     {
         protected override void WndProc(ref Message m)
         {
-            const int WM_NCHITTEST = 0x0084; // TODO: PInvoke
-            const int HTTRANSPARENT = (-1); // TODO: PInvoke
-
-            if (m.Msg == WM_NCHITTEST)
+            if (m.Msg == PInvoke.WM_NCHITTEST)
             {
                 var point = PointToClient(new Point(MainForm.LoWord((int)m.LParam), MainForm.HiWord((int)m.LParam)));
 
@@ -41,7 +51,7 @@ namespace GUI.Controls
                     }
                 }
 
-                m.Result = (IntPtr)HTTRANSPARENT;
+                m.Result = PInvoke.HTTRANSPARENT;
             }
             else
             {

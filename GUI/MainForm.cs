@@ -931,15 +931,5 @@ namespace GUI
                 form.ShowDialog(this);
             });
         }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void menuStrip_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
-        {
-
-        }
     }
 }

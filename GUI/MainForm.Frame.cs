@@ -170,7 +170,7 @@ partial class MainForm
             if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
             {
                 // Magic number for close message because I don't think the PInvoke source generator offers it?
-                PInvoke.PostMessage((HWND)Handle, (uint)0x0010, 0, 0);
+                PInvoke.PostMessage((HWND)Handle, PInvoke.WM_CLOSE, 0, 0);
                 m.Result = 0;
                 return;
             }
@@ -326,6 +326,11 @@ partial class MainForm
         {
             Invalidate();
         }
+    }
+
+    private void logoButton_Click(object sender, EventArgs e)
+    {
+        PInvoke.PostMessage((HWND)Handle, PInvoke.WM_SYSCOMMAND, 0, 0);
     }
 }
 

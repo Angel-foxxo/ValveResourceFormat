@@ -82,6 +82,7 @@ namespace GUI
             vpkEditSaveToDiskToolStripMenuItem = new ToolStripMenuItem();
             mainTabs = new FlatTabControl();
             topNavBarPanel = new TransparentPanel();
+            logoButton = new SysMenuLogoButton();
             controlsBoxPanel = new TransparentPanel();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
@@ -95,14 +96,13 @@ namespace GUI
             menuStrip.BackColor = System.Drawing.SystemColors.Window;
             menuStrip.Dock = DockStyle.Fill;
             menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, explorerToolStripMenuItem, findToolStripButton, settingsToolStripMenuItem, aboutToolStripMenuItem, versionLabel, newVersionAvailableToolStripMenuItem, checkForUpdatesToolStripMenuItem });
-            menuStrip.Location = new System.Drawing.Point(0, 0);
+            menuStrip.Location = new System.Drawing.Point(40, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new Padding(0);
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new System.Drawing.Size(600, 40);
+            menuStrip.Size = new System.Drawing.Size(560, 40);
             menuStrip.TabIndex = 0;
             menuStrip.Text = "menuStrip1";
-            menuStrip.ItemClicked += menuStrip_ItemClicked;
             // 
             // fileToolStripMenuItem
             // 
@@ -430,6 +430,7 @@ namespace GUI
             // topNavBarPanel
             // 
             topNavBarPanel.Controls.Add(menuStrip);
+            topNavBarPanel.Controls.Add(logoButton);
             topNavBarPanel.Controls.Add(controlsBoxPanel);
             topNavBarPanel.Dock = DockStyle.Top;
             topNavBarPanel.Location = new System.Drawing.Point(0, 0);
@@ -437,6 +438,22 @@ namespace GUI
             topNavBarPanel.Name = "topNavBarPanel";
             topNavBarPanel.Size = new System.Drawing.Size(750, 40);
             topNavBarPanel.TabIndex = 3;
+            // 
+            // logoButton
+            // 
+            logoButton.BackColor = System.Drawing.Color.Peru;
+            logoButton.BackgroundImageLayout = ImageLayout.Zoom;
+            logoButton.Dock = DockStyle.Left;
+            logoButton.FlatAppearance.BorderSize = 0;
+            logoButton.FlatStyle = FlatStyle.Flat;
+            logoButton.Location = new System.Drawing.Point(0, 0);
+            logoButton.Margin = new Padding(0);
+            logoButton.Name = "logoButton";
+            logoButton.Size = new System.Drawing.Size(40, 40);
+            logoButton.TabIndex = 13;
+            logoButton.Text = "logo";
+            logoButton.UseVisualStyleBackColor = false;
+            logoButton.Click += logoButton_Click;
             // 
             // controlsBoxPanel
             // 
@@ -520,6 +537,7 @@ namespace GUI
         private ToolStripSeparator toolStripSeparator3;
         private TransparentPanel topNavBarPanel;
         private TransparentPanel controlsBoxPanel;
+        private Button logoButton;
     }
 }
 
