@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DarkModeForms;
 using GUI.Controls;
 using GUI.Types.Audio;
 using GUI.Types.Renderer;
@@ -10,7 +11,6 @@ using ValveResourceFormat;
 using ValveResourceFormat.Blocks;
 using ValveResourceFormat.IO;
 using ValveResourceFormat.ResourceTypes;
-using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

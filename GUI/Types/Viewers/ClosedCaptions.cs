@@ -1,10 +1,10 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
+using DarkModeForms;
 using GUI.Controls;
 using GUI.Utils;
 using ValveResourceFormat.ClosedCaptions;
-using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

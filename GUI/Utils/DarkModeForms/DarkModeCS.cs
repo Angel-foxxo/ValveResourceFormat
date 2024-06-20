@@ -1,11 +1,10 @@
-using Microsoft.Win32;
+using System.ComponentModel.Design;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using GUI.Controls;
-using System.ComponentModel.Design;
 using GUI.Types.PackageViewer;
-using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Windows.Win32;
 
 namespace DarkModeForms
@@ -20,6 +19,8 @@ namespace DarkModeForms
         /// <summary>Windows Colors. Can be customized.</summary>
         public ThemeColors ThemeColors { get; set; }
 
+        private static bool DebugTheme;
+
         /// <summary>Constructor.</summary>
         public DarkModeCS(bool debugTheme = false)
         {
@@ -28,8 +29,6 @@ namespace DarkModeForms
             IsDarkMode = IsWindowsDarkThemed();
             ThemeColors = GetAppTheme();
         }
-
-        #region Public Methods
 
         /// <summary>This tries to style and automatically apply Windows Dark Mode (if enabled) to a Form.</summary>
         /// <param name="_Form">The Form to become Dark</param>
@@ -157,7 +156,7 @@ namespace DarkModeForms
             if (control is TransparentMenuStrip menu)
             {
                 menu.RenderMode = ToolStripRenderMode.Professional;
-                menu.Renderer = new MyRenderer(new CustomColorTable(ThemeColors), false)
+                menu.Renderer = new DarkToolStripRenderer(new CustomColorTable(ThemeColors), false)
                 {
                     themeColors = ThemeColors
                 };
@@ -166,12 +165,12 @@ namespace DarkModeForms
             {
                 toolBar.GripStyle = ToolStripGripStyle.Hidden;
                 toolBar.RenderMode = ToolStripRenderMode.Professional;
-                toolBar.Renderer = new MyRenderer(new CustomColorTable(ThemeColors), false) { themeColors = ThemeColors };
+                toolBar.Renderer = new DarkToolStripRenderer(new CustomColorTable(ThemeColors), false) { themeColors = ThemeColors };
             }
             if (control is ContextMenuStrip cMenu)
             {
                 cMenu.RenderMode = ToolStripRenderMode.Professional;
-                cMenu.Renderer = new MyRenderer(new CustomColorTable(ThemeColors), false) { themeColors = ThemeColors };
+                cMenu.Renderer = new DarkToolStripRenderer(new CustomColorTable(ThemeColors), false) { themeColors = ThemeColors };
             }
             if (control is DataGridView grid)
             {
@@ -320,11 +319,9 @@ namespace DarkModeForms
             return intResult <= 0;
         }
 
-        public static ThemeColors GetAppTheme()
+        public ThemeColors GetAppTheme()
         {
             var themeColors = new ThemeColors();
-
-            var IsDarkMode = IsWindowsDarkThemed();
 
             if (IsDarkMode)
             {
@@ -419,11 +416,11 @@ namespace DarkModeForms
 
                 var colorMatrix = new System.Drawing.Imaging.ColorMatrix(
                 [
-                [1,    0,  0,  0,  0],
-                [0,    1,  0,  0,  0],
-                [0,    0,  1,  0,  0],
-                [0,    0,  0,  1,  0],  //<- not changing alpha
-				[tR,   tG, tB, 0,  1]
+                [1, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 0, 1, 0],  //<- not changing alpha
+                    [tR, tG, tB, 0, 1]
                 ]);
 
                 var attributes = new System.Drawing.Imaging.ImageAttributes();
@@ -436,56 +433,8 @@ namespace DarkModeForms
             }
             return bmp2;
         }
+
         public static Image ChangeToColor(Image bmp, Color c) => (Image)ChangeToColor((Bitmap)bmp, c);
-
-        #endregion
-
-        #region Private Methods
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct COMBOBOXINFO
-        {
-            internal int cbSize;
-            internal Win32Rect rcItem;
-            internal Win32Rect rcButton;
-            internal int stateButton;
-            internal IntPtr hwndCombo;
-            internal IntPtr hwndItem;
-            internal IntPtr hwndList;
-
-            internal COMBOBOXINFO(int size)
-            {
-                cbSize = size;
-                rcItem = Win32Rect.Empty;
-                rcButton = Win32Rect.Empty;
-                stateButton = 0;
-                hwndCombo = IntPtr.Zero;
-                hwndItem = IntPtr.Zero;
-                hwndList = IntPtr.Zero;
-            }
-        };
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct Win32Rect
-        {
-            internal int left;
-            internal int top;
-            internal int right;
-            internal int bottom;
-            static internal Win32Rect Empty
-            {
-                get
-                {
-                    return new Win32Rect(0, 0, 0, 0);
-                }
-            }
-
-            internal Win32Rect(int _left, int _top, int _right, int _bottom)
-            {
-                left = _left; top = _top; right = _right; bottom = _bottom;
-            }
-        }
-
-        private static bool DebugTheme;
 
         private void ApplyTheme(Form _Form)
         {
@@ -519,6 +468,7 @@ namespace DarkModeForms
         private void OnUserPreferenceChanged(object sender, EventArgs e)
         {
             var currentTheme = IsWindowsDarkThemed();
+
             if (IsDarkMode != currentTheme)
             {
                 IsDarkMode = currentTheme;
@@ -568,7 +518,6 @@ namespace DarkModeForms
             {
                 DarkModeOn = 0;
             }
-
 
             if (control is ComboBox comboBox)
             {
@@ -644,13 +593,13 @@ namespace DarkModeForms
         public Color Accent { get; set; }
     }
 
-    /* Custom Renderers for Menus and ToolBars */
-    public class MyRenderer : ToolStripProfessionalRenderer
+    // Custom Renderers for Menus and ToolBars
+    public class DarkToolStripRenderer : ToolStripProfessionalRenderer
     {
         public bool ColorizeIcons { get; set; } = true;
-        public ThemeColors themeColors { get; set; } //<- Your Custom Colors Colection
+        public ThemeColors themeColors { get; set; }
 
-        public MyRenderer(ProfessionalColorTable table, bool pColorizeIcons = true) : base(table)
+        public DarkToolStripRenderer(ProfessionalColorTable table, bool pColorizeIcons = true) : base(table)
         {
             ColorizeIcons = pColorizeIcons;
         }
@@ -758,8 +707,6 @@ namespace DarkModeForms
             e.Graphics.FillRectangle(b, bounds);
 
             //3. Draws the Chevron:
-            #region Chevron
-
             //int Padding = 2; //<- From the right side
             //Size cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
             //Pen ChevronPen = new Pen(MyColors.TextInactive, 2); //<- Color and Border Width
@@ -769,8 +716,6 @@ namespace DarkModeForms
 
             //e.Graphics.DrawLine(ChevronPen, P1, P3);
             //e.Graphics.DrawLine(ChevronPen, P2, P3);
-
-            #endregion
         }
 
         // For SplitButtons on a ToolBar:
@@ -801,8 +746,6 @@ namespace DarkModeForms
             e.Graphics.FillRectangle(b, bounds);
 
             //3. Draws the Chevron:
-            #region Chevron
-
             var Padding = 2; //<- From the right side
             var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
             var ChevronPen = new Pen(themeColors.TextInactive, 2); //<- Color and Border Width
@@ -814,8 +757,6 @@ namespace DarkModeForms
             e.Graphics.DrawLine(ChevronPen, P2, P3);
 
             ChevronPen.Dispose();
-
-            #endregion
         }
 
         // For the Text Color of all Items:
@@ -908,8 +849,8 @@ namespace DarkModeForms
                 base.OnRenderItemImage(e);
             }
         }
-
     }
+
     public class CustomColorTable : ProfessionalColorTable
     {
         public ThemeColors Colors { get; set; }
@@ -920,17 +861,8 @@ namespace DarkModeForms
             UseSystemColors = false;
         }
 
-        public override Color ImageMarginGradientBegin
-        {
-            get { return Colors.Container; }
-        }
-        public override Color ImageMarginGradientMiddle
-        {
-            get { return Colors.Container; }
-        }
-        public override Color ImageMarginGradientEnd
-        {
-            get { return Colors.Container; }
-        }
+        public override Color ImageMarginGradientBegin => Colors.Container;
+        public override Color ImageMarginGradientMiddle => Colors.Container;
+        public override Color ImageMarginGradientEnd => Colors.Container;
     }
 }

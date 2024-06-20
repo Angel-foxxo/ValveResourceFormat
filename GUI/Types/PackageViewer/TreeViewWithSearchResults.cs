@@ -2,10 +2,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using DarkModeForms;
 using GUI.Forms;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
-using DarkModeForms;
 
 namespace GUI.Types.PackageViewer
 {

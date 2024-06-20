@@ -1,5 +1,5 @@
-using DarkModeForms;
 using System.Windows.Forms;
+using DarkModeForms;
 
 namespace GUI.Forms
 {

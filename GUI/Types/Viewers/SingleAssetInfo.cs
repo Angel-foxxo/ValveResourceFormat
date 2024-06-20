@@ -3,11 +3,11 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+using DarkModeForms;
 using GUI.Controls;
 using GUI.Utils;
 using SteamDatabase.ValvePak;
 using ValveKeyValue;
-using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

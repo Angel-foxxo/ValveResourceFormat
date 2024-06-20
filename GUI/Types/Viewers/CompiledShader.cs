@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using DarkModeForms;
 using GUI.Controls;
 using GUI.Utils;
 using ValveResourceFormat.CompiledShader;
@@ -11,7 +12,6 @@ using ValveResourceFormat.IO;
 using Vortice.SpirvCross;
 using static ValveResourceFormat.CompiledShader.ShaderUtilHelpers;
 using VrfPackage = SteamDatabase.ValvePak.Package;
-using DarkModeForms;
 
 namespace GUI.Types.Viewers
 {

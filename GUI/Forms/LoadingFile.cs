@@ -1,6 +1,6 @@
-using DarkModeForms;
 using System.Drawing;
 using System.Windows.Forms;
+using DarkModeForms;
 
 namespace GUI.Forms
 {
