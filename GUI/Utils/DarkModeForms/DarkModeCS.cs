@@ -6,7 +6,7 @@ using GUI.Controls;
 using System.ComponentModel.Design;
 using GUI.Types.PackageViewer;
 using System.Runtime.InteropServices;
-using Windows.Win32.UI.Controls;
+using Windows.Win32;
 
 namespace DarkModeForms
 {
@@ -14,150 +14,6 @@ namespace DarkModeForms
     /// <para>Author: DarkModeForms (DarkModeForms.play@gmail.com)  2024</para></summary>
     public partial class DarkModeCS
     {
-        #region Win32 API Declarations
-
-        public enum DWMWINDOWATTRIBUTE
-        {
-            /// <summary>
-            /// Use with DwmGetWindowAttribute. Discovers whether non-client rendering is enabled. The retrieved value is of type BOOL. TRUE if non-client rendering is enabled; otherwise, FALSE.
-            /// </summary>
-            DWMWA_NCRENDERING_ENABLED = 1,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Sets the non-client rendering policy. The pvAttribute parameter points to a value from the DWMNCRENDERINGPOLICY enumeration.
-            /// </summary>
-            DWMWA_NCRENDERING_POLICY,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Enables or forcibly disables DWM transitions. The pvAttribute parameter points to a value of type BOOL. TRUE to disable transitions, or FALSE to enable transitions.
-            /// </summary>
-            DWMWA_TRANSITIONS_FORCEDISABLED,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Enables content rendered in the non-client area to be visible on the frame drawn by DWM. The pvAttribute parameter points to a value of type BOOL. TRUE to enable content rendered in the non-client area to be visible on the frame; otherwise, FALSE.
-            /// </summary>
-            DWMWA_ALLOW_NCPAINT,
-
-            /// <summary>
-            /// Use with DwmGetWindowAttribute. Retrieves the bounds of the caption button area in the window-relative space. The retrieved value is of type RECT. If the window is minimized or otherwise not visible to the user, then the value of the RECT retrieved is undefined. You should check whether the retrieved RECT contains a boundary that you can work with, and if it doesn't then you can conclude that the window is minimized or otherwise not visible.
-            /// </summary>
-            DWMWA_CAPTION_BUTTON_BOUNDS,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Specifies whether non-client content is right-to-left (RTL) mirrored. The pvAttribute parameter points to a value of type BOOL. TRUE if the non-client content is right-to-left (RTL) mirrored; otherwise, FALSE.
-            /// </summary>
-            DWMWA_NONCLIENT_RTL_LAYOUT,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Forces the window to display an iconic thumbnail or peek representation (a static bitmap), even if a live or snapshot representation of the window is available. This value is normally set during a window's creation, and not changed throughout the window's lifetime. Some scenarios, however, might require the value to change over time. The pvAttribute parameter points to a value of type BOOL. TRUE to require a iconic thumbnail or peek representation; otherwise, FALSE.
-            /// </summary>
-            DWMWA_FORCE_ICONIC_REPRESENTATION,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Sets how Flip3D treats the window. The pvAttribute parameter points to a value from the DWMFLIP3DWINDOWPOLICY enumeration.
-            /// </summary>
-            DWMWA_FLIP3D_POLICY,
-
-            /// <summary>
-            /// Use with DwmGetWindowAttribute. Retrieves the extended frame bounds rectangle in screen space. The retrieved value is of type RECT.
-            /// </summary>
-            DWMWA_EXTENDED_FRAME_BOUNDS,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. The window will provide a bitmap for use by DWM as an iconic thumbnail or peek representation (a static bitmap) for the window. DWMWA_HAS_ICONIC_BITMAP can be specified with DWMWA_FORCE_ICONIC_REPRESENTATION. DWMWA_HAS_ICONIC_BITMAP normally is set during a window's creation and not changed throughout the window's lifetime. Some scenarios, however, might require the value to change over time. The pvAttribute parameter points to a value of type BOOL. TRUE to inform DWM that the window will provide an iconic thumbnail or peek representation; otherwise, FALSE. Windows Vista and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_HAS_ICONIC_BITMAP,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Do not show peek preview for the window. The peek view shows a full-sized preview of the window when the mouse hovers over the window's thumbnail in the taskbar. If this attribute is set, hovering the mouse pointer over the window's thumbnail dismisses peek (in case another window in the group has a peek preview showing). The pvAttribute parameter points to a value of type BOOL. TRUE to prevent peek functionality, or FALSE to allow it. Windows Vista and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_DISALLOW_PEEK,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Prevents a window from fading to a glass sheet when peek is invoked. The pvAttribute parameter points to a value of type BOOL. TRUE to prevent the window from fading during another window's peek, or FALSE for normal behavior. Windows Vista and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_EXCLUDED_FROM_PEEK,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Cloaks the window such that it is not visible to the user. The window is still composed by DWM. Using with DirectComposition: Use the DWMWA_CLOAK flag to cloak the layered child window when animating a representation of the window's content via a DirectComposition visual that has been associated with the layered child window. For more details on this usage case, see How to animate the bitmap of a layered child window. Windows 7 and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_CLOAK,
-
-            /// <summary>
-            /// Use with DwmGetWindowAttribute. If the window is cloaked, provides one of the following values explaining why. DWM_CLOAKED_APP (value 0x0000001). The window was cloaked by its owner application. DWM_CLOAKED_SHELL(value 0x0000002). The window was cloaked by the Shell. DWM_CLOAKED_INHERITED(value 0x0000004). The cloak value was inherited from its owner window. Windows 7 and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_CLOAKED,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Freeze the window's thumbnail image with its current visuals. Do no further live updates on the thumbnail image to match the window's contents. Windows 7 and earlier: This value is not supported.
-            /// </summary>
-            DWMWA_FREEZE_REPRESENTATION,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Enables a non-UWP window to use host backdrop brushes. If this flag is set, then a Win32 app that calls Windows::UI::Composition APIs can build transparency effects using the host backdrop brush (see Compositor.CreateHostBackdropBrush). The pvAttribute parameter points to a value of type BOOL. TRUE to enable host backdrop brushes for the window, or FALSE to disable it. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_USE_HOSTBACKDROPBRUSH,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Allows the window frame for this window to be drawn in dark mode colors when the dark mode system setting is enabled. For compatibility reasons, all windows default to light mode regardless of the system setting. The pvAttribute parameter points to a value of type BOOL. TRUE to honor dark mode for the window, FALSE to always use light mode. This value is supported starting with Windows 10 Build 17763.
-            /// </summary>
-            DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Allows the window frame for this window to be drawn in dark mode colors when the dark mode system setting is enabled. For compatibility reasons, all windows default to light mode regardless of the system setting. The pvAttribute parameter points to a value of type BOOL. TRUE to honor dark mode for the window, FALSE to always use light mode. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Specifies the rounded corner preference for a window. The pvAttribute parameter points to a value of type DWM_WINDOW_CORNER_PREFERENCE. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_WINDOW_CORNER_PREFERENCE = 33,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Specifies the color of the window border. The pvAttribute parameter points to a value of type COLORREF. The app is responsible for changing the border color according to state changes, such as a change in window activation. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_BORDER_COLOR,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Specifies the color of the caption. The pvAttribute parameter points to a value of type COLORREF. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_CAPTION_COLOR,
-
-            /// <summary>
-            /// Use with DwmSetWindowAttribute. Specifies the color of the caption text. The pvAttribute parameter points to a value of type COLORREF. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_TEXT_COLOR,
-
-            /// <summary>
-            /// Use with DwmGetWindowAttribute. Retrieves the width of the outer border that the DWM would draw around this window. The value can vary depending on the DPI of the window. The pvAttribute parameter points to a value of type UINT. This value is supported starting with Windows 11 Build 22000.
-            /// </summary>
-            DWMWA_VISIBLE_FRAME_BORDER_THICKNESS,
-
-            /// <summary>
-            /// The maximum recognized DWMWINDOWATTRIBUTE value, used for validation purposes.
-            /// </summary>
-            DWMWA_LAST,
-        }
-
-        [Flags]
-        public enum DWM_WINDOW_CORNER_PREFERENCE
-        {
-            DWMWCP_DEFAULT = 0,
-            DWMWCP_DONOTROUND = 1,
-            DWMWCP_ROUND = 2,
-            DWMWCP_ROUNDSMALL = 3
-        }
-
-        public const int EM_SETCUEBANNER = 5377;
-
-        public static IntPtr GetHeaderControl(ListView list)
-        {
-            const int LVM_GETHEADER = 0x1000 + 31;
-            return Windows.Win32.PInvoke.SendMessage((Windows.Win32.Foundation.HWND)list.Handle, LVM_GETHEADER, 0, 0);
-        }
-
-        #endregion
-
         /// <summary>'true' if Dark Mode Color is set in Windows's Settings.</summary>
         public bool IsDarkMode { get; set; }
 
@@ -451,7 +307,7 @@ namespace DarkModeForms
 
             try
             {
-                intResult = (int)Microsoft.Win32.Registry.GetValue(
+                intResult = (int)Registry.GetValue(
                     @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
                     GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
                     -1);
@@ -660,7 +516,7 @@ namespace DarkModeForms
             }
         }
 
-        private void OnUserPreferenceChanged(object sender, System.EventArgs e)
+        private void OnUserPreferenceChanged(object sender, EventArgs e)
         {
             var currentTheme = IsWindowsDarkThemed();
             if (IsDarkMode != currentTheme)
@@ -696,12 +552,12 @@ namespace DarkModeForms
             
 				SetWindowTheme:     https://learn.microsoft.com/en-us/windows/win32/api/uxtheme/nf-uxtheme-setwindowtheme
 				Causes a window to use a different set of visual style information than its class normally uses.
-			 */
+			*/
             IntPtr DarkModeOn = 0; //<- 1=True, 0=False
-            
+
             var windowsTheme = "Explorer";
             var windowsThemeCombo = "Explorer";
-            
+
             if (IsDarkMode)
             {
                 windowsTheme = "DarkMode_Explorer";
@@ -712,29 +568,31 @@ namespace DarkModeForms
             {
                 DarkModeOn = 0;
             }
-            
-            
-            if (control is System.Windows.Forms.ComboBox comboBox)
+
+
+            if (control is ComboBox comboBox)
             {
-                _ = Windows.Win32.PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)comboBox.Handle, windowsThemeCombo, null);
-            
+                _ = PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)comboBox.Handle, windowsThemeCombo, null);
+
                 // Style the ComboBox drop-down (including its ScrollBar(s)):
                 Windows.Win32.UI.Controls.COMBOBOXINFO cInfo = default;
-                var result = Windows.Win32.PInvoke.GetComboBoxInfo((Windows.Win32.Foundation.HWND)comboBox.Handle, ref cInfo);
-                _ = Windows.Win32.PInvoke.SetWindowTheme(cInfo.hwndList, windowsThemeCombo, null);
+                var result = PInvoke.GetComboBoxInfo((Windows.Win32.Foundation.HWND)comboBox.Handle, ref cInfo);
+                _ = PInvoke.SetWindowTheme(cInfo.hwndList, windowsThemeCombo, null);
             }
             else
             {
-                _ = Windows.Win32.PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)control.Handle, windowsTheme, null);
+                _ = PInvoke.SetWindowTheme((Windows.Win32.Foundation.HWND)control.Handle, windowsTheme, null);
             }
             unsafe
             {
-                if (Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &DarkModeOn, sizeof(int)) != 0)
+                const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
+
+                if (PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &DarkModeOn, sizeof(int)) != 0)
                 {
-                    _ = Windows.Win32.PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, (Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(int));
+                    _ = PInvoke.DwmSetWindowAttribute((Windows.Win32.Foundation.HWND)control.Handle, Windows.Win32.Graphics.Dwm.DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkModeOn, sizeof(int));
                 }
             }
-            
+
             foreach (Control child in control.Controls)
             {
                 if (child.Controls.Count != 0)
@@ -743,7 +601,6 @@ namespace DarkModeForms
                 }
             }
         }
-        #endregion
     }
 
     public class ThemeColors
@@ -751,39 +608,39 @@ namespace DarkModeForms
         public ThemeColors() { }
 
         /// <summary>For the very back of the Window</summary>
-        public System.Drawing.Color Window { get; set; }
+        public Color Window { get; set; }
         /// <summary>For Borders around the Background</summary>
-        public System.Drawing.Color WindowBorder { get; set; }
+        public Color WindowBorder { get; set; }
         /// <summary>For hightlights over the Background</summary>
-        public System.Drawing.Color WindowHighlight { get; set; }
+        public Color WindowHighlight { get; set; }
 
         /// <summary>For Container above the Background</summary>
-        public System.Drawing.Color Container { get; set; }
+        public Color Container { get; set; }
         /// <summary>For Borders around the Surface</summary>
-        public System.Drawing.Color ContainerBorder { get; set; }
+        public Color ContainerBorder { get; set; }
         /// <summary>For Highligh over the Surface</summary>
-        public System.Drawing.Color ContainerHighlight { get; set; }
+        public Color ContainerHighlight { get; set; }
 
         /// <summary>For Main Texts</summary>
-        public System.Drawing.Color Text { get; set; }
+        public Color Text { get; set; }
         /// <summary>For Inactive Texts</summary>
-        public System.Drawing.Color TextInactive { get; set; }
+        public Color TextInactive { get; set; }
         /// <summary>For Hightligh Texts</summary>
-        public System.Drawing.Color TextHighlight { get; set; }
+        public Color TextHighlight { get; set; }
 
         /// <summary>For the background of any Control</summary>
-        public System.Drawing.Color Control { get; set; }
+        public Color Control { get; set; }
         /// <summary>For Borders of any Control</summary>
-        public System.Drawing.Color ControlBorder { get; set; }
+        public Color ControlBorder { get; set; }
         /// <summary>For Highlight elements in a Control</summary>
-        public System.Drawing.Color ControlHighlight { get; set; }
+        public Color ControlHighlight { get; set; }
 
         /// <summary>For the control box</summary>
-        public System.Drawing.Color ControlBoxHighlight { get; set; }
-        public System.Drawing.Color ControlBoxHighlightCloseButton { get; set; }
+        public Color ControlBoxHighlight { get; set; }
+        public Color ControlBoxHighlightCloseButton { get; set; }
 
         /// <summary>For anything that accented like hovering over a tab</summary>
-        public System.Drawing.Color Accent { get; set; }
+        public Color Accent { get; set; }
     }
 
     /* Custom Renderers for Menus and ToolBars */
@@ -972,7 +829,7 @@ namespace DarkModeForms
                 e.TextColor = themeColors.TextInactive;
             }
 
-            var text = e.Text.Replace("&", "");
+            var text = e.Text.Replace("&", "", StringComparison.Ordinal);
 
             using var textBrush = new SolidBrush(e.TextColor);
             //e.Graphics.DrawString(text, e.TextFont, textBrush, e.TextRectangle);
@@ -1059,7 +916,7 @@ namespace DarkModeForms
         public CustomColorTable(ThemeColors _Colors)
         {
             Colors = _Colors;
-            base.UseSystemColors = false;
+            UseSystemColors = false;
         }
 
         public override Color ImageMarginGradientBegin
