@@ -550,7 +550,6 @@ namespace DarkModeForms
                 }
             }
         }
-        #endregion Private Methods
     }
 
     public class ThemeColors
