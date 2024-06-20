@@ -341,6 +341,7 @@ namespace GUI.Types.Renderer
                     entityInfoForm.AddProperty("Light Probe Handshake", $"{sceneNode.LightProbeVolumePrecomputedHandshake}");
                 }
 
+                entityInfoForm.AddProperty("Flags", sceneNode.Flags.ToString());
                 entityInfoForm.AddProperty("Layer", sceneNode.LayerName);
             }
 
