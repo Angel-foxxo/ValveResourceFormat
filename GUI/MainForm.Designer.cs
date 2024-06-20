@@ -83,7 +83,7 @@ namespace GUI
             mainTabs = new FlatTabControl();
             topNavBarPanel = new TransparentPanel();
             logoButton = new SysMenuLogoButton();
-            controlsBoxPanel = new TransparentPanel();
+            controlsBoxPanel = new ControlsBoxPanel();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
             vpkContextMenu.SuspendLayout();
@@ -536,7 +536,7 @@ namespace GUI
         private ToolStripMenuItem copyFileNameOnDiskToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator3;
         private TransparentPanel topNavBarPanel;
-        private TransparentPanel controlsBoxPanel;
+        private ControlsBoxPanel controlsBoxPanel;
         private Button logoButton;
     }
 }
