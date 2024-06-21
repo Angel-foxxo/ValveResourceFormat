@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using GUI;
 using GUI.Controls;
 using GUI.Types.PackageViewer;
+using GUI.Utils;
 using Microsoft.Win32;
 using Windows.Win32;
 
@@ -313,15 +314,22 @@ namespace DarkModeForms
         /// <summary>Returns Windows Color Mode for Applications.
         /// <para>true=dark theme, false=light theme</para>
         /// </summary>
-        public static bool IsWindowsDarkThemed(bool GetSystemColorModeInstead = false)
+        public static bool IsWindowsDarkThemed()
         {
+            var theme = (Settings.AppTheme)Settings.Config.Theme;
+
+            if (theme != Settings.AppTheme.Automatic)
+            {
+                return theme == Settings.AppTheme.Dark;
+            }
+
             var intResult = 1;
 
             try
             {
                 intResult = (int)Registry.GetValue(
                     @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
-                    GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
+                    "AppsUseLightTheme",
                     -1);
             }
             catch
@@ -478,7 +486,9 @@ namespace DarkModeForms
             }
         }
 
-        private void OnUserPreferenceChanged(object sender, EventArgs e)
+        private void OnUserPreferenceChanged(object sender, EventArgs e) => UpdateTheme();
+
+        public void UpdateTheme()
         {
             var currentTheme = IsWindowsDarkThemed();
 

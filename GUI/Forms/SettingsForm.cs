@@ -37,6 +37,7 @@ namespace GUI.Forms
             vsyncCheckBox.Checked = Settings.Config.Vsync != 0;
             displayFpsCheckBox.Checked = Settings.Config.DisplayFps != 0;
             openExplorerOnStartCheckbox.Checked = Settings.Config.OpenExplorerOnStart != 0;
+            themeComboBox.SelectedIndex = Settings.Config.Theme;
 
             var quickPreviewFlags = (Settings.QuickPreviewFlags)Settings.Config.QuickFilePreview;
             quickPreviewCheckbox.Checked = (quickPreviewFlags & Settings.QuickPreviewFlags.Enabled) != 0;
@@ -140,6 +141,13 @@ namespace GUI.Forms
         {
             var newValue = AntiAliasingSampleOptions[antiAliasingComboBox.SelectedIndex];
             Settings.Config.AntiAliasingSamples = newValue;
+        }
+
+        private void OnThemeValueChanged(object sender, EventArgs e)
+        {
+            Settings.Config.Theme = themeComboBox.SelectedIndex;
+
+            MainForm.DarkModeCS.UpdateTheme();
         }
 
         private void OnVsyncValueChanged(object sender, EventArgs e)

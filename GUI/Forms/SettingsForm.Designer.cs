@@ -51,6 +51,8 @@ namespace GUI.Forms
             tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
             openExplorerOnStartLabel = new System.Windows.Forms.Label();
+            themeLabel = new System.Windows.Forms.Label();
+            themeComboBox = new System.Windows.Forms.ComboBox();
             groupBox4 = new System.Windows.Forms.GroupBox();
             tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             quickPreviewLabel = new System.Windows.Forms.Label();
@@ -185,7 +187,7 @@ namespace GUI.Forms
             // registerAssociationButton
             // 
             registerAssociationButton.Dock = System.Windows.Forms.DockStyle.Fill;
-            registerAssociationButton.Location = new System.Drawing.Point(4, 43);
+            registerAssociationButton.Location = new System.Drawing.Point(4, 83);
             registerAssociationButton.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             registerAssociationButton.Name = "registerAssociationButton";
             registerAssociationButton.Size = new System.Drawing.Size(202, 34);
@@ -318,7 +320,7 @@ namespace GUI.Forms
             groupBox3.Margin = new System.Windows.Forms.Padding(0);
             groupBox3.Name = "groupBox3";
             groupBox3.Padding = new System.Windows.Forms.Padding(16);
-            groupBox3.Size = new System.Drawing.Size(452, 138);
+            groupBox3.Size = new System.Drawing.Size(452, 177);
             groupBox3.TabIndex = 3;
             groupBox3.TabStop = false;
             groupBox3.Text = "Explorer";
@@ -328,24 +330,27 @@ namespace GUI.Forms
             tableLayoutPanel4.ColumnCount = 2;
             tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            tableLayoutPanel4.Controls.Add(openExplorerOnStartCheckbox, 1, 0);
-            tableLayoutPanel4.Controls.Add(openExplorerOnStartLabel, 0, 0);
-            tableLayoutPanel4.Controls.Add(registerAssociationButton, 0, 1);
+            tableLayoutPanel4.Controls.Add(openExplorerOnStartCheckbox, 1, 1);
+            tableLayoutPanel4.Controls.Add(openExplorerOnStartLabel, 0, 1);
+            tableLayoutPanel4.Controls.Add(registerAssociationButton, 0, 2);
+            tableLayoutPanel4.Controls.Add(themeLabel, 0, 0);
+            tableLayoutPanel4.Controls.Add(themeComboBox, 1, 0);
             tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             tableLayoutPanel4.Location = new System.Drawing.Point(16, 32);
             tableLayoutPanel4.Name = "tableLayoutPanel4";
-            tableLayoutPanel4.RowCount = 3;
+            tableLayoutPanel4.RowCount = 4;
+            tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            tableLayoutPanel4.Size = new System.Drawing.Size(420, 90);
+            tableLayoutPanel4.Size = new System.Drawing.Size(420, 129);
             tableLayoutPanel4.TabIndex = 11;
             // 
             // openExplorerOnStartCheckbox
             // 
             openExplorerOnStartCheckbox.AutoSize = true;
             openExplorerOnStartCheckbox.Dock = System.Windows.Forms.DockStyle.Fill;
-            openExplorerOnStartCheckbox.Location = new System.Drawing.Point(213, 3);
+            openExplorerOnStartCheckbox.Location = new System.Drawing.Point(213, 43);
             openExplorerOnStartCheckbox.Name = "openExplorerOnStartCheckbox";
             openExplorerOnStartCheckbox.Size = new System.Drawing.Size(204, 34);
             openExplorerOnStartCheckbox.TabIndex = 12;
@@ -356,11 +361,33 @@ namespace GUI.Forms
             // 
             openExplorerOnStartLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
             openExplorerOnStartLabel.AutoSize = true;
-            openExplorerOnStartLabel.Location = new System.Drawing.Point(3, 12);
+            openExplorerOnStartLabel.Location = new System.Drawing.Point(3, 52);
             openExplorerOnStartLabel.Name = "openExplorerOnStartLabel";
             openExplorerOnStartLabel.Size = new System.Drawing.Size(128, 15);
             openExplorerOnStartLabel.TabIndex = 11;
             openExplorerOnStartLabel.Text = "Open explorer on start:";
+            // 
+            // themeLabel
+            // 
+            themeLabel.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            themeLabel.AutoSize = true;
+            themeLabel.Location = new System.Drawing.Point(3, 12);
+            themeLabel.Name = "themeLabel";
+            themeLabel.Size = new System.Drawing.Size(46, 15);
+            themeLabel.TabIndex = 13;
+            themeLabel.Text = "Theme:";
+            // 
+            // themeComboBox
+            // 
+            themeComboBox.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            themeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            themeComboBox.FormattingEnabled = true;
+            themeComboBox.Items.AddRange(new object[] { "Automatic", "Light", "Dark" });
+            themeComboBox.Location = new System.Drawing.Point(213, 8);
+            themeComboBox.Name = "themeComboBox";
+            themeComboBox.Size = new System.Drawing.Size(100, 23);
+            themeComboBox.TabIndex = 14;
+            themeComboBox.SelectedIndexChanged += OnThemeValueChanged;
             // 
             // groupBox4
             // 
@@ -441,7 +468,7 @@ namespace GUI.Forms
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             AutoScroll = true;
-            ClientSize = new System.Drawing.Size(484, 751);
+            ClientSize = new System.Drawing.Size(484, 841);
             Controls.Add(groupBox3);
             Controls.Add(groupBox4);
             Controls.Add(groupBox2);
@@ -502,5 +529,7 @@ namespace GUI.Forms
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private System.Windows.Forms.CheckBox openExplorerOnStartCheckbox;
         private System.Windows.Forms.Label openExplorerOnStartLabel;
+        private System.Windows.Forms.Label themeLabel;
+        private System.Windows.Forms.ComboBox themeComboBox;
     }
 }

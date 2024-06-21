@@ -461,6 +461,7 @@ namespace GUI
             // controlsBoxPanel
             // 
             controlsBoxPanel.BackColor = System.Drawing.Color.Transparent;
+            controlsBoxPanel.CurrentHoveredButton = ControlsBoxPanel.CustomTitleBarHoveredButton.None;
             controlsBoxPanel.Dock = DockStyle.Right;
             controlsBoxPanel.ForeColor = System.Drawing.Color.Transparent;
             controlsBoxPanel.Location = new System.Drawing.Point(597, 0);
@@ -485,6 +486,7 @@ namespace GUI
             SizeGripStyle = SizeGripStyle.Hide;
             Text = "Source 2 Viewer";
             Load += MainForm_Load;
+            Shown += MainForm_Shown;
             DragDrop += MainForm_DragDrop;
             DragEnter += MainForm_DragEnter;
             menuStrip.ResumeLayout(false);
