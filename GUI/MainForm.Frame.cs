@@ -84,14 +84,18 @@ partial class MainForm
             // of the panel here, and corrently set NONE.
             controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
 
-            if (point.Y - padding <= menuStrip.Top)
+            // Only run top scaling logic when not fullscreened so the window can be dragged even if the cursor is at the very top of the screen.
+            if (!IsWindowMaximised())
             {
-                // Manually set none for fix some oddity with hover not updating
-                // when moving the cursor outside the window on the top.
-                controlsBoxPanel.CurrentHoveredButton = ControlsBoxPanel.CustomTitleBarHoveredButton.None;
+                if (point.Y - padding <= menuStrip.Top)
+                {
+                    // Manually set none for fix some oddity with hover not updating
+                    // when moving the cursor outside the window on the top.
+                    controlsBoxPanel.CurrentHoveredButton = ControlsBoxPanel.CustomTitleBarHoveredButton.None;
 
-                m.Result = new IntPtr(PInvoke.HTTOP);
-                return;
+                    m.Result = new IntPtr(PInvoke.HTTOP);
+                    return;
+                }
             }
 
             if (point.Y < menuStrip.Height)
