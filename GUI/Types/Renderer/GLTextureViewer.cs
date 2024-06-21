@@ -914,6 +914,9 @@ namespace GUI.Types.Renderer
             shader.SetUniform1("g_bTextureViewer", 1u);
             shader.SetUniform2("g_vViewportSize", new Vector2(fbo.Width, fbo.Height));
 
+            var theme1 = MainForm.DarkModeCS.ThemeColors.ControlHighlight;
+            shader.SetUniform3("g_vCheckerboardTheme", new Vector3(theme1.R, theme1.G, theme1.B) / 255f);
+
             var (scale, position) = captureFullSizeImage
                 ? (1f, Vector2.Zero)
                 : GetCurrentPositionAndScale();
