@@ -142,6 +142,12 @@ class ControlsBoxPanel : Panel
         // -1 in order to fix a weird pixel missing in the top right corner
         e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
 
+        if(Program.MainForm.IsWindowMaximised())
+        {
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left + 2, maximiseIconRect.Top - 2, maximiseIconRect.Right + 2, maximiseIconRect.Top - 2);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right + 2, maximiseIconRect.Top - 2, maximiseIconRect.Right + 2, maximiseIconRect.Bottom - 2);
+        }
+
         // Draws the X for the close icon.
         // Drawing this last so it can use high quality PixelOffsetMode which makes the line have a
         // more consistent thickness in relation to the other caption buttons
