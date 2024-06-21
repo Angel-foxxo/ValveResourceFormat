@@ -30,7 +30,7 @@ namespace GUI.Controls
         {
             if (m.Msg == PInvoke.WM_NCHITTEST)
             {
-                var point = PointToClient(new Point(MainForm.LoWord((int)m.LParam), MainForm.HiWord((int)m.LParam)));
+                var point = PointToClient(Cursor.Position);
 
                 foreach (ToolStripMenuItem item in Items)
                 {

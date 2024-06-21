@@ -26,18 +26,6 @@ partial class MainForm
         return placement.showCmd == SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED;
     }
 
-    // Equivalent to the LoWord C Macro.
-    public static int LoWord(int dwValue)
-    {
-        return dwValue & 0xFFFF;
-    }
-
-    // Equivalent to the HiWord C Macro.
-    public static int HiWord(int dwValue)
-    {
-        return (dwValue >> 16) & 0xFFFF;
-    }
-
     protected override void WndProc(ref Message m)
     {
         var padding = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
@@ -77,8 +65,8 @@ partial class MainForm
 
             // Convert to client coordinates
             // TODO: easier word conversion?
-            var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
-            var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+            var point = PointToClient(Cursor.Position);
+            var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(Cursor.Position);
 
             // Updating here instead of in the ControlsBoxPanel class is better because we can tell when we are outside
             // of the panel here, and corrently set NONE.
@@ -155,7 +143,7 @@ partial class MainForm
         {
             if (m.WParam == PInvoke.HTCAPTION)
             {
-                var point = PointToScreen(PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam))));
+                var point = PointToScreen(PointToClient(Cursor.Position));
                 OpenSystemMenu(point);
                 return;
             }
@@ -166,7 +154,7 @@ partial class MainForm
             // TODO: controlsBoxPanel IS null at start
             if (controlsBoxPanel != null)
             {
-                var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+                var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(Cursor.Position);
                 controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
             }
         }
