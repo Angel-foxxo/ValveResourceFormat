@@ -35,24 +35,24 @@ namespace GUI.Forms
             // progressBar1
             // 
             progressBar1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            progressBar1.Location = new System.Drawing.Point(500, 311);
+            progressBar1.Location = new System.Drawing.Point(75, 130);
             progressBar1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             progressBar1.MarqueeAnimationSpeed = 30;
             progressBar1.Name = "progressBar1";
-            progressBar1.Size = new System.Drawing.Size(150, 12);
+            progressBar1.Size = new System.Drawing.Size(150, 15);
             progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             progressBar1.TabIndex = 0;
             // 
             // label1
             // 
             label1.Anchor = System.Windows.Forms.AnchorStyles.None;
-            label1.AutoSize = true;
-            label1.Location = new System.Drawing.Point(503, 326);
+            label1.Location = new System.Drawing.Point(75, 155);
             label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(142, 15);
+            label1.Size = new System.Drawing.Size(150, 15);
             label1.TabIndex = 1;
             label1.Text = "Loading file, please wait…";
+            label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // LoadingFile
             // 
@@ -63,10 +63,9 @@ namespace GUI.Forms
             Controls.Add(progressBar1);
             Margin = new System.Windows.Forms.Padding(0);
             Name = "LoadingFile";
-            Size = new System.Drawing.Size(1189, 704);
+            Size = new System.Drawing.Size(300, 300);
             Load += LoadingFile_Load;
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
