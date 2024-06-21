@@ -26,6 +26,11 @@ partial class MainForm
         return placement.showCmd == SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED;
     }
 
+    public static Point LParamToPoint(IntPtr ptr)
+    {
+        return new Point(IntPtr.Size == 8 ? unchecked((int)ptr.ToInt64()) : ptr.ToInt32());
+    }
+
     protected override void WndProc(ref Message m)
     {
         var padding = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXPADDEDBORDER, (uint)DeviceDpi);
@@ -63,10 +68,11 @@ partial class MainForm
                 return;
             }
 
+            var rawPoint = LParamToPoint(m.LParam);
+
             // Convert to client coordinates
-            // TODO: easier word conversion?
-            var point = PointToClient(Cursor.Position);
-            var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(Cursor.Position);
+            var point = PointToClient(rawPoint);
+            var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(rawPoint);
 
             // Updating here instead of in the ControlsBoxPanel class is better because we can tell when we are outside
             // of the panel here, and corrently set NONE.
@@ -143,7 +149,7 @@ partial class MainForm
         {
             if (m.WParam == PInvoke.HTCAPTION)
             {
-                var point = PointToScreen(PointToClient(Cursor.Position));
+                var point = PointToScreen(PointToClient(LParamToPoint(m.LParam)));
                 OpenSystemMenu(point);
                 return;
             }
@@ -154,7 +160,7 @@ partial class MainForm
             // TODO: controlsBoxPanel IS null at start
             if (controlsBoxPanel != null)
             {
-                var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(Cursor.Position);
+                var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(LParamToPoint(m.LParam));
                 controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
             }
         }

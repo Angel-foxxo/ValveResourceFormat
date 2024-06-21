@@ -136,11 +136,11 @@ class ControlsBoxPanel : Panel
         e.Graphics.DrawLine(controlBoxPen, minimiseIconRect3.X, minimiseIconRect3.Y, minimiseIconRect3.X + minimiseIconRect3.Width, minimiseIconRect3.Y);
 
         // Draws the square for the maximise icon.
-        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Bottom, maximiseIconRect.Right, maximiseIconRect.Bottom);
-        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
-        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom);
+        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Bottom, maximiseIconRect.Right, maximiseIconRect.Bottom);
+        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
+        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom);
         // -1 in order to fix a weird pixel missing in the top right corner
-        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
+        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
 
         // Draws the X for the close icon.
         // Drawing this last so it can use high quality PixelOffsetMode which makes the line have a

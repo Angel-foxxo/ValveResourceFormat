@@ -26,11 +26,12 @@ namespace GUI.Controls
 
     internal class TransparentMenuStrip : MenuStrip
     {
+
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == PInvoke.WM_NCHITTEST)
             {
-                var point = PointToClient(Cursor.Position);
+                var point = PointToClient(MainForm.LParamToPoint(m.LParam));
 
                 foreach (ToolStripMenuItem item in Items)
                 {
