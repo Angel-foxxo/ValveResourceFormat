@@ -37,6 +37,8 @@ namespace GUI.Forms
             vsyncCheckBox.Checked = Settings.Config.Vsync != 0;
             displayFpsCheckBox.Checked = Settings.Config.DisplayFps != 0;
             openExplorerOnStartCheckbox.Checked = Settings.Config.OpenExplorerOnStart != 0;
+
+            themeComboBox.Items.AddRange(Enum.GetNames<Settings.AppTheme>());
             themeComboBox.SelectedIndex = Settings.Config.Theme;
 
             var quickPreviewFlags = (Settings.QuickPreviewFlags)Settings.Config.QuickFilePreview;

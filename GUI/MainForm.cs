@@ -312,7 +312,7 @@ namespace GUI
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
-            if ((Settings.AppTheme)Settings.Config.Theme != Settings.AppTheme.Automatic)
+            if ((Settings.AppTheme)Settings.Config.Theme != Settings.AppTheme.System)
             {
                 // This is slightly stupid, but darkmode is initialized before settings load
                 // And can't move settings higher because it has log calls which require the console window to exist

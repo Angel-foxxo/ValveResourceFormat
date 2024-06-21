@@ -21,7 +21,7 @@ namespace GUI.Utils
 
         public enum AppTheme : int
         {
-            Automatic = 0,
+            System = 0,
             Light = 1,
             Dark = 2,
         }

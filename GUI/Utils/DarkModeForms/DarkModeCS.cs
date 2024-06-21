@@ -318,7 +318,7 @@ namespace DarkModeForms
         {
             var theme = (Settings.AppTheme)Settings.Config.Theme;
 
-            if (theme != Settings.AppTheme.Automatic)
+            if (theme != Settings.AppTheme.System)
             {
                 return theme == Settings.AppTheme.Dark;
             }

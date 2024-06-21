@@ -382,7 +382,6 @@ namespace GUI.Forms
             themeComboBox.Anchor = System.Windows.Forms.AnchorStyles.Left;
             themeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             themeComboBox.FormattingEnabled = true;
-            themeComboBox.Items.AddRange(new object[] { "Automatic", "Light", "Dark" });
             themeComboBox.Location = new System.Drawing.Point(213, 8);
             themeComboBox.Name = "themeComboBox";
             themeComboBox.Size = new System.Drawing.Size(100, 23);
