@@ -28,6 +28,7 @@ namespace GUI
         // Disposable fields should be disposed
         // for some reason disposing it makes closing GUI very slow
         public static ImageList ImageList { get; }
+        public static ImageList AppIconImageList { get; }
         public static Dictionary<string, int> ImageListLookup { get; }
 
         private SearchForm searchForm;
@@ -40,6 +41,15 @@ namespace GUI
             {
                 ColorDepth = ColorDepth.Depth32Bit
             };
+
+            AppIconImageList = new ImageList
+            {
+                ColorDepth = ColorDepth.Depth32Bit,
+                ImageSize = new Size(20, 20)
+            };
+            var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            var icon = (Icon)resources.GetObject("$this.Icon");
+            AppIconImageList.Images.Add(icon);
 
             var assembly = Assembly.GetExecutingAssembly();
             var names = assembly.GetManifestResourceNames().Where(n => n.StartsWith("GUI.AssetTypes.", StringComparison.Ordinal)).ToList();
@@ -78,6 +88,10 @@ namespace GUI
             mainTabs.ImageList = ImageList;
             var size = AdjustForDPI(16f);
             ImageList.ImageSize = new Size(size, size);
+
+            logoButton.ImageList = AppIconImageList;
+            var appIconIsize = AdjustForDPI(25f);
+            AppIconImageList.ImageSize = new Size(appIconIsize, appIconIsize);
 
             var consoleTab = new ConsoleTab();
             Log.SetConsoleTab(consoleTab);

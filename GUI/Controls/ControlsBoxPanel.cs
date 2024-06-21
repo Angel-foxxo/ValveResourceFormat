@@ -13,6 +13,10 @@ class ControlsBoxPanel : Panel
     private readonly int TitleBarHeight = 35;
     private readonly int TitleBarButtonWidth = 45;
 
+    public Color ControlBoxIconColor = Color.Black;
+    public Color ControlBoxHoverColor = Color.DimGray;
+    public Color ControlBoxHoverCloseColor = Color.Red;
+
     public enum CustomTitleBarHoveredButton
     {
         None,
@@ -28,7 +32,7 @@ class ControlsBoxPanel : Panel
         internal Rectangle Minimize;
     }
 
-    public CustomTitleBarHoveredButton CurrentHoveredButton { get; private set; }
+    public CustomTitleBarHoveredButton CurrentHoveredButton { get; set; }
 
     private Rectangle GetTitleBarRect()
     {
@@ -67,7 +71,7 @@ class ControlsBoxPanel : Panel
     {
         base.OnPaint(e);
 
-        using var controlBoxPen = new Pen(MainForm.DarkModeCS.ThemeColors.Text);
+        using var controlBoxPen = new Pen(ControlBoxIconColor);
         controlBoxPen.Width = AdjustForDPI(1);
 
         // This needs to always be white to contrast with the red.
@@ -112,8 +116,8 @@ class ControlsBoxPanel : Panel
         minimiseIconRect3.Y = titleBarButtonRects.Minimize.Y + ((titleBarButtonRects.Minimize.Height) / 2);
 
         // Draw the button rectangle if the mouse is hovering over the button,
-        using var controlBoxButtonBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.ControlBoxHighlightCloseButton);
-        using var closeButtonBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.ControlBoxHighlight);
+        using var controlBoxButtonBrush = new SolidBrush(ControlBoxHoverColor);
+        using var closeButtonBrush = new SolidBrush(ControlBoxHoverCloseColor);
 
         if (CurrentHoveredButton == CustomTitleBarHoveredButton.Close)
         {
@@ -132,7 +136,11 @@ class ControlsBoxPanel : Panel
         e.Graphics.DrawLine(controlBoxPen, minimiseIconRect3.X, minimiseIconRect3.Y, minimiseIconRect3.X + minimiseIconRect3.Width, minimiseIconRect3.Y);
 
         // Draws the square for the maximise icon.
-        e.Graphics.DrawRectangle(controlBoxPen, maximiseIconRect);
+        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Bottom, maximiseIconRect.Right, maximiseIconRect.Bottom);
+        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
+        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom);
+        // -1 in order to fix a weird pixel missing in the top right corner
+        e.Graphics.DrawLine(controlBoxPenCloseButtonHighlighted, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
 
         // Draws the X for the close icon.
         // Drawing this last so it can use high quality PixelOffsetMode which makes the line have a
@@ -155,22 +163,7 @@ class ControlsBoxPanel : Panel
     {
         if (m.Msg == PInvoke.WM_NCHITTEST)
         {
-            // Convert to client coordinates
-            var point = PointToClient(new Point(MainForm.LoWord((int)m.LParam), MainForm.HiWord((int)m.LParam)));
-
-            CheckControlBoxHoverState(point);
-
             m.Result = PInvoke.HTTRANSPARENT;
-        }
-        else if (m.Msg == PInvoke.WM_MOUSELEAVE)
-        {
-            var lastHoveredButton = CurrentHoveredButton;
-            CurrentHoveredButton = CustomTitleBarHoveredButton.None;
-
-            if (lastHoveredButton != CurrentHoveredButton)
-            {
-                Invalidate();
-            }
         }
         else
         {
@@ -178,7 +171,7 @@ class ControlsBoxPanel : Panel
         }
     }
 
-    private void CheckControlBoxHoverState(Point point)
+    public void CheckControlBoxHoverState(Point point)
     {
         var titleBarButtonRects = GetCustomTitleBarButtonRects();
 

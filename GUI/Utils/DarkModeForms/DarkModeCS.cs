@@ -2,6 +2,7 @@ using System.ComponentModel.Design;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using GUI;
 using GUI.Controls;
 using GUI.Types.PackageViewer;
 using Microsoft.Win32;
@@ -121,6 +122,12 @@ namespace DarkModeForms
             }
             if (control is Button button)
             {
+                // Let this be styled in the designer
+                if (control.GetType() == typeof(SysMenuLogoButton))
+                {
+                    return;
+                }
+
                 button.FlatStyle = FStyle;
                 button.FlatAppearance.CheckedBackColor = ThemeColors.Control;
                 button.BackColor = ThemeColors.Control;
@@ -286,6 +293,12 @@ namespace DarkModeForms
             {
                 pgBar.BackColor = ThemeColors.Window;
                 pgBar.ForeColor = ThemeColors.Accent;
+            }
+            if (control is ControlsBoxPanel controlsBoxPanel)
+            {
+                controlsBoxPanel.ControlBoxIconColor = MainForm.DarkModeCS.ThemeColors.Text;
+                controlsBoxPanel.ControlBoxHoverColor = MainForm.DarkModeCS.ThemeColors.ControlBoxHighlightCloseButton;
+                controlsBoxPanel.ControlBoxHoverCloseColor = MainForm.DarkModeCS.ThemeColors.ControlBoxHighlight;
             }
 
             ApplySystemTheme(control);

@@ -82,9 +82,18 @@ partial class MainForm
             // Convert to client coordinates
             // TODO: easier word conversion?
             var point = PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+            var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+
+            // Updating here instead of in the ControlsBoxPanel class is better because we can tell when we are outside
+            // of the panel here, and corrently set NONE.
+            controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
 
             if (point.Y - padding <= menuStrip.Top)
             {
+                // Manually set none for fix some oddity with hover not updating
+                // when moving the cursor outside the window on the top.
+                controlsBoxPanel.CurrentHoveredButton = ControlsBoxPanel.CustomTitleBarHoveredButton.None;
+
                 m.Result = new IntPtr(PInvoke.HTTOP);
                 return;
             }
@@ -147,6 +156,16 @@ partial class MainForm
             }
 
             base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_SIZE)
+        {
+            // Needed to make sure hover state is updated correctly when the window is maximised.
+            // TODO: controlsBoxPanel IS null at start
+            if (controlsBoxPanel != null)
+            {
+                var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam)));
+                controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
+            }
         }
         else
         {
