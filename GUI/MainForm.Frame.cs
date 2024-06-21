@@ -23,12 +23,7 @@ partial class MainForm
         WINDOWPLACEMENT placement = default;
         PInvoke.GetWindowPlacement((HWND)Handle, ref placement);
 
-        if (placement.showCmd == SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED)
-        {
-            return true;
-        }
-
-        return false;
+        return placement.showCmd == SHOW_WINDOW_CMD.SW_SHOWMAXIMIZED;
     }
 
     // Equivalent to the LoWord C Macro.
@@ -68,6 +63,7 @@ partial class MainForm
             Marshal.StructureToPtr(nccsp, m.LParam, false);
 
             m.Result = IntPtr.Zero;
+            return;
         }
         else if (m.Msg == PInvoke.WM_NCHITTEST)
         {
@@ -119,43 +115,46 @@ partial class MainForm
                 m.Result = new IntPtr(PInvoke.HTCAPTION);
                 return;
             }
-
-            base.WndProc(ref m);
         }
         else if (m.Msg == PInvoke.WM_NCLBUTTONDOWN)
         {
-            if (controlsBoxPanel.CurrentHoveredButton != ControlsBoxPanel.CustomTitleBarHoveredButton.None)
+            if ((uint)m.WParam is PInvoke.HTCLOSE or PInvoke.HTMINBUTTON or PInvoke.HTMAXBUTTON)
             {
                 m.Result = 0;
                 return;
             }
-
-            base.WndProc(ref m);
         }
         else if (m.Msg == PInvoke.WM_NCLBUTTONUP)
         {
-            if (controlsBoxPanel.CurrentHoveredButton == ControlsBoxPanel.CustomTitleBarHoveredButton.Close)
+            if (m.WParam == PInvoke.HTCLOSE)
             {
                 // Magic number for close message because I don't think the PInvoke source generator offers it?
                 PInvoke.PostMessage((HWND)Handle, PInvoke.WM_CLOSE, 0, 0);
                 m.Result = 0;
                 return;
             }
-            else if (controlsBoxPanel.CurrentHoveredButton == ControlsBoxPanel.CustomTitleBarHoveredButton.Minimize)
+            else if (m.WParam == PInvoke.HTMINBUTTON)
             {
                 PInvoke.ShowWindow((HWND)Handle, SHOW_WINDOW_CMD.SW_MINIMIZE);
                 m.Result = 0;
                 return;
             }
-            else if (controlsBoxPanel.CurrentHoveredButton == ControlsBoxPanel.CustomTitleBarHoveredButton.Maximize)
+            else if (m.WParam == PInvoke.HTMAXBUTTON)
             {
                 var mode = IsWindowMaximised() ? SHOW_WINDOW_CMD.SW_NORMAL : SHOW_WINDOW_CMD.SW_MAXIMIZE;
                 PInvoke.ShowWindow((HWND)Handle, mode);
                 m.Result = 0;
                 return;
             }
-
-            base.WndProc(ref m);
+        }
+        else if (m.Msg == PInvoke.WM_NCRBUTTONUP)
+        {
+            if (m.WParam == PInvoke.HTCAPTION)
+            {
+                var point = PointToScreen(PointToClient(new Point(LoWord((int)m.LParam), HiWord((int)m.LParam))));
+                OpenSystemMenu(point);
+                return;
+            }
         }
         else if (m.Msg == PInvoke.WM_SIZE)
         {
@@ -167,15 +166,24 @@ partial class MainForm
                 controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
             }
         }
-        else
-        {
-            base.WndProc(ref m);
-        }
+
+        base.WndProc(ref m);
     }
 
     private void logoButton_Click(object sender, EventArgs e)
     {
-        PInvoke.PostMessage((HWND)Handle, PInvoke.WM_SYSCOMMAND, 0, 0);
+        var point = PointToScreen(new Point(logoButton.Left, logoButton.Top + logoButton.Height));
+        OpenSystemMenu(point);
+    }
+
+    private void OpenSystemMenu(Point point)
+    {
+        var hwnd = (HWND)Handle;
+        var menu = PInvoke.GetSystemMenu(hwnd, false);
+
+        unsafe
+        {
+            PInvoke.TrackPopupMenu(menu, TRACK_POPUP_MENU_FLAGS.TPM_RETURNCMD, point.X, point.Y, 0, hwnd);
+        }
     }
 }
-

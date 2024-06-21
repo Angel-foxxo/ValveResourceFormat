@@ -123,7 +123,7 @@ namespace DarkModeForms
             if (control is Button button)
             {
                 // Let this be styled in the designer
-                if (control.GetType() == typeof(SysMenuLogoButton))
+                if (control is SysMenuLogoButton)
                 {
                     return;
                 }

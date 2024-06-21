@@ -6,17 +6,7 @@ namespace GUI.Controls
 {
     internal class SysMenuLogoButton : Button
     {
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == PInvoke.WM_NCHITTEST)
-            {
-                m.Result = new IntPtr(PInvoke.HTSYSMENU);
-            }
-            else
-            {
-                base.WndProc(ref m);
-            }
-        }
+        //
     }
 
     internal class TransparentPanel : Panel
