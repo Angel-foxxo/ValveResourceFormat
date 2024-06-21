@@ -135,17 +135,29 @@ class ControlsBoxPanel : Panel
         // Draws the horizontal line for the minimise icon.
         e.Graphics.DrawLine(controlBoxPen, minimiseIconRect3.X, minimiseIconRect3.Y, minimiseIconRect3.X + minimiseIconRect3.Width, minimiseIconRect3.Y);
 
-        // Draws the square for the maximise icon.
-        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Bottom, maximiseIconRect.Right, maximiseIconRect.Bottom);
-        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
-        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom);
-        // -1 in order to fix a weird pixel missing in the top right corner
-        e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
 
-        if(Program.MainForm.IsWindowMaximised())
+        // Draws the maximise icon.
+        if (Program.MainForm.IsWindowMaximised())
         {
-            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left + 2, maximiseIconRect.Top - 2, maximiseIconRect.Right + 2, maximiseIconRect.Top - 2);
-            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right + 2, maximiseIconRect.Top - 2, maximiseIconRect.Right + 2, maximiseIconRect.Bottom - 2);
+            var offset = AdjustForDPI(2);
+            var maximiseIconRectMaximised = new Rectangle(maximiseIconRect.X, maximiseIconRect.Y + offset, maximiseIconRect.Width - offset, maximiseIconRect.Height - offset);
+
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRectMaximised.Left, maximiseIconRectMaximised.Bottom, maximiseIconRectMaximised.Right, maximiseIconRectMaximised.Bottom);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRectMaximised.Left, maximiseIconRectMaximised.Top, maximiseIconRectMaximised.Right, maximiseIconRectMaximised.Top);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRectMaximised.Right, maximiseIconRectMaximised.Top, maximiseIconRectMaximised.Right, maximiseIconRectMaximised.Bottom);
+            // -1 in order to fix a weird pixel missing in the top right corner
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRectMaximised.Left, maximiseIconRectMaximised.Top - 1, maximiseIconRectMaximised.Left, maximiseIconRectMaximised.Bottom);
+
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left + offset, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom - offset);
+        }
+        else
+        {
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Bottom, maximiseIconRect.Right, maximiseIconRect.Bottom);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Top);
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Right, maximiseIconRect.Top, maximiseIconRect.Right, maximiseIconRect.Bottom);
+            // -1 in order to fix a weird pixel missing in the top right corner
+            e.Graphics.DrawLine(controlBoxPen, maximiseIconRect.Left, maximiseIconRect.Top - 1, maximiseIconRect.Left, maximiseIconRect.Bottom);
         }
 
         // Draws the X for the close icon.
