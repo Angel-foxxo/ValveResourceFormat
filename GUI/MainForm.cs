@@ -3,6 +3,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -33,7 +34,7 @@ namespace GUI
 
         private SearchForm searchForm;
 
-        static public DarkModeCS DarkModeCS { get; set; }
+        static public DarkModeCS DarkModeCS { get; private set; }
 
         static MainForm()
         {
@@ -47,8 +48,8 @@ namespace GUI
                 ColorDepth = ColorDepth.Depth32Bit,
                 ImageSize = new Size(20, 20)
             };
-            var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            var icon = (Icon)resources.GetObject("$this.Icon");
+            var resources = new ComponentResourceManager(typeof(MainForm));
+            var icon = (Icon)resources.GetObject("$this.Icon", CultureInfo.InvariantCulture);
             AppIconImageList.Images.Add(icon);
 
             var assembly = Assembly.GetExecutingAssembly();
