@@ -86,6 +86,8 @@ namespace GUI
             DarkModeCS.ThemeControl(vpkContextMenu);
             DarkModeCS.ThemeControl(vpkEditingContextMenu);
 
+            bottomPanel.SeparatorWidth = AdjustForDPI(4);
+
             mainTabs.ImageList = ImageList;
             var size = AdjustForDPI(16f);
             ImageList.ImageSize = new Size(size, size);
@@ -243,6 +245,13 @@ namespace GUI
 
             // Force refresh title due to OpenFile calls above, SelectedIndexChanged is not called in the same tick
             OnMainSelectedTabChanged(null, null);
+        }
+
+        protected override void OnTextChanged(EventArgs e)
+        {
+            base.OnTextChanged(e);
+
+            AppTitleTextLabel.Text = Text;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -930,7 +939,7 @@ namespace GUI
             form.ShowDialog(this);
         }
 
-        private int AdjustForDPI(float value)
+        public int AdjustForDPI(float value)
         {
             return (int)(value * DeviceDpi / 96f);
         }

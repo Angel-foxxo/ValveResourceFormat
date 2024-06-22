@@ -62,6 +62,11 @@ namespace DarkModeForms
                 // Process the panel within the container
                 panel.BackColor = ThemeColors.Container;
                 panel.BorderStyle = BorderStyle.None;
+
+            }
+            if(control is MainformBottomPanel mainformBottomPanel)
+            {
+                mainformBottomPanel.SeparatorColor = ThemeColors.WindowHighlight;
             }
             if (control is GroupBox group)
             {

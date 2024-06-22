@@ -84,11 +84,14 @@ namespace GUI
             topNavBarPanel = new TransparentPanel();
             logoButton = new SysMenuLogoButton();
             controlsBoxPanel = new ControlsBoxPanel();
+            AppTitleTextLabel = new Label();
+            bottomPanel = new MainformBottomPanel();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
             vpkContextMenu.SuspendLayout();
             vpkEditingContextMenu.SuspendLayout();
             topNavBarPanel.SuspendLayout();
+            bottomPanel.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip
@@ -470,12 +473,34 @@ namespace GUI
             controlsBoxPanel.Size = new System.Drawing.Size(150, 32);
             controlsBoxPanel.TabIndex = 1;
             // 
+            // AppTitleTextLabel
+            // 
+            AppTitleTextLabel.Dock = DockStyle.Fill;
+            AppTitleTextLabel.Font = new System.Drawing.Font("Segoe UI", 11F);
+            AppTitleTextLabel.Location = new System.Drawing.Point(0, 0);
+            AppTitleTextLabel.Name = "AppTitleTextLabel";
+            AppTitleTextLabel.Padding = new Padding(2, 0, 0, 0);
+            AppTitleTextLabel.Size = new System.Drawing.Size(747, 30);
+            AppTitleTextLabel.TabIndex = 0;
+            AppTitleTextLabel.Text = "Source2 Viewer -----";
+            AppTitleTextLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // bottomPanel
+            // 
+            bottomPanel.Controls.Add(AppTitleTextLabel);
+            bottomPanel.Dock = DockStyle.Bottom;
+            bottomPanel.Location = new System.Drawing.Point(0, 382);
+            bottomPanel.Name = "bottomPanel";
+            bottomPanel.Size = new System.Drawing.Size(747, 30);
+            bottomPanel.TabIndex = 4;
+            // 
             // MainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(747, 412);
+            Controls.Add(bottomPanel);
             Controls.Add(mainTabs);
             Controls.Add(topNavBarPanel);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
@@ -496,6 +521,7 @@ namespace GUI
             vpkEditingContextMenu.ResumeLayout(false);
             topNavBarPanel.ResumeLayout(false);
             topNavBarPanel.PerformLayout();
+            bottomPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -529,7 +555,6 @@ namespace GUI
         private ToolStripMenuItem createVpkFromFolderToolStripMenuItem;
         private ToolStripMenuItem verifyPackageContentsToolStripMenuItem;
         private ToolStripMenuItem registerVpkFileAssociationToolStripMenuItem;
-        private ToolStripMenuItem newVersionAvailableToolStripMenuItem;
         private ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private ToolStripMenuItem clearConsoleToolStripMenuItem;
         private ToolStripMenuItem vpkEditAddExistingFolderToolStripMenuItem;
@@ -544,6 +569,9 @@ namespace GUI
         private TransparentPanel topNavBarPanel;
         private ControlsBoxPanel controlsBoxPanel;
         private SysMenuLogoButton logoButton;
+        private Label AppTitleTextLabel;
+        private MainformBottomPanel bottomPanel;
+        private ToolStripMenuItem newVersionAvailableToolStripMenuItem;
     }
 }
 
