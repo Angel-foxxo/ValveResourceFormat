@@ -32,7 +32,7 @@ namespace GUI.Utils
             public TextStyle Style;
         }
 
-        private static readonly TextStyle TextStyleTime = new(new SolidBrush(MainForm.DarkModeCS.ThemeColors.Text), null, FontStyle.Regular);
+        private static readonly TextStyle TextStyleTime = new(new SolidBrush(MainForm.DarkModeCS.ThemeColors.Contrast), null, FontStyle.Regular);
         private static readonly TextStyle TextStyleError = new(Brushes.Orange, Brushes.DarkRed, FontStyle.Regular);
         private static readonly TextStyle TextStyleWarn = new(Brushes.Orange, null, FontStyle.Regular);
         private static readonly TextStyle TextStyleDebug = new(new SolidBrush(Color.DodgerBlue), null, FontStyle.Regular);
@@ -154,8 +154,6 @@ namespace GUI.Utils
             var bgColor = Color.FromArgb(37, 37, 37);
             control = new CodeTextBox(null)
             {
-                BackColor = MainForm.DarkModeCS.ThemeColors.Container,
-                ForeColor = MainForm.DarkModeCS.ThemeColors.Text,
                 Paddings = new Padding(0, 10, 0, 10),
             };
             control.VisibleChanged += VisibleChanged;

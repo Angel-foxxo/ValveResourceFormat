@@ -140,7 +140,7 @@ namespace DarkModeForms
             var TextColor = SelectedForeColor;
             using Brush brush = new SolidBrush(HeaderColor);
             using var headerPen = new Pen(HeaderColor);
-            using var headerUnderlinePen = new Pen(Color.DodgerBlue, tabRect.Height / 11);
+            using var headerUnderlinePen = new Pen(LineColor, tabRect.Height / 11);
 
             g.FillRectangle(brush, tabRect);
 

@@ -475,6 +475,7 @@ namespace GUI
             // 
             // AppTitleTextLabel
             // 
+            AppTitleTextLabel.AutoEllipsis = true;
             AppTitleTextLabel.Dock = DockStyle.Fill;
             AppTitleTextLabel.Font = new System.Drawing.Font("Segoe UI", 11F);
             AppTitleTextLabel.Location = new System.Drawing.Point(0, 0);

@@ -72,7 +72,7 @@ namespace GUI.Controls
         {
             if (fileListView.SelectedItems.Count == 0)
             {
-                TextBox.Text = "";
+                BetterTextBox.Text = "";
                 return;
             }
 
@@ -96,14 +96,14 @@ namespace GUI.Controls
             {
                 sb.AppendLine(scene.Name);
             }
-            TextBox.Text = sb.ToString();
+            BetterTextBox.Text = sb.ToString();
         }
 
         private void ShowVcd(int index)
         {
             var scene = choreoDataList.Scenes[index];
             var kv = new KV3File(scene.ToKeyValues());
-            TextBox.Text = kv.ToString();
+            BetterTextBox.Text = kv.ToString();
         }
 
         private void InitializeComponent()

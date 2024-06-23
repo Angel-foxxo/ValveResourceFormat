@@ -1,4 +1,4 @@
-﻿namespace GUI.Forms
+namespace GUI.Forms
 {
     partial class PromptForm
     {
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             textLabel = new System.Windows.Forms.Label();
-            inputTextBox = new System.Windows.Forms.TextBox();
+            inputTextBox = new Controls.BetterTextBox();
             cancelButton = new System.Windows.Forms.Button();
             submitButton = new System.Windows.Forms.Button();
             SuspendLayout();
@@ -102,7 +102,7 @@
         #endregion
 
         private System.Windows.Forms.Label textLabel;
-        private System.Windows.Forms.TextBox inputTextBox;
+        private Controls.BetterTextBox inputTextBox;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.Button submitButton;
     }

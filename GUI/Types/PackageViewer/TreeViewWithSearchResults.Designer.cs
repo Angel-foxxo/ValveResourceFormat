@@ -32,16 +32,14 @@ namespace GUI.Types.PackageViewer
         private void InitializeComponent()
         {
             mainSplitContainer = new System.Windows.Forms.SplitContainer();
+            searchTextBox = new Controls.BetterTextBox();
             mainTreeView = new BetterTreeView();
-            panel1 = new System.Windows.Forms.Panel();
-            searchTextBox = new System.Windows.Forms.TextBox();
             rightPanel = new System.Windows.Forms.Panel();
             mainListView = new BetterListView();
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).BeginInit();
             mainSplitContainer.Panel1.SuspendLayout();
             mainSplitContainer.Panel2.SuspendLayout();
             mainSplitContainer.SuspendLayout();
-            panel1.SuspendLayout();
             rightPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -55,8 +53,8 @@ namespace GUI.Types.PackageViewer
             // 
             // mainSplitContainer.Panel1
             // 
+            mainSplitContainer.Panel1.Controls.Add(searchTextBox);
             mainSplitContainer.Panel1.Controls.Add(mainTreeView);
-            mainSplitContainer.Panel1.Controls.Add(panel1);
             // 
             // mainSplitContainer.Panel2
             // 
@@ -68,36 +66,28 @@ namespace GUI.Types.PackageViewer
             mainSplitContainer.TabStop = false;
             mainSplitContainer.SplitterMoved += MainSplitContainerSplitterMoved;
             // 
-            // mainTreeView
-            // 
-            mainTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
-            mainTreeView.Location = new System.Drawing.Point(0, 25);
-            mainTreeView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            mainTreeView.Name = "mainTreeView";
-            mainTreeView.ShowLines = false;
-            mainTreeView.Size = new System.Drawing.Size(394, 375);
-            mainTreeView.TabIndex = 0;
-            mainTreeView.VrfGuiContext = null;
-            // 
-            // panel1
-            // 
-            panel1.Controls.Add(searchTextBox);
-            panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            panel1.Location = new System.Drawing.Point(0, 0);
-            panel1.Name = "panel1";
-            panel1.Size = new System.Drawing.Size(394, 25);
-            panel1.TabIndex = 0;
-            // 
             // searchTextBox
             // 
-            searchTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            searchTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            searchTextBox.Dock = System.Windows.Forms.DockStyle.Top;
             searchTextBox.Font = new System.Drawing.Font("Segoe UI", 11F);
             searchTextBox.Location = new System.Drawing.Point(0, 0);
             searchTextBox.Name = "searchTextBox";
             searchTextBox.PlaceholderText = "Search…";
-            searchTextBox.Size = new System.Drawing.Size(394, 27);
+            searchTextBox.Size = new System.Drawing.Size(394, 20);
             searchTextBox.TabIndex = 1;
             searchTextBox.KeyDown += OnSearchTextBoxKeyDown;
+            // 
+            // mainTreeView
+            // 
+            mainTreeView.Dock = System.Windows.Forms.DockStyle.Bottom;
+            mainTreeView.Location = new System.Drawing.Point(0, 18);
+            mainTreeView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            mainTreeView.Name = "mainTreeView";
+            mainTreeView.ShowLines = false;
+            mainTreeView.Size = new System.Drawing.Size(394, 382);
+            mainTreeView.TabIndex = 0;
+            mainTreeView.VrfGuiContext = null;
             // 
             // rightPanel
             // 
@@ -110,10 +100,12 @@ namespace GUI.Types.PackageViewer
             // 
             // mainListView
             // 
+            mainListView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             mainListView.Dock = System.Windows.Forms.DockStyle.Fill;
             mainListView.Location = new System.Drawing.Point(0, 0);
             mainListView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             mainListView.Name = "mainListView";
+            mainListView.OwnerDraw = true;
             mainListView.Size = new System.Drawing.Size(401, 400);
             mainListView.TabIndex = 3;
             mainListView.UseCompatibleStateImageBehavior = false;
@@ -130,11 +122,10 @@ namespace GUI.Types.PackageViewer
             Size = new System.Drawing.Size(800, 400);
             Load += TreeViewWithSearchResults_Load;
             mainSplitContainer.Panel1.ResumeLayout(false);
+            mainSplitContainer.Panel1.PerformLayout();
             mainSplitContainer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)mainSplitContainer).EndInit();
             mainSplitContainer.ResumeLayout(false);
-            panel1.ResumeLayout(false);
-            panel1.PerformLayout();
             rightPanel.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -143,9 +134,8 @@ namespace GUI.Types.PackageViewer
 
         private System.Windows.Forms.SplitContainer mainSplitContainer;
         private BetterListView mainListView;
-        public BetterTreeView mainTreeView;
         private System.Windows.Forms.Panel rightPanel;
-        private System.Windows.Forms.TextBox searchTextBox;
-        private System.Windows.Forms.Panel panel1;
+        private Controls.BetterTextBox searchTextBox;
+        public BetterTreeView mainTreeView;
     }
 }

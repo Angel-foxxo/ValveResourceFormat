@@ -59,72 +59,47 @@ namespace DarkModeForms
 
             if (control is Panel panel)
             {
-                // Process the panel within the container
-                panel.BackColor = ThemeColors.Container;
+                panel.BackColor = panel.Parent.BackColor;
                 panel.BorderStyle = BorderStyle.None;
 
             }
-            if(control is MainformBottomPanel mainformBottomPanel)
+            if (control is MainformBottomPanel mainformBottomPanel)
             {
-                mainformBottomPanel.SeparatorColor = ThemeColors.WindowHighlight;
+                mainformBottomPanel.SeparatorColor = ThemeColors.Border;
             }
             if (control is GroupBox group)
             {
-                group.BackColor = ThemeColors.Window;
-                group.ForeColor = ThemeColors.Text;
+                group.BackColor = ThemeColors.AppFirm;
+                group.ForeColor = ThemeColors.Contrast;
             }
             if (control is TableLayoutPanel table)
             {
-                // Process the panel within the container
-                table.BackColor = ThemeColors.Window;
+                table.BackColor = ThemeColors.AppFirm;
                 table.BorderStyle = BorderStyle.None;
             }
             if (control is FlatTabControl fTab)
             {
-                fTab.BackColor = ThemeColors.Window;
-                fTab.TabColor = ThemeColors.Control;
-                fTab.SelectTabColor = ThemeColors.ContainerHighlight;
-                fTab.SelectedForeColor = ThemeColors.Text;
-                fTab.BorderColor = ThemeColors.Window;
-                fTab.ForeColor = ThemeColors.TextInactive;
-                fTab.LineColor = ThemeColors.Window;
+                if (fTab.Name == "mainTabs")
+                {
+                    fTab.BackColor = ThemeColors.App;
+                }
+                else
+                {
+                    fTab.BackColor = ThemeColors.AppSoft;
+                }
+                fTab.TabColor = ThemeColors.AppSoft;
+                fTab.SelectTabColor = ThemeColors.AppSoft;
+                fTab.SelectedForeColor = ThemeColors.Contrast;
+                fTab.BorderColor = ThemeColors.Border;
+                fTab.ForeColor = ThemeColors.ContrastSoft;
+                fTab.LineColor = ThemeColors.Accent;
                 fTab.HoverColor = ThemeColors.Accent;
-                fTab.Margin = new Padding(-10, 0, 0, 0);
+                //fTab.Margin = new Padding(-10, 0, 0, 0);
             }
             if (control is PictureBox pic)
             {
                 pic.BorderStyle = BorderStyle.None;
                 pic.BackColor = Color.Transparent;
-            }
-            if (control is ListView lView)
-            {
-                if (lView.View == View.Details)
-                {
-                    lView.OwnerDraw = true;
-                    void DrawColumn(object sender, DrawListViewColumnHeaderEventArgs e)
-                    {
-                        using var backBrush = new SolidBrush(ThemeColors.ContainerHighlight);
-                        using var foreBrush = new SolidBrush(ThemeColors.Text);
-                        using var sf = new StringFormat();
-                        sf.Alignment = StringAlignment.Center;
-                        e.Graphics.FillRectangle(backBrush, e.Bounds);
-                        e.Graphics.DrawString(e.Header.Text, lView.Font, foreBrush, e.Bounds, sf);
-
-                    };
-                    void Dispose(object sender, EventArgs e)
-                    {
-                        lView.DrawColumnHeader -= DrawColumn;
-                        lView.Disposed -= Dispose;
-                    }
-                    lView.DrawColumnHeader += DrawColumn;
-                    lView.Disposed += Dispose;
-                    lView.DrawItem += (sender, e) => { e.DrawDefault = true; };
-                    lView.DrawSubItem += (sender, e) =>
-                    {
-
-                        e.DrawDefault = true;
-                    };
-                }
             }
             if (control is Button button)
             {
@@ -135,15 +110,15 @@ namespace DarkModeForms
                 }
 
                 button.FlatStyle = FStyle;
-                button.FlatAppearance.CheckedBackColor = ThemeColors.Control;
-                button.BackColor = ThemeColors.Control;
-                button.FlatAppearance.BorderColor = ThemeColors.ControlBorder;
-                button.ForeColor = ThemeColors.Text;
+                button.FlatAppearance.CheckedBackColor = ThemeColors.AppFirm;
+                button.BackColor = ThemeColors.BorderSoft;
+                button.FlatAppearance.BorderColor = ThemeColors.BorderSoft;
+                button.ForeColor = ThemeColors.Contrast;
             }
             if (control is Label label)
             {
                 label.BorderStyle = BorderStyle.None;
-                label.ForeColor = ThemeColors.Text;
+                label.ForeColor = ThemeColors.Contrast;
                 label.BackColor = Color.Transparent;
             }
             if (control is LinkLabel link)
@@ -154,17 +129,17 @@ namespace DarkModeForms
             if (control is CheckBox chk)
             {
                 chk.BackColor = Color.Transparent;
-                chk.ForeColor = ThemeColors.Text;
+                chk.ForeColor = ThemeColors.Contrast;
                 chk.UseVisualStyleBackColor = true;
             }
             if (control is RadioButton opt)
             {
-                opt.BackColor = ThemeColors.Control;
+                opt.BackColor = ThemeColors.AppFirm;
             }
             if (control is ComboBox combo)
             {
-                combo.ForeColor = ThemeColors.Text;
-                combo.BackColor = ThemeColors.Window;
+                combo.ForeColor = ThemeColors.Contrast;
+                combo.BackColor = ThemeColors.AppSoft;
             }
             if (control is TransparentMenuStrip menu)
             {
@@ -189,59 +164,58 @@ namespace DarkModeForms
             {
                 grid.EnableHeadersVisualStyles = false;
                 grid.BorderStyle = BorderStyle.FixedSingle;
-                grid.BackgroundColor = ThemeColors.Window;
-                grid.GridColor = ThemeColors.Window;
+                grid.BackgroundColor = ThemeColors.AppFirm;
+                grid.GridColor = ThemeColors.BorderSoft;
 
-                grid.DefaultCellStyle.BackColor = ThemeColors.Window;
-                grid.DefaultCellStyle.ForeColor = ThemeColors.Text;
+                grid.DefaultCellStyle.BackColor = ThemeColors.AppSoft;
+                grid.DefaultCellStyle.ForeColor = ThemeColors.Contrast;
 
-
-                grid.ColumnHeadersDefaultCellStyle.BackColor = ThemeColors.Window;
-                grid.ColumnHeadersDefaultCellStyle.ForeColor = ThemeColors.Text;
+                grid.ColumnHeadersDefaultCellStyle.BackColor = ThemeColors.AppSoft;
+                grid.ColumnHeadersDefaultCellStyle.ForeColor = ThemeColors.Contrast;
                 grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = ThemeColors.Accent;
                 grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
 
-                grid.RowHeadersDefaultCellStyle.BackColor = ThemeColors.Window;
-                grid.RowHeadersDefaultCellStyle.ForeColor = ThemeColors.Text;
+                grid.RowHeadersDefaultCellStyle.BackColor = ThemeColors.AppSoft;
+                grid.RowHeadersDefaultCellStyle.ForeColor = ThemeColors.Contrast;
                 grid.RowHeadersDefaultCellStyle.SelectionBackColor = ThemeColors.Accent;
                 grid.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             }
             if (control is PropertyGrid pGrid)
             {
-                pGrid.BackColor = ThemeColors.Window;
-                pGrid.ViewBackColor = ThemeColors.Window;
-                pGrid.LineColor = ThemeColors.Window;
-                pGrid.ViewForeColor = ThemeColors.Text;
-                pGrid.ViewBorderColor = ThemeColors.ContainerBorder;
-                pGrid.CategoryForeColor = ThemeColors.Text;
-                pGrid.CategorySplitterColor = ThemeColors.ContainerHighlight;
+                pGrid.BackColor = ThemeColors.AppSoft;
+                pGrid.ViewBackColor = ThemeColors.AppSoft;
+                pGrid.LineColor = ThemeColors.AppSoft;
+                pGrid.ViewForeColor = ThemeColors.Contrast;
+                pGrid.ViewBorderColor = ThemeColors.Border;
+                pGrid.CategoryForeColor = ThemeColors.Contrast;
+                pGrid.CategorySplitterColor = ThemeColors.BorderSoft;
             }
             if (control is TreeView tree)
             {
                 tree.BorderStyle = BorderStyle.None;
-                tree.BackColor = ThemeColors.Window;
+                tree.BackColor = ThemeColors.AppFirm;
             }
             if (control is TrackBar slider)
             {
-                slider.BackColor = ThemeColors.Control;
+                slider.BackColor = ThemeColors.AppSoft;
             }
             if (control is CodeTextBox console)
             {
-                console.IndentBackColor = ThemeColors.Window;
-                console.ServiceLinesColor = ThemeColors.Window;
-                console.BackColor = ThemeColors.ContainerBorder;
-                console.FoldingIndicatorColor = ThemeColors.Control;
+                console.IndentBackColor = ThemeColors.App;
+                console.ServiceLinesColor = ThemeColors.App;
+                console.BackColor = ThemeColors.AppFirm;
+                console.FoldingIndicatorColor = ThemeColors.ContrastSoft;
                 var col = new FastColoredTextBoxNS.ServiceColors
                 {
-                    ExpandMarkerBackColor = ThemeColors.Control,
-                    ExpandMarkerForeColor = ThemeColors.Text,
-                    CollapseMarkerForeColor = ThemeColors.Text,
-                    CollapseMarkerBackColor = ThemeColors.Control,
-                    ExpandMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 110),
-                    CollapseMarkerBorderColor = ControlPaint.Dark(ThemeColors.Text, 90)
+                    ExpandMarkerBackColor = ThemeColors.ContrastSoft,
+                    ExpandMarkerForeColor = ThemeColors.Contrast,
+                    CollapseMarkerForeColor = ThemeColors.Contrast,
+                    CollapseMarkerBackColor = ThemeColors.ContrastSoft,
+                    ExpandMarkerBorderColor = ThemeColors.Border,
+                    CollapseMarkerBorderColor = ThemeColors.BorderSoft
                 };
                 console.ServiceColors = col;
-                console.ForeColor = ThemeColors.Text;
+                console.ForeColor = ThemeColors.Contrast;
             }
             if (control is ByteViewer hexViewer)
             {
@@ -254,8 +228,8 @@ namespace DarkModeForms
             }
             if (control is GLViewerMultiSelectionControl multiSelection)
             {
-                multiSelection.BackColor = ThemeColors.Control;
-                multiSelection.ForeColor = ThemeColors.Text;
+                multiSelection.BackColor = ThemeColors.AppSoft;
+                multiSelection.ForeColor = ThemeColors.Contrast;
             }
             if (control is ControlPanelView controlPanelView)
             {
@@ -264,47 +238,51 @@ namespace DarkModeForms
             }
             if (control is ListBox listBox)
             {
-                listBox.ForeColor = ThemeColors.Text;
-                listBox.BackColor = ThemeColors.Window;
+                listBox.ForeColor = ThemeColors.Contrast;
+                listBox.BackColor = ThemeColors.AppSoft;
             }
             if (control is NumericUpDown numeric)
             {
-                numeric.ForeColor = ThemeColors.Text;
-                numeric.BackColor = ThemeColors.Control;
+                numeric.ForeColor = ThemeColors.Contrast;
+                numeric.BackColor = numeric.Parent.BackColor;
             }
-            if (control is TextBox textBox)
+            if (control is BetterTextBox textBox)
             {
-                textBox.ForeColor = ThemeColors.Text;
-                textBox.BackColor = ThemeColors.ContainerBorder;
-                textBox.BorderStyle = BorderStyle.None;
+                textBox.ForeColor = ThemeColors.Contrast;
+                textBox.BackColor = ThemeColors.AppFirm;
+                textBox.BorderColor = ThemeColors.Border;
             }
             if (control is BetterListView listView)
             {
-                listView.BackColor = ThemeColors.Window;
-                listView.ForeColor = ThemeColors.Text;
+                listView.BackColor = ThemeColors.AppFirm;
+                listView.ForeColor = ThemeColors.Contrast;
             }
             if (control is TreeView treeView)
             {
-                treeView.BackColor = ThemeColors.Window;
-                treeView.ForeColor = ThemeColors.Text;
-                treeView.LineColor = ThemeColors.Window;
+                treeView.BackColor = ThemeColors.AppSoft;
+                treeView.ForeColor = ThemeColors.Contrast;
+                treeView.LineColor = ThemeColors.BorderSoft;
             }
             if (control is TabPage tabPage)
             {
                 tabPage.Padding = new Padding(-10, 0, 0, 0);
-                tabPage.BackColor = ThemeColors.Control;
-                tabPage.ForeColor = ThemeColors.Text;
+                tabPage.BackColor = tabPage.Parent.BackColor;
+                tabPage.ForeColor = ThemeColors.Contrast;
             }
             if (control is ProgressBar pgBar)
             {
-                pgBar.BackColor = ThemeColors.Window;
+                pgBar.BackColor = pgBar.Parent.BackColor;
                 pgBar.ForeColor = ThemeColors.Accent;
             }
             if (control is ControlsBoxPanel controlsBoxPanel)
             {
-                controlsBoxPanel.ControlBoxIconColor = MainForm.DarkModeCS.ThemeColors.Text;
-                controlsBoxPanel.ControlBoxHoverColor = MainForm.DarkModeCS.ThemeColors.ControlBoxHighlightCloseButton;
-                controlsBoxPanel.ControlBoxHoverCloseColor = MainForm.DarkModeCS.ThemeColors.ControlBoxHighlight;
+                controlsBoxPanel.ControlBoxIconColor = ThemeColors.Contrast;
+                controlsBoxPanel.ControlBoxHoverColor = ThemeColors.ControlBoxHighlightCloseButton;
+                controlsBoxPanel.ControlBoxHoverCloseColor = ThemeColors.ControlBoxHighlight;
+            }
+            if (control is SplitContainer splitContainer)
+            {
+                splitContainer.BackColor = ThemeColors.App;
             }
 
             ApplySystemTheme(control);
@@ -351,73 +329,29 @@ namespace DarkModeForms
 
             if (IsDarkMode)
             {
-                themeColors.Window = Color.FromArgb(42, 42, 42);
-                themeColors.WindowBorder = Color.FromArgb(18, 18, 18);
-                themeColors.WindowHighlight = Color.FromArgb(57, 57, 57);
+                themeColors.App = Color.FromArgb(255, 22, 25, 32);
+                themeColors.AppFirm = Color.FromArgb(255, 27, 31, 41);
+                themeColors.AppSoft = Color.FromArgb(255, 34, 39, 51);
 
-                themeColors.Container = Color.FromArgb(43, 43, 43);
-                themeColors.ContainerBorder = Color.FromArgb(30, 30, 30);
-                themeColors.ContainerHighlight = Color.FromArgb(59, 59, 59);
+                themeColors.Border = Color.FromArgb(255, 41, 47, 64);
+                themeColors.BorderSoft = Color.FromArgb(255, 41, 45, 55);
 
-                themeColors.Text = Color.White;
-                themeColors.TextInactive = Color.FromArgb(176, 176, 176);
-                themeColors.TextHighlight = Color.DodgerBlue;
-
-                themeColors.Control = Color.FromArgb(55, 55, 55);
-                themeColors.ControlBorder = Color.FromArgb(28, 28, 28);
-                themeColors.ControlHighlight = Color.FromArgb(67, 67, 67);
+                themeColors.Contrast = Color.White;
+                themeColors.ContrastSoft = Color.FromArgb(255, 158, 159, 164);
 
                 themeColors.ControlBoxHighlight = Color.FromArgb(67, 67, 67);
                 themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
-
-                themeColors.Accent = Color.DodgerBlue;
+                themeColors.Accent = Color.FromArgb(255, 99, 161, 255);
             }
             else
             {
-                themeColors.Window = Color.FromArgb(240, 240, 240);
-                themeColors.WindowBorder = Color.FromArgb(200, 200, 200);
-                themeColors.WindowHighlight = Color.FromArgb(255, 255, 255);
-
-                themeColors.Container = Color.FromArgb(245, 245, 245);
-                themeColors.ContainerBorder = Color.FromArgb(215, 215, 215);
-                themeColors.ContainerHighlight = Color.FromArgb(255, 255, 255);
-
-                themeColors.Text = Color.Black;
-                themeColors.TextInactive = Color.FromArgb(100, 100, 100);
-                themeColors.TextHighlight = Color.DodgerBlue;
-
-                themeColors.Control = Color.FromArgb(220, 220, 220);
-                themeColors.ControlBorder = Color.FromArgb(190, 190, 190);
-                themeColors.ControlHighlight = Color.FromArgb(235, 235, 235);
-
-                themeColors.ControlBoxHighlight = Color.FromArgb(190, 190, 190);
-                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
                 themeColors.Accent = Color.DodgerBlue;
             }
 
             if (DebugTheme)
             {
-                themeColors.Window = Color.FromArgb(91, 206, 250);
-                themeColors.WindowBorder = Color.FromArgb(21, 136, 180);
-                themeColors.WindowHighlight = Color.FromArgb(131, 236, 255);
-
-                themeColors.Container = Color.FromArgb(245, 169, 184);
-                themeColors.ContainerBorder = Color.FromArgb(255, 179, 194);
-                themeColors.ContainerHighlight = Color.FromArgb(185, 109, 124);
-
-                themeColors.Text = Color.White;
-                themeColors.TextInactive = Color.FromArgb(30, 30, 30);
-                themeColors.TextHighlight = Color.DodgerBlue;
-
-                themeColors.Control = Color.FromArgb(245, 169, 184);
-                themeColors.ControlBorder = Color.FromArgb(245, 169, 184);
-                themeColors.ControlHighlight = Color.FromArgb(255, 179, 194);
-
-                themeColors.ControlBoxHighlight = Color.FromArgb(255, 179, 194);
-                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
-
                 themeColors.Accent = Color.DodgerBlue;
             }
 
@@ -468,8 +402,8 @@ namespace DarkModeForms
             {
                 if (_Form != null && _Form.Controls != null)
                 {
-                    _Form.BackColor = ThemeColors.Window;
-                    _Form.ForeColor = ThemeColors.Text;
+                    _Form.BackColor = ThemeColors.App;
+                    _Form.ForeColor = ThemeColors.Contrast;
 
                     foreach (Control _control in _Form.Controls)
                     {
@@ -584,39 +518,30 @@ namespace DarkModeForms
     {
         public ThemeColors() { }
 
-        /// <summary>For the very back of the Window</summary>
-        public Color Window { get; set; }
-        /// <summary>For Borders around the Background</summary>
-        public Color WindowBorder { get; set; }
-        /// <summary>For hightlights over the Background</summary>
-        public Color WindowHighlight { get; set; }
+        /// <summary>For background elements like the window itself and titlebars.</summary>
+        public Color App { get; set; }
+        /// <summary>For element which need to stand out from the background but are not the main focus, like a data container.</summary>
+        public Color AppFirm { get; set; }
+        /// <summary>For most of the main interfact, this should be used by most flat panels.</summary>
+        public Color AppSoft { get; set; }
 
-        /// <summary>For Container above the Background</summary>
-        public Color Container { get; set; }
-        /// <summary>For Borders around the Surface</summary>
-        public Color ContainerBorder { get; set; }
-        /// <summary>For Highligh over the Surface</summary>
-        public Color ContainerHighlight { get; set; }
+        /// <summary>For borders meant to visually separate parts of the interfact.</summary>
+        public Color Border { get; set; }
+        /// <summary>For secondary borders or padding which need to not stand out too much from the background.</summary>
+        public Color BorderSoft { get; set; }
 
-        /// <summary>For Main Texts</summary>
-        public Color Text { get; set; }
-        /// <summary>For Inactive Texts</summary>
-        public Color TextInactive { get; set; }
-        /// <summary>For Hightligh Texts</summary>
-        public Color TextHighlight { get; set; }
+        /// <summary>For any element which needs contrast from the background, like text</summary>
+        public Color Contrast { get; set; }
+        /// <summary>For any element which needs contrast but doesn't have to be as visible, like inactive text or scrollbars</summary>
+        public Color ContrastSoft { get; set; }
 
-        /// <summary>For the background of any Control</summary>
-        public Color Control { get; set; }
-        /// <summary>For Borders of any Control</summary>
-        public Color ControlBorder { get; set; }
-        /// <summary>For Highlight elements in a Control</summary>
-        public Color ControlHighlight { get; set; }
-
-        /// <summary>For the control box</summary>
+        /// <summary>For hover state of buttons in the control box except close, (_ [] buttons)</summary>
         public Color ControlBoxHighlight { get; set; }
+        /// <summary>For hover state of close button in the control box, (X button)</summary>
         public Color ControlBoxHighlightCloseButton { get; set; }
 
-        /// <summary>For anything that accented like hovering over a tab</summary>
+
+        /// <summary>For anything that needs to be accented like hovering over a tab</summary>
         public Color Accent { get; set; }
     }
 
@@ -634,7 +559,7 @@ namespace DarkModeForms
         // Background of the whole ToolBar Or MenuBar:
         protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
-            e.ToolStrip.BackColor = themeColors.Window;
+            e.ToolStrip.BackColor = themeColors.App;
             base.OnRenderToolStripBackground(e);
             //e.Graphics.FillRectangle(new SolidBrush(themeColors.Window), e.AffectedBounds);
         }
@@ -645,16 +570,16 @@ namespace DarkModeForms
             var g = e.Graphics;
             var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
-            var gradientBegin = themeColors.Container;
-            var gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.App;
+            var gradientEnd = themeColors.App;
 
-            var BordersPencil = new Pen(themeColors.Container);
+            var BordersPencil = new Pen(themeColors.BorderSoft);
 
             var button = e.Item as ToolStripButton;
             if (button.Pressed || button.Checked)
             {
-                gradientBegin = themeColors.Control;
-                gradientEnd = themeColors.Control;
+                gradientBegin = themeColors.AppSoft;
+                gradientEnd = themeColors.AppSoft;
             }
             else if (button.Selected)
             {
@@ -708,21 +633,21 @@ namespace DarkModeForms
         {
             var g = e.Graphics;
             var bounds = new Rectangle(Point.Empty, e.Item.Size);
-            var gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
-            var gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.App;
+            var gradientEnd = themeColors.App;
 
-            using var BordersPencil = new Pen(themeColors.Container);
+            using var BordersPencil = new Pen(themeColors.BorderSoft);
 
             //1. Determine the colors to use:
             if (e.Item.Pressed)
             {
-                gradientBegin = themeColors.Control;
-                gradientEnd = themeColors.Control;
+                gradientBegin = themeColors.AppFirm;
+                gradientEnd = themeColors.AppFirm;
             }
             else if (e.Item.Selected)
             {
-                gradientBegin = themeColors.Accent;
-                gradientEnd = themeColors.Accent;
+                gradientBegin = themeColors.AppFirm;
+                gradientEnd = themeColors.AppFirm;
             }
 
             //2. Draw the Box around the Control
@@ -749,19 +674,19 @@ namespace DarkModeForms
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
         {
             var bounds = new Rectangle(Point.Empty, e.Item.Size);
-            var gradientBegin = themeColors.Container; // Color.FromArgb(203, 225, 252);
-            var gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.App; // Color.FromArgb(203, 225, 252);
+            var gradientEnd = themeColors.App;
 
             //1. Determine the colors to use:
             if (e.Item.Pressed)
             {
-                gradientBegin = themeColors.Control;
-                gradientEnd = themeColors.Control;
+                gradientBegin = themeColors.AppSoft;
+                gradientEnd = themeColors.AppSoft;
             }
             else if (e.Item.Selected)
             {
-                gradientBegin = themeColors.Accent;
-                gradientEnd = themeColors.Accent;
+                gradientBegin = themeColors.AppSoft;
+                gradientEnd = themeColors.AppSoft;
             }
 
             //2. Draw the Box around the Control
@@ -775,7 +700,7 @@ namespace DarkModeForms
             //3. Draws the Chevron:
             var Padding = 2; //<- From the right side
             var cSize = new Size(8, 4); //<- Size of the Chevron: 8x4 px
-            var ChevronPen = new Pen(themeColors.TextInactive, 2); //<- Color and Border Width
+            var ChevronPen = new Pen(themeColors.ContrastSoft, 2); //<- Color and Border Width
             var P1 = new Point(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
             var P2 = new Point(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
             var P3 = new Point(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
@@ -791,11 +716,11 @@ namespace DarkModeForms
         {
             if (e.Item.Enabled)
             {
-                e.TextColor = themeColors.Text;
+                e.TextColor = themeColors.Contrast;
             }
             else
             {
-                e.TextColor = themeColors.TextInactive;
+                e.TextColor = themeColors.ContrastSoft;
             }
 
             var text = e.Text.Replace("&", "", StringComparison.Ordinal);
@@ -826,15 +751,15 @@ namespace DarkModeForms
             var g = e.Graphics;
             var bounds = new Rectangle(Point.Empty, e.Item.Size);
 
-            var gradientBegin = themeColors.Container;
-            var gradientEnd = themeColors.Container;
+            var gradientBegin = themeColors.App;
+            var gradientEnd = themeColors.App;
 
             var DrawIt = false;
             var _menu = e.Item as ToolStripItem;
             if (_menu.Pressed)
             {
-                gradientBegin = themeColors.Control;
-                gradientEnd = themeColors.Control;
+                gradientBegin = themeColors.Accent;
+                gradientEnd = themeColors.Accent;
                 DrawIt = true;
             }
             else if (_menu.Selected)
@@ -854,28 +779,6 @@ namespace DarkModeForms
                 g.FillRectangle(b, bounds);
             }
         }
-
-        // Re-Colors the Icon Images to a Clear color:
-        protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e)
-        {
-            if (ColorizeIcons && e.Image != null)
-            {
-                // Get the current icon
-                var image = e.Image;
-                var _ClearColor = e.Item.Enabled ? themeColors.Text : themeColors.WindowBorder;
-
-                // Create a new image with the desired color adjustments
-                using var adjustedImage = DarkModeCS.ChangeToColor(image, _ClearColor);
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
-            }
-            else
-            {
-                base.OnRenderItemImage(e);
-            }
-        }
     }
 
     public class CustomColorTable : ProfessionalColorTable
@@ -888,8 +791,8 @@ namespace DarkModeForms
             UseSystemColors = false;
         }
 
-        public override Color ImageMarginGradientBegin => Colors.Container;
-        public override Color ImageMarginGradientMiddle => Colors.Container;
-        public override Color ImageMarginGradientEnd => Colors.Container;
+        public override Color ImageMarginGradientBegin => Colors.AppSoft;
+        public override Color ImageMarginGradientMiddle => Colors.AppSoft;
+        public override Color ImageMarginGradientEnd => Colors.AppSoft;
     }
 }

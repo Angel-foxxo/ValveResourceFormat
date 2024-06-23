@@ -33,7 +33,7 @@ namespace GUI.Forms
         {
             findButton = new System.Windows.Forms.Button();
             cancelButton = new System.Windows.Forms.Button();
-            findTextBox = new System.Windows.Forms.TextBox();
+            findTextBox = new Controls.BetterTextBox();
             findLabel = new System.Windows.Forms.Label();
             searchTypeComboBox = new ComboBox();
             SuspendLayout();
@@ -118,7 +118,7 @@ namespace GUI.Forms
 
         private System.Windows.Forms.Button findButton;
         private System.Windows.Forms.Button cancelButton;
-        private System.Windows.Forms.TextBox findTextBox;
+        private Controls.BetterTextBox findTextBox;
         private System.Windows.Forms.Label findLabel;
         private ComboBox searchTypeComboBox;
     }
