@@ -46,10 +46,11 @@ namespace GUI.Forms
             // 
             // inputTextBox
             // 
+            inputTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
             inputTextBox.Location = new System.Drawing.Point(13, 27);
             inputTextBox.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             inputTextBox.Name = "inputTextBox";
-            inputTextBox.Size = new System.Drawing.Size(380, 23);
+            inputTextBox.Size = new System.Drawing.Size(380, 16);
             inputTextBox.TabIndex = 6;
             // 
             // cancelButton
@@ -91,6 +92,7 @@ namespace GUI.Forms
             Name = "PromptForm";
             ShowIcon = false;
             ShowInTaskbar = false;
+            SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             Text = "PromptForm";
             TopMost = true;

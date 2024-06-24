@@ -73,13 +73,14 @@ namespace GUI.Forms
             // 
             // gamePaths
             // 
+            gamePaths.BorderStyle = System.Windows.Forms.BorderStyle.None;
             gamePaths.Dock = System.Windows.Forms.DockStyle.Top;
             gamePaths.FormattingEnabled = true;
             gamePaths.ItemHeight = 15;
             gamePaths.Location = new System.Drawing.Point(16, 32);
             gamePaths.Margin = new System.Windows.Forms.Padding(0);
             gamePaths.Name = "gamePaths";
-            gamePaths.Size = new System.Drawing.Size(420, 109);
+            gamePaths.Size = new System.Drawing.Size(420, 105);
             gamePaths.TabIndex = 1;
             // 
             // gamePathsAdd
@@ -264,7 +265,7 @@ namespace GUI.Forms
             tableLayoutPanel1.Controls.Add(gamePathsAddFolder, 1, 0);
             tableLayoutPanel1.Controls.Add(gamePathsRemove, 2, 0);
             tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Top;
-            tableLayoutPanel1.Location = new System.Drawing.Point(16, 141);
+            tableLayoutPanel1.Location = new System.Drawing.Point(16, 137);
             tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
@@ -482,6 +483,7 @@ namespace GUI.Forms
             Padding = new System.Windows.Forms.Padding(16);
             ShowIcon = false;
             ShowInTaskbar = false;
+            SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             Text = "Settings";
             Load += SettingsForm_Load;

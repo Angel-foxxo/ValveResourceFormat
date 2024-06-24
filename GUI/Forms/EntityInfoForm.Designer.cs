@@ -193,6 +193,7 @@ namespace GUI.Forms
             ClientSize = new System.Drawing.Size(800, 450);
             Controls.Add(tabControl);
             Name = "EntityInfoForm";
+            SizeGripStyle = SizeGripStyle.Hide;
             StartPosition = FormStartPosition.CenterParent;
             Text = "EntityInfoForm";
             TopMost = true;
