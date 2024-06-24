@@ -818,8 +818,8 @@ namespace DarkModeForms
             UseSystemColors = false;
         }
 
-        public override Color ImageMarginGradientBegin => Colors.AppSoft;
-        public override Color ImageMarginGradientMiddle => Colors.AppSoft;
-        public override Color ImageMarginGradientEnd => Colors.AppSoft;
+        public override Color ImageMarginGradientBegin => Color.Transparent;
+        public override Color ImageMarginGradientMiddle => Color.Transparent;
+        public override Color ImageMarginGradientEnd => Color.Transparent;
     }
 }
