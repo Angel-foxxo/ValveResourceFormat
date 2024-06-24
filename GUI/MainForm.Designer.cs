@@ -51,9 +51,6 @@ namespace GUI
             findToolStripButton = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
             settingsToolStripMenuItem = new ToolStripMenuItem();
-            versionLabel = new ToolStripMenuItem();
-            newVersionAvailableToolStripMenuItem = new ToolStripMenuItem();
-            checkForUpdatesToolStripMenuItem = new ToolStripMenuItem();
             recoverDeletedToolStripMenuItem = new ToolStripMenuItem();
             tabContextMenuStrip = new ContextMenuStrip(components);
             closeToolStripMenuItem = new ToolStripMenuItem();
@@ -86,24 +83,29 @@ namespace GUI
             controlsBoxPanel = new ControlsBoxPanel();
             AppTitleTextLabel = new Label();
             bottomPanel = new MainformBottomPanel();
+            menuStripBottom = new MenuStrip();
+            versionLabel = new ToolStripMenuItem();
+            checkForUpdatesToolStripMenuItem = new ToolStripMenuItem();
+            newVersionAvailableToolStripMenuItem = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
             vpkContextMenu.SuspendLayout();
             vpkEditingContextMenu.SuspendLayout();
             topNavBarPanel.SuspendLayout();
             bottomPanel.SuspendLayout();
+            menuStripBottom.SuspendLayout();
             SuspendLayout();
             // 
             // menuStrip
             // 
             menuStrip.BackColor = System.Drawing.SystemColors.Window;
             menuStrip.Dock = DockStyle.Fill;
-            menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, explorerToolStripMenuItem, findToolStripButton, aboutToolStripMenuItem, settingsToolStripMenuItem, versionLabel, newVersionAvailableToolStripMenuItem, checkForUpdatesToolStripMenuItem });
+            menuStrip.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, explorerToolStripMenuItem, findToolStripButton, aboutToolStripMenuItem, settingsToolStripMenuItem });
             menuStrip.Location = new System.Drawing.Point(43, 0);
             menuStrip.Name = "menuStrip";
             menuStrip.Padding = new Padding(0, 6, 0, 4);
             menuStrip.RenderMode = ToolStripRenderMode.System;
-            menuStrip.Size = new System.Drawing.Size(554, 32);
+            menuStrip.Size = new System.Drawing.Size(677, 32);
             menuStrip.TabIndex = 0;
             menuStrip.Text = "menuStrip1";
             // 
@@ -179,32 +181,6 @@ namespace GUI
             settingsToolStripMenuItem.Size = new System.Drawing.Size(77, 22);
             settingsToolStripMenuItem.Text = "Settings";
             settingsToolStripMenuItem.Click += OnSettingsItemClick;
-            // 
-            // versionLabel
-            // 
-            versionLabel.Alignment = ToolStripItemAlignment.Right;
-            versionLabel.Name = "versionLabel";
-            versionLabel.Size = new System.Drawing.Size(57, 22);
-            versionLabel.Text = "Version";
-            versionLabel.Click += OnAboutItemClick;
-            // 
-            // newVersionAvailableToolStripMenuItem
-            // 
-            newVersionAvailableToolStripMenuItem.Alignment = ToolStripItemAlignment.Right;
-            newVersionAvailableToolStripMenuItem.Image = (System.Drawing.Image)resources.GetObject("newVersionAvailableToolStripMenuItem.Image");
-            newVersionAvailableToolStripMenuItem.Name = "newVersionAvailableToolStripMenuItem";
-            newVersionAvailableToolStripMenuItem.Size = new System.Drawing.Size(149, 22);
-            newVersionAvailableToolStripMenuItem.Text = "New version available";
-            newVersionAvailableToolStripMenuItem.Visible = false;
-            newVersionAvailableToolStripMenuItem.Click += NewVersionAvailableToolStripMenuItem_Click;
-            // 
-            // checkForUpdatesToolStripMenuItem
-            // 
-            checkForUpdatesToolStripMenuItem.Alignment = ToolStripItemAlignment.Right;
-            checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
-            checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(115, 22);
-            checkForUpdatesToolStripMenuItem.Text = "Check for updates";
-            checkForUpdatesToolStripMenuItem.Click += CheckForUpdatesToolStripMenuItem_Click;
             // 
             // recoverDeletedToolStripMenuItem
             // 
@@ -424,7 +400,7 @@ namespace GUI
             mainTabs.SelectedForeColor = System.Drawing.SystemColors.ControlText;
             mainTabs.SelectedIndex = 0;
             mainTabs.SelectTabColor = System.Drawing.SystemColors.ControlLightLight;
-            mainTabs.Size = new System.Drawing.Size(747, 372);
+            mainTabs.Size = new System.Drawing.Size(870, 372);
             mainTabs.TabColor = System.Drawing.SystemColors.ButtonFace;
             mainTabs.TabIndex = 1;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
@@ -440,7 +416,7 @@ namespace GUI
             topNavBarPanel.Margin = new Padding(0);
             topNavBarPanel.Name = "topNavBarPanel";
             topNavBarPanel.Padding = new Padding(0, 0, 0, 8);
-            topNavBarPanel.Size = new System.Drawing.Size(747, 40);
+            topNavBarPanel.Size = new System.Drawing.Size(870, 40);
             topNavBarPanel.TabIndex = 3;
             // 
             // logoButton
@@ -467,7 +443,7 @@ namespace GUI
             controlsBoxPanel.CurrentHoveredButton = ControlsBoxPanel.CustomTitleBarHoveredButton.None;
             controlsBoxPanel.Dock = DockStyle.Right;
             controlsBoxPanel.ForeColor = System.Drawing.Color.Transparent;
-            controlsBoxPanel.Location = new System.Drawing.Point(597, 0);
+            controlsBoxPanel.Location = new System.Drawing.Point(720, 0);
             controlsBoxPanel.Margin = new Padding(0);
             controlsBoxPanel.Name = "controlsBoxPanel";
             controlsBoxPanel.Size = new System.Drawing.Size(150, 32);
@@ -477,30 +453,70 @@ namespace GUI
             // 
             AppTitleTextLabel.AutoEllipsis = true;
             AppTitleTextLabel.Dock = DockStyle.Fill;
-            AppTitleTextLabel.Font = new System.Drawing.Font("Segoe UI", 11F);
-            AppTitleTextLabel.Location = new System.Drawing.Point(0, 0);
+            AppTitleTextLabel.Location = new System.Drawing.Point(0, 2);
             AppTitleTextLabel.Name = "AppTitleTextLabel";
             AppTitleTextLabel.Padding = new Padding(2, 0, 0, 0);
-            AppTitleTextLabel.Size = new System.Drawing.Size(747, 30);
+            AppTitleTextLabel.Size = new System.Drawing.Size(870, 28);
             AppTitleTextLabel.TabIndex = 0;
             AppTitleTextLabel.Text = "Source2 Viewer -----";
             AppTitleTextLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // bottomPanel
             // 
+            bottomPanel.Controls.Add(menuStripBottom);
             bottomPanel.Controls.Add(AppTitleTextLabel);
             bottomPanel.Dock = DockStyle.Bottom;
             bottomPanel.Location = new System.Drawing.Point(0, 382);
+            bottomPanel.Margin = new Padding(0);
             bottomPanel.Name = "bottomPanel";
-            bottomPanel.Size = new System.Drawing.Size(747, 30);
+            bottomPanel.Padding = new Padding(0, 2, 0, 0);
+            bottomPanel.Size = new System.Drawing.Size(870, 30);
             bottomPanel.TabIndex = 4;
+            // 
+            // menuStripBottom
+            // 
+            menuStripBottom.Dock = DockStyle.Right;
+            menuStripBottom.Items.AddRange(new ToolStripItem[] { versionLabel, checkForUpdatesToolStripMenuItem, newVersionAvailableToolStripMenuItem });
+            menuStripBottom.LayoutStyle = ToolStripLayoutStyle.HorizontalStackWithOverflow;
+            menuStripBottom.Location = new System.Drawing.Point(696, 2);
+            menuStripBottom.Name = "menuStripBottom";
+            menuStripBottom.Padding = new Padding(0);
+            menuStripBottom.Size = new System.Drawing.Size(174, 28);
+            menuStripBottom.TabIndex = 3;
+            menuStripBottom.Text = "menuStrip1";
+            // 
+            // versionLabel
+            // 
+            versionLabel.Alignment = ToolStripItemAlignment.Right;
+            versionLabel.Name = "versionLabel";
+            versionLabel.Size = new System.Drawing.Size(57, 28);
+            versionLabel.Text = "Version";
+            versionLabel.Click += OnAboutItemClick;
+            // 
+            // checkForUpdatesToolStripMenuItem
+            // 
+            checkForUpdatesToolStripMenuItem.Alignment = ToolStripItemAlignment.Right;
+            checkForUpdatesToolStripMenuItem.Name = "checkForUpdatesToolStripMenuItem";
+            checkForUpdatesToolStripMenuItem.Size = new System.Drawing.Size(115, 28);
+            checkForUpdatesToolStripMenuItem.Text = "Check for updates";
+            checkForUpdatesToolStripMenuItem.Click += CheckForUpdatesToolStripMenuItem_Click;
+            // 
+            // newVersionAvailableToolStripMenuItem
+            // 
+            newVersionAvailableToolStripMenuItem.Alignment = ToolStripItemAlignment.Right;
+            newVersionAvailableToolStripMenuItem.Image = (System.Drawing.Image)resources.GetObject("newVersionAvailableToolStripMenuItem.Image");
+            newVersionAvailableToolStripMenuItem.Name = "newVersionAvailableToolStripMenuItem";
+            newVersionAvailableToolStripMenuItem.Size = new System.Drawing.Size(149, 28);
+            newVersionAvailableToolStripMenuItem.Text = "New version available";
+            newVersionAvailableToolStripMenuItem.Visible = false;
+            newVersionAvailableToolStripMenuItem.Click += NewVersionAvailableToolStripMenuItem_Click;
             // 
             // MainForm
             // 
             AllowDrop = true;
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(747, 412);
+            ClientSize = new System.Drawing.Size(870, 412);
             Controls.Add(bottomPanel);
             Controls.Add(mainTabs);
             Controls.Add(topNavBarPanel);
@@ -523,6 +539,9 @@ namespace GUI
             topNavBarPanel.ResumeLayout(false);
             topNavBarPanel.PerformLayout();
             bottomPanel.ResumeLayout(false);
+            bottomPanel.PerformLayout();
+            menuStripBottom.ResumeLayout(false);
+            menuStripBottom.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -556,7 +575,6 @@ namespace GUI
         private ToolStripMenuItem createVpkFromFolderToolStripMenuItem;
         private ToolStripMenuItem verifyPackageContentsToolStripMenuItem;
         private ToolStripMenuItem registerVpkFileAssociationToolStripMenuItem;
-        private ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private ToolStripMenuItem clearConsoleToolStripMenuItem;
         private ToolStripMenuItem vpkEditAddExistingFolderToolStripMenuItem;
         private ToolStripMenuItem vpkEditSaveToDiskToolStripMenuItem;
@@ -564,7 +582,6 @@ namespace GUI
         private ToolStripMenuItem vpkEditCreateFolderToolStripMenuItem;
         private ToolStripMenuItem vpkEditRemoveThisFolderToolStripMenuItem;
         private ToolStripMenuItem vpkEditRemoveThisFileToolStripMenuItem;
-        private ToolStripMenuItem versionLabel;
         private ToolStripMenuItem copyFileNameOnDiskToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator3;
         private TransparentPanel topNavBarPanel;
@@ -572,6 +589,9 @@ namespace GUI
         private SysMenuLogoButton logoButton;
         private Label AppTitleTextLabel;
         private MainformBottomPanel bottomPanel;
+        private MenuStrip menuStripBottom;
+        private ToolStripMenuItem versionLabel;
+        private ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private ToolStripMenuItem newVersionAvailableToolStripMenuItem;
     }
 }

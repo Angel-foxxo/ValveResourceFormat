@@ -71,6 +71,11 @@ class ControlsBoxPanel : Panel
     {
         base.OnPaint(e);
 
+        if (DesignMode)
+        {
+            return;
+        }
+
         using var controlBoxPen = new Pen(ControlBoxIconColor);
         controlBoxPen.Width = AdjustForDPI(1);
 
