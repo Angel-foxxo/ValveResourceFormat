@@ -785,14 +785,14 @@ namespace DarkModeForms
             var _menu = e.Item as ToolStripItem;
             if (_menu.Pressed)
             {
-                gradientBegin = themeColors.Accent;
-                gradientEnd = themeColors.Accent;
+                gradientBegin = themeColors.ControlBoxHighlight;
+                gradientEnd = themeColors.ControlBoxHighlight;
                 DrawIt = true;
             }
             else if (_menu.Selected)
             {
-                gradientBegin = themeColors.Accent;
-                gradientEnd = themeColors.Accent;
+                gradientBegin = themeColors.ControlBoxHighlight;
+                gradientEnd = themeColors.ControlBoxHighlight;
                 DrawIt = true;
             }
 
