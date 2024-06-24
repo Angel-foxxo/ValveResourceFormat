@@ -162,6 +162,7 @@ partial class MainForm
             {
                 var controlsBoxPanelPoint = controlsBoxPanel.PointToClient(LParamToPoint(m.LParam));
                 controlsBoxPanel.CheckControlBoxHoverState(controlsBoxPanelPoint);
+                controlsBoxPanel.Invalidate();
             }
         }
 

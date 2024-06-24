@@ -15,8 +15,8 @@ namespace GUI.Controls
             // Draw separator
             using var pen = new Pen(SeparatorColor);
             pen.Width = SeparatorWidth;
-            var p1 = new Point(e.ClipRectangle.Left, e.ClipRectangle.Top);
-            var p2 = new Point(e.ClipRectangle.Right, e.ClipRectangle.Top);
+            var p1 = new Point(ClientRectangle.Left, ClientRectangle.Top);
+            var p2 = new Point(ClientRectangle.Right, ClientRectangle.Top);
             e.Graphics.DrawLine(pen, p1, p2);
         }
     }

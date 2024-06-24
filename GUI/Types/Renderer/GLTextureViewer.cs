@@ -56,7 +56,7 @@ namespace GUI.Types.Renderer
         private TextureCodec decodeFlags;
         private Framebuffer SaveAsFbo;
 
-        private CheckedListBox decodeFlagsListBox;
+        private BetterCheckedListBox decodeFlagsListBox;
 
         private Vector2 ActualTextureSize
         {
@@ -339,7 +339,7 @@ namespace GUI.Types.Renderer
             channelsComboBox.SelectedIndex = DefaultSelection;
         }
 
-        private void SetInitialDecodeFlagsState(CheckedListBox listBox)
+        private void SetInitialDecodeFlagsState(BetterCheckedListBox listBox)
         {
             listBox.Items.Clear();
             var values = Enum.GetValues<TextureCodec>();

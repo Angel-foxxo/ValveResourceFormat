@@ -21,3 +21,10 @@ WM_NCRBUTTONUP
 WM_SIZE
 WM_NCPAINT
 GetWindowDC
+WM_PAINT
+BeginPaint
+EndPaint
+FrameRect
+CreateSolidBrush
+COLORREF
+GetSysColorBrush

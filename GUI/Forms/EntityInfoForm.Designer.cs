@@ -60,6 +60,7 @@ namespace GUI.Forms
             tabControl.Controls.Add(tabPageProperties);
             tabControl.Controls.Add(tabPageOutputs);
             tabControl.Dock = DockStyle.Fill;
+            tabControl.HoverColor = System.Drawing.SystemColors.Highlight;
             tabControl.LineColor = System.Drawing.SystemColors.Highlight;
             tabControl.Location = new System.Drawing.Point(0, 0);
             tabControl.Name = "tabControl";

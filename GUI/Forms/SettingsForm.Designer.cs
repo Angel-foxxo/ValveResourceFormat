@@ -28,7 +28,7 @@ namespace GUI.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            gamePaths = new System.Windows.Forms.ListBox();
+            gamePaths = new Controls.BetterListBox();
             gamePathsAdd = new System.Windows.Forms.Button();
             gamePathsRemove = new System.Windows.Forms.Button();
             gamePathsAddFolder = new System.Windows.Forms.Button();
@@ -43,17 +43,17 @@ namespace GUI.Forms
             vsyncCheckBox = new System.Windows.Forms.CheckBox();
             displayFpsCheckBox = new System.Windows.Forms.CheckBox();
             displayFpsLabel = new System.Windows.Forms.Label();
-            groupBox1 = new System.Windows.Forms.GroupBox();
+            groupBox1 = new Controls.BetterGroupBox();
             tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            groupBox2 = new System.Windows.Forms.GroupBox();
+            groupBox2 = new Controls.BetterGroupBox();
             tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            groupBox3 = new System.Windows.Forms.GroupBox();
+            groupBox3 = new Controls.BetterGroupBox();
             tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
             openExplorerOnStartLabel = new System.Windows.Forms.Label();
             themeLabel = new System.Windows.Forms.Label();
             themeComboBox = new System.Windows.Forms.ComboBox();
-            groupBox4 = new System.Windows.Forms.GroupBox();
+            groupBox4 = new Controls.BetterGroupBox();
             tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             quickPreviewLabel = new System.Windows.Forms.Label();
             quickPreviewSoundsLabel = new System.Windows.Forms.Label();
@@ -244,6 +244,7 @@ namespace GUI.Forms
             groupBox1.Controls.Add(tableLayoutPanel1);
             groupBox1.Controls.Add(gamePaths);
             groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
+            groupBox1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             groupBox1.Location = new System.Drawing.Point(16, 16);
             groupBox1.Margin = new System.Windows.Forms.Padding(0, 0, 0, 16);
             groupBox1.Name = "groupBox1";
@@ -275,6 +276,7 @@ namespace GUI.Forms
             // 
             groupBox2.Controls.Add(tableLayoutPanel2);
             groupBox2.Dock = System.Windows.Forms.DockStyle.Top;
+            groupBox2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             groupBox2.Location = new System.Drawing.Point(16, 209);
             groupBox2.Margin = new System.Windows.Forms.Padding(3, 16, 3, 3);
             groupBox2.Name = "groupBox2";
@@ -316,6 +318,7 @@ namespace GUI.Forms
             // 
             groupBox3.Controls.Add(tableLayoutPanel4);
             groupBox3.Dock = System.Windows.Forms.DockStyle.Top;
+            groupBox3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             groupBox3.Location = new System.Drawing.Point(16, 599);
             groupBox3.Margin = new System.Windows.Forms.Padding(0);
             groupBox3.Name = "groupBox3";
@@ -392,6 +395,7 @@ namespace GUI.Forms
             // 
             groupBox4.Controls.Add(tableLayoutPanel3);
             groupBox4.Dock = System.Windows.Forms.DockStyle.Top;
+            groupBox4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             groupBox4.Location = new System.Drawing.Point(16, 461);
             groupBox4.Name = "groupBox4";
             groupBox4.Padding = new System.Windows.Forms.Padding(16);
@@ -499,7 +503,7 @@ namespace GUI.Forms
 
         #endregion
 
-        private System.Windows.Forms.ListBox gamePaths;
+        private Controls.BetterListBox gamePaths;
         private System.Windows.Forms.Button gamePathsAdd;
         private System.Windows.Forms.Button gamePathsRemove;
         private System.Windows.Forms.Button gamePathsAddFolder;
@@ -514,12 +518,12 @@ namespace GUI.Forms
         private System.Windows.Forms.Button registerAssociationButton;
         private System.Windows.Forms.CheckBox displayFpsCheckBox;
         private System.Windows.Forms.Label displayFpsLabel;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private Controls.BetterGroupBox groupBox1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.GroupBox groupBox2;
+        private Controls.BetterGroupBox groupBox2;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.GroupBox groupBox4;
+        private Controls.BetterGroupBox groupBox3;
+        private Controls.BetterGroupBox groupBox4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.Label quickPreviewLabel;
         private System.Windows.Forms.Label quickPreviewSoundsLabel;

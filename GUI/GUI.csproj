@@ -51,4 +51,7 @@
       <Name>ValveResourceFormat</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Controls\BetterCheckedListBox.cs" />
+  </ItemGroup>
 </Project>

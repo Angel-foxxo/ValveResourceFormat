@@ -3,15 +3,13 @@ using System.Windows.Forms;
 
 namespace GUI.Controls
 {
-    // Adds a customizable border 
-    internal class BetterTextBox : TextBox
+    internal class BetterCheckedListBox : CheckedListBox
     {
-        public Color BorderColor = Color.Gray;
+        public Color BorderColor = Color.Black;
 
-        public BetterTextBox()
+        public BetterCheckedListBox()
         {
             BorderStyle = BorderStyle.None;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         }
 
         protected override void WndProc(ref Message m)
@@ -21,7 +19,8 @@ namespace GUI.Controls
             var dc = Windows.Win32.PInvoke.GetWindowDC((Windows.Win32.Foundation.HWND)Handle);
             using var g = Graphics.FromHdc(dc);
             using var borderPen = new Pen(BorderColor);
-            g.DrawRectangle(borderPen, 0, 0, Width - 1, Height - 1);
+            var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+            g.DrawRectangle(borderPen, rect);
         }
     }
 }

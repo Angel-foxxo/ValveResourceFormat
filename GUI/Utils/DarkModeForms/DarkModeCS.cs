@@ -59,7 +59,14 @@ namespace DarkModeForms
 
             if (control is Panel panel)
             {
-                panel.BackColor = panel.Parent.BackColor;
+                if (panel.Name == "controlsPanel")
+                {
+                    panel.BackColor = ThemeColors.AppSoft;
+                }
+                else
+                {
+                    panel.BackColor = panel.Parent.BackColor;
+                }
                 panel.BorderStyle = BorderStyle.None;
 
             }
@@ -67,10 +74,11 @@ namespace DarkModeForms
             {
                 mainformBottomPanel.SeparatorColor = ThemeColors.Border;
             }
-            if (control is GroupBox group)
+            if (control is BetterGroupBox group)
             {
                 group.BackColor = ThemeColors.AppFirm;
                 group.ForeColor = ThemeColors.Contrast;
+                group.BorderColor = ThemeColors.Border;
             }
             if (control is TableLayoutPanel table)
             {
@@ -201,7 +209,7 @@ namespace DarkModeForms
             }
             if (control is CodeTextBox console)
             {
-                console.IndentBackColor = ThemeColors.App;
+                console.IndentBackColor = ThemeColors.BorderSoft;
                 console.ServiceLinesColor = ThemeColors.App;
                 console.BackColor = ThemeColors.AppFirm;
                 console.FoldingIndicatorColor = ThemeColors.ContrastSoft;
@@ -210,7 +218,7 @@ namespace DarkModeForms
                     ExpandMarkerBackColor = ThemeColors.ContrastSoft,
                     ExpandMarkerForeColor = ThemeColors.Contrast,
                     CollapseMarkerForeColor = ThemeColors.Contrast,
-                    CollapseMarkerBackColor = ThemeColors.ContrastSoft,
+                    CollapseMarkerBackColor = ThemeColors.App,
                     ExpandMarkerBorderColor = ThemeColors.Border,
                     CollapseMarkerBorderColor = ThemeColors.BorderSoft
                 };
@@ -236,10 +244,17 @@ namespace DarkModeForms
                 controlPanelView.BackColor = Color.Transparent;
                 controlPanelView.Invalidate();
             }
-            if (control is ListBox listBox)
+            if (control is BetterListBox listBox)
             {
                 listBox.ForeColor = ThemeColors.Contrast;
                 listBox.BackColor = ThemeColors.AppSoft;
+                listBox.BorderColor = ThemeColors.Border;
+            }
+            if (control is BetterCheckedListBox checkedListBox)
+            {
+                checkedListBox.ForeColor = ThemeColors.Contrast;
+                checkedListBox.BackColor = ThemeColors.AppSoft;
+                checkedListBox.BorderColor = ThemeColors.Border;
             }
             if (control is NumericUpDown numeric)
             {
@@ -346,8 +361,20 @@ namespace DarkModeForms
             }
             else
             {
+                themeColors.App = Color.FromArgb(255, 218, 218, 218);
+                themeColors.AppFirm = Color.FromArgb(255, 255, 255, 255);
+                themeColors.AppSoft = Color.FromArgb(255, 244, 244, 244);
 
-                themeColors.Accent = Color.DodgerBlue;
+                themeColors.Border = Color.FromArgb(255, 230, 230, 230);
+                themeColors.BorderSoft = Color.FromArgb(255, 245, 245, 245);
+
+                themeColors.Contrast = Color.Black;
+                themeColors.ContrastSoft = Color.FromArgb(255, 109, 109, 109);
+
+                themeColors.ControlBoxHighlight = Color.FromArgb(67, 67, 67);
+                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
+
+                themeColors.Accent = Color.FromArgb(255, 99, 161, 255);
             }
 
             if (DebugTheme)
