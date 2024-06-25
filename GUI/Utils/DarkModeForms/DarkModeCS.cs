@@ -344,42 +344,55 @@ namespace DarkModeForms
 
             if (IsDarkMode)
             {
-                themeColors.App = Color.FromArgb(255, 22, 25, 32);
-                themeColors.AppFirm = Color.FromArgb(255, 27, 31, 41);
-                themeColors.AppSoft = Color.FromArgb(255, 34, 39, 51);
+                themeColors.App = Color.FromArgb(22, 25, 32);
+                themeColors.AppFirm = Color.FromArgb(27, 31, 41);
+                themeColors.AppSoft = Color.FromArgb(34, 39, 51);
 
-                themeColors.Border = Color.FromArgb(255, 41, 47, 64);
-                themeColors.BorderSoft = Color.FromArgb(255, 41, 45, 55);
+                themeColors.Border = Color.FromArgb(41, 47, 64);
+                themeColors.BorderSoft = Color.FromArgb(41, 45, 55);
 
                 themeColors.Contrast = Color.White;
-                themeColors.ContrastSoft = Color.FromArgb(255, 158, 159, 164);
+                themeColors.ContrastSoft = Color.FromArgb(158, 159, 164);
 
                 themeColors.ControlBoxHighlight = Color.FromArgb(67, 67, 67);
                 themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
-                themeColors.Accent = Color.FromArgb(255, 99, 161, 255);
+                themeColors.Accent = Color.FromArgb(99, 161, 255);
             }
             else
             {
-                themeColors.App = Color.FromArgb(255, 218, 218, 218);
-                themeColors.AppFirm = Color.FromArgb(255, 255, 255, 255);
-                themeColors.AppSoft = Color.FromArgb(255, 244, 244, 244);
+                themeColors.App = Color.FromArgb(218, 218, 218);
+                themeColors.AppFirm = Color.FromArgb(255, 255, 255);
+                themeColors.AppSoft = Color.FromArgb(244, 244, 244);
 
-                themeColors.Border = Color.FromArgb(255, 230, 230, 230);
-                themeColors.BorderSoft = Color.FromArgb(255, 245, 245, 245);
+                themeColors.Border = Color.FromArgb(230, 230, 230);
+                themeColors.BorderSoft = Color.FromArgb(245, 245, 245);
 
                 themeColors.Contrast = Color.Black;
-                themeColors.ContrastSoft = Color.FromArgb(255, 109, 109, 109);
+                themeColors.ContrastSoft = Color.FromArgb(109, 109, 109);
 
-                themeColors.ControlBoxHighlight = Color.FromArgb(67, 67, 67);
+                themeColors.ControlBoxHighlight = Color.FromArgb(170, 170, 170);
                 themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(240, 20, 20);
 
-                themeColors.Accent = Color.FromArgb(255, 99, 161, 255);
+                themeColors.Accent = Color.FromArgb(99, 161, 255);
             }
 
             if (DebugTheme)
             {
-                themeColors.Accent = Color.DodgerBlue;
+                themeColors.App = Color.FromArgb(1, 202, 247);
+                themeColors.AppFirm = Color.FromArgb(210, 210, 210);
+                themeColors.AppSoft = Color.FromArgb(247, 160, 177);
+
+                themeColors.Border = Color.FromArgb(255, 255, 255);
+                themeColors.BorderSoft = Color.FromArgb(235, 235, 235);
+
+                themeColors.Contrast = Color.Black;
+                themeColors.ContrastSoft = Color.FromArgb(109, 109, 109);
+
+                themeColors.ControlBoxHighlight = Color.FromArgb(0, 180, 242);
+                themeColors.ControlBoxHighlightCloseButton = Color.FromArgb(247, 160, 177);
+
+                themeColors.Accent = Color.FromArgb(255, 255, 255);
             }
 
             return themeColors;
