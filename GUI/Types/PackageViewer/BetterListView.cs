@@ -30,7 +30,6 @@ namespace GUI.Types.PackageViewer
         protected override void OnDrawColumnHeader(DrawListViewColumnHeaderEventArgs e)
         {
             using var backBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.AppFirm);
-            using var foreBrush = new SolidBrush(MainForm.DarkModeCS.ThemeColors.Contrast);
             using var borderPen = new Pen(MainForm.DarkModeCS.ThemeColors.Border);
 
             // Need to do this because for some reason the bottom edge is obscured
@@ -41,7 +40,7 @@ namespace GUI.Types.PackageViewer
             sf.Alignment = StringAlignment.Center;
             e.Graphics.FillRectangle(backBrush, boundsRect);
             e.Graphics.DrawRectangle(borderPen, boundsRect);
-            e.Graphics.DrawString(e.Header.Text, e.Font, foreBrush, boundsRect, sf);
+            TextRenderer.DrawText(e.Graphics, e.Header.Text, e.Font, boundsRect, MainForm.DarkModeCS.ThemeColors.Contrast);
         }
     }
 }
