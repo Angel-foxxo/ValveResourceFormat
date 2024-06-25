@@ -53,8 +53,8 @@ namespace GUI.Types.PackageViewer
             // 
             // mainSplitContainer.Panel1
             // 
-            mainSplitContainer.Panel1.Controls.Add(searchTextBox);
             mainSplitContainer.Panel1.Controls.Add(mainTreeView);
+            mainSplitContainer.Panel1.Controls.Add(searchTextBox);
             // 
             // mainSplitContainer.Panel2
             // 
@@ -80,12 +80,12 @@ namespace GUI.Types.PackageViewer
             // 
             // mainTreeView
             // 
-            mainTreeView.Dock = System.Windows.Forms.DockStyle.Bottom;
-            mainTreeView.Location = new System.Drawing.Point(0, 18);
+            mainTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            mainTreeView.Location = new System.Drawing.Point(0, 20);
             mainTreeView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             mainTreeView.Name = "mainTreeView";
             mainTreeView.ShowLines = false;
-            mainTreeView.Size = new System.Drawing.Size(394, 382);
+            mainTreeView.Size = new System.Drawing.Size(394, 380);
             mainTreeView.TabIndex = 0;
             mainTreeView.VrfGuiContext = null;
             // 
