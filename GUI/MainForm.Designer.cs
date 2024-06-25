@@ -405,7 +405,7 @@ namespace GUI
             mainTabs.SelectedForeColor = System.Drawing.SystemColors.ControlText;
             mainTabs.SelectedIndex = 0;
             mainTabs.SelectTabColor = System.Drawing.SystemColors.ControlLightLight;
-            mainTabs.Size = new System.Drawing.Size(870, 372);
+            mainTabs.Size = new System.Drawing.Size(870, 342);
             mainTabs.TabColor = System.Drawing.SystemColors.ButtonFace;
             mainTabs.TabIndex = 1;
             mainTabs.SelectedIndexChanged += OnMainSelectedTabChanged;
@@ -460,16 +460,16 @@ namespace GUI
             AppTitleTextLabel.Dock = DockStyle.Fill;
             AppTitleTextLabel.Location = new System.Drawing.Point(0, 2);
             AppTitleTextLabel.Name = "AppTitleTextLabel";
-            AppTitleTextLabel.Padding = new Padding(2, 0, 0, 0);
-            AppTitleTextLabel.Size = new System.Drawing.Size(870, 28);
+            AppTitleTextLabel.Padding = new Padding(2, 1, 2, 1);
+            AppTitleTextLabel.Size = new System.Drawing.Size(696, 28);
             AppTitleTextLabel.TabIndex = 0;
             AppTitleTextLabel.Text = "Source2 Viewer -----";
             AppTitleTextLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // bottomPanel
             // 
-            bottomPanel.Controls.Add(menuStripBottom);
             bottomPanel.Controls.Add(AppTitleTextLabel);
+            bottomPanel.Controls.Add(menuStripBottom);
             bottomPanel.Dock = DockStyle.Bottom;
             bottomPanel.Location = new System.Drawing.Point(0, 382);
             bottomPanel.Margin = new Padding(0);
@@ -522,8 +522,8 @@ namespace GUI
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new System.Drawing.Size(870, 412);
-            Controls.Add(bottomPanel);
             Controls.Add(mainTabs);
+            Controls.Add(bottomPanel);
             Controls.Add(topNavBarPanel);
             Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip;
