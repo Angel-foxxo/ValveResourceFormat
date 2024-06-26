@@ -487,7 +487,7 @@ namespace DarkModeForms
 
         /// <summary>Attemps to apply Window's Dark Style to the Control and all its childs.</summary>
         /// <param name="control"></param>
-        private void ApplySystemTheme(Control control = null)
+        public void ApplySystemTheme(Control control = null)
         {
             if (control is ByteViewer)
             {

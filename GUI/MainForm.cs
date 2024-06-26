@@ -965,5 +965,29 @@ namespace GUI
                 form.ShowDialog(this);
             });
         }
+
+        private void ThemeMenu(object sender)
+        {
+            if (!DesignMode)
+            {
+                DarkModeCS.ThemeControl((Control) sender);
+                DarkModeCS.ApplySystemTheme((Control) sender);
+            }
+        }
+
+        private void tabContextMenuStrip_Opening(object sender, CancelEventArgs e)
+        {
+            ThemeMenu((Control)sender);
+        }
+
+        private void vpkContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            ThemeMenu((Control)sender);
+        }
+
+        private void vpkEditingContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            ThemeMenu((Control)sender);
+        }
     }
 }
