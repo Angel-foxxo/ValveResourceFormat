@@ -53,5 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Controls\BetterCheckedListBox.cs" />
+    <Compile Update="Controls\BetterCheckBox.cs" />
   </ItemGroup>
 </Project>

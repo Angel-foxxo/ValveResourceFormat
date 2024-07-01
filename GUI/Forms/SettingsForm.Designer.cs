@@ -40,8 +40,8 @@ namespace GUI.Forms
             antiAliasingComboBox = new System.Windows.Forms.ComboBox();
             registerAssociationButton = new System.Windows.Forms.Button();
             vsyncLabel = new System.Windows.Forms.Label();
-            vsyncCheckBox = new System.Windows.Forms.CheckBox();
-            displayFpsCheckBox = new System.Windows.Forms.CheckBox();
+            vsyncCheckBox = new Controls.BetterCheckBox();
+            displayFpsCheckBox = new Controls.BetterCheckBox();
             displayFpsLabel = new System.Windows.Forms.Label();
             groupBox1 = new Controls.BetterGroupBox();
             tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
@@ -49,7 +49,7 @@ namespace GUI.Forms
             tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             groupBox3 = new Controls.BetterGroupBox();
             tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
+            openExplorerOnStartCheckbox = new Controls.BetterCheckBox();
             openExplorerOnStartLabel = new System.Windows.Forms.Label();
             themeLabel = new System.Windows.Forms.Label();
             themeComboBox = new System.Windows.Forms.ComboBox();
@@ -57,8 +57,8 @@ namespace GUI.Forms
             tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             quickPreviewLabel = new System.Windows.Forms.Label();
             quickPreviewSoundsLabel = new System.Windows.Forms.Label();
-            quickPreviewCheckbox = new System.Windows.Forms.CheckBox();
-            quickPreviewSoundsCheckbox = new System.Windows.Forms.CheckBox();
+            quickPreviewCheckbox = new Controls.BetterCheckBox();
+            quickPreviewSoundsCheckbox = new Controls.BetterCheckBox();
             ((System.ComponentModel.ISupportInitialize)maxTextureSizeInput).BeginInit();
             ((System.ComponentModel.ISupportInitialize)fovInput).BeginInit();
             groupBox1.SuspendLayout();
@@ -516,9 +516,9 @@ namespace GUI.Forms
         private System.Windows.Forms.Label antiAliasingLabel;
         private System.Windows.Forms.ComboBox antiAliasingComboBox;
         private System.Windows.Forms.Label vsyncLabel;
-        private System.Windows.Forms.CheckBox vsyncCheckBox;
+        private Controls.BetterCheckBox vsyncCheckBox;
         private System.Windows.Forms.Button registerAssociationButton;
-        private System.Windows.Forms.CheckBox displayFpsCheckBox;
+        private Controls.BetterCheckBox displayFpsCheckBox;
         private System.Windows.Forms.Label displayFpsLabel;
         private Controls.BetterGroupBox groupBox1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
@@ -529,10 +529,10 @@ namespace GUI.Forms
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.Label quickPreviewLabel;
         private System.Windows.Forms.Label quickPreviewSoundsLabel;
-        private System.Windows.Forms.CheckBox quickPreviewCheckbox;
-        private System.Windows.Forms.CheckBox quickPreviewSoundsCheckbox;
+        private Controls.BetterCheckBox quickPreviewCheckbox;
+        private Controls.BetterCheckBox quickPreviewSoundsCheckbox;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
-        private System.Windows.Forms.CheckBox openExplorerOnStartCheckbox;
+        private Controls.BetterCheckBox openExplorerOnStartCheckbox;
         private System.Windows.Forms.Label openExplorerOnStartLabel;
         private System.Windows.Forms.Label themeLabel;
         private System.Windows.Forms.ComboBox themeComboBox;

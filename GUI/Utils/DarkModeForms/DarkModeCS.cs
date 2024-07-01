@@ -134,11 +134,18 @@ namespace DarkModeForms
                 link.LinkColor = ThemeColors.Accent;
                 link.VisitedLinkColor = ThemeColors.Accent;
             }
-            if (control is CheckBox chk)
+            if (control is BetterCheckBox chk)
             {
                 chk.BackColor = Color.Transparent;
                 chk.ForeColor = ThemeColors.Contrast;
-                chk.UseVisualStyleBackColor = true;
+            }
+            if (control is BetterCheckBox betterChk)
+            {
+                betterChk.BackColor = Color.Transparent;
+                betterChk.ForeColor = ThemeColors.Contrast;
+                betterChk.AccentColor = ThemeColors.Accent;
+                betterChk.FillColor = ThemeColors.App;
+                betterChk.BorderColor = ThemeColors.Border;
             }
             if (control is RadioButton opt)
             {

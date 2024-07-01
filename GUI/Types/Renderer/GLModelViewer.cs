@@ -14,8 +14,8 @@ namespace GUI.Types.Renderer
         protected Model model { get; init; }
         private PhysAggregateData phys;
         public ComboBox animationComboBox { get; private set; }
-        private CheckBox animationPlayPause;
-        private CheckBox showSkeletonCheckbox;
+        private BetterCheckBox animationPlayPause;
+        private BetterCheckBox showSkeletonCheckbox;
         private ComboBox hitboxComboBox;
         private GLViewerTrackBarControl animationTrackBar;
         private GLViewerTrackBarControl slowmodeTrackBar;

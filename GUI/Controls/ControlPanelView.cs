@@ -19,19 +19,19 @@ namespace GUI.Controls
             SetControlLocation(control);
         }
 
-        public CheckBox AddCheckBox(string name, bool defaultChecked, Action<bool> changeCallback)
+        public BetterCheckBox AddCheckBox(string name, bool defaultChecked, Action<bool> changeCallback)
         {
             var checkbox = new GLViewerCheckboxControl(name, defaultChecked);
-            checkbox.CheckBox.CheckedChanged += (_, __) =>
+            checkbox.BetterCheckBox.CheckedChanged += (_, __) =>
             {
-                changeCallback(checkbox.CheckBox.Checked);
+                changeCallback(checkbox.BetterCheckBox.Checked);
             };
 
             ControlsPanel.Controls.Add(checkbox);
 
             SetControlLocation(checkbox);
 
-            return checkbox.CheckBox;
+            return checkbox.BetterCheckBox;
         }
 
         public ComboBox AddSelection(string name, Action<string, int> changeCallback)

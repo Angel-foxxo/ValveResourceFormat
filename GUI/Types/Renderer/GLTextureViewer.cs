@@ -187,7 +187,7 @@ namespace GUI.Types.Renderer
             });
 
             ComboBox cubemapProjectionComboBox = null;
-            CheckBox softwareDecodeCheckBox = null;
+            BetterCheckBox softwareDecodeCheckBox = null;
 
             if (textureData.NumMipLevels > 1)
             {
