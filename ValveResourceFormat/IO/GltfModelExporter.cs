@@ -30,10 +30,12 @@ namespace ValveResourceFormat.IO
         public IFileLoader FileLoader { get; }
         private readonly ShaderDataProvider shaderDataProvider;
         private readonly BasicShaderDataProvider shaderDataProviderFallback = new();
+        public bool ExportAnimations { get; set; } = true;
         public bool ExportMaterials { get; set; } = true;
         public bool AdaptTextures { get; set; } = true;
         public bool SatelliteImages { get; set; } = true;
         public bool ExportExtras { get; set; }
+        public HashSet<string> AnimationFilter { get; } = [];
 
         private string DstDir;
         private CancellationToken CancellationToken;
@@ -354,7 +356,10 @@ namespace ValveResourceFormat.IO
 #endif
 
             CancellationToken.ThrowIfCancellationRequested();
-            var (skeletonNode, joints) = CreateGltfSkeleton(scene, model.Skeleton, name);
+
+            var (skeletonNode, joints) = ExportAnimations
+                ? CreateGltfSkeleton(scene, model.Skeleton, name)
+                : (null, null);
 
             if (skeletonNode != null)
             {
@@ -378,8 +383,25 @@ namespace ValveResourceFormat.IO
                 var lastScales = new Vector3?[boneCount];
                 var scaleOmitted = new bool[boneCount];
 
+                var animationFilter = AnimationFilter;
+
+                // When exporting map entities, only export the default animation
+                if (entity != null)
+                {
+                    var entityAnimation = entity.GetProperty<string>("defaultanim") ?? entity.GetProperty<string>("idleanim");
+                    animationFilter = [
+                        entityAnimation,
+                        $"@{entityAnimation}"
+                    ];
+                }
+
                 foreach (var animation in animations)
                 {
+                    if (animationFilter.Count > 0 && !animationFilter.Contains(animation.Name))
+                    {
+                        continue;
+                    }
+
                     // Cleanup state
                     frame.Clear(model.Skeleton);
                     for (var i = 0; i < boneCount; i++)

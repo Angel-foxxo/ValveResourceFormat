@@ -3,6 +3,7 @@
  */
 using System.Buffers.Binary;
 using System.IO;
+using ValveResourceFormat.Utils;
 
 namespace ValveResourceFormat.Compression
 {
@@ -10,13 +11,13 @@ namespace ValveResourceFormat.Compression
     {
         private const byte IndexHeader = 0xe0;
 
-        private static void PushEdgeFifo(ValueTuple<uint, uint>[] fifo, ref int offset, uint a, uint b)
+        private static void PushEdgeFifo(Span<ValueTuple<uint, uint>> fifo, ref int offset, uint a, uint b)
         {
             fifo[offset] = (a, b);
             offset = (offset + 1) & 15;
         }
 
-        private static void PushVertexFifo(uint[] fifo, ref int offset, uint v, bool cond = true)
+        private static void PushVertexFifo(Span<uint> fifo, ref int offset, uint v, bool cond = true)
         {
             fifo[offset] = v;
             offset = (offset + (cond ? 1 : 0)) & 15;
@@ -95,18 +96,27 @@ namespace ValveResourceFormat.Compression
                 throw new ArgumentException("Index buffer is too short.");
             }
 
-            if (buffer[0] != IndexHeader)
+            if ((buffer[0] & 0xF0) != IndexHeader)
             {
-                throw new ArgumentException("Incorrect index buffer header.");
+                throw new ArgumentException($"Invalid index buffer header, expected {IndexHeader} but got {buffer[0]}.");
             }
 
-            var vertexFifo = new uint[16];
-            var edgeFifo = new ValueTuple<uint, uint>[16];
+            var version = buffer[0] & 0x0F;
+
+            if (version > 1)
+            {
+                throw new ArgumentException($"Incorrect index buffer encoding version, got {version}.");
+            }
+
+            Span<uint> vertexFifo = stackalloc uint[16];
+            Span<ValueTuple<uint, uint>> edgeFifo = stackalloc ValueTuple<uint, uint>[16];
             var edgeFifoOffset = 0;
             var vertexFifoOffset = 0;
 
             var next = 0u;
             var last = 0u;
+
+            var fecmax = version >= 1 ? 13 : 15;
 
             var bufferIndex = 1;
             var data = buffer[dataOffset..^16];
@@ -129,7 +139,7 @@ namespace ValveResourceFormat.Compression
 
                     var fec = codetri & 15;
 
-                    if (fec != 15)
+                    if (fec < fecmax)
                     {
                         var c = fec == 0 ? next : vertexFifo[(vertexFifoOffset - 1 - fec) & 15];
 
@@ -145,7 +155,7 @@ namespace ValveResourceFormat.Compression
                     }
                     else
                     {
-                        var c = last = DecodeIndex(data, last, ref position);
+                        var c = last = (fec != 15) ? last + (uint)(fec - (fec ^ 3)) : DecodeIndex(data, last, ref position);
 
                         WriteTriangle(destination, i, indexSize, a, b, c);
 
@@ -192,9 +202,14 @@ namespace ValveResourceFormat.Compression
                     var feb = codeaux >> 4;
                     var fec = codeaux & 15;
 
+                    if (codeaux == 0)
+                    {
+                        next = 0;
+                    }
+
                     var a = (fea == 0) ? next++ : 0;
-                    var b = (feb == 0) ? next++ : vertexFifo[(vertexFifoOffset - feb) & 15];
-                    var c = (fec == 0) ? next++ : vertexFifo[(vertexFifoOffset - fec) & 15];
+                    var b = (feb == 0) ? next++ : vertexFifo[(vertexFifoOffset - (int)feb) & 15];
+                    var c = (fec == 0) ? next++ : vertexFifo[(vertexFifoOffset - (int)fec) & 15];
 
                     if (fea == 15)
                     {
