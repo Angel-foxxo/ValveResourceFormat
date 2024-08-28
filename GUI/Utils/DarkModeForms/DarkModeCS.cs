@@ -826,6 +826,10 @@ namespace DarkModeForms
                 g.FillRectangle(b, bounds);
             }
         }
+
+        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+        {
+        }
     }
 
     public class CustomColorTable : ProfessionalColorTable

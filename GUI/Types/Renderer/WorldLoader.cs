@@ -73,6 +73,7 @@ namespace GUI.Types.Renderer
                 }
 
                 var entityLump = (EntityLump)newResource.DataBlock;
+
                 LoadEntitiesFromLump(entityLump, "world_layer_base", Matrix4x4.Identity); // TODO: Hardcoded layer name
             }
 
@@ -300,7 +301,7 @@ namespace GUI.Types.Renderer
                 {
                     var entityLumpName = entity.GetProperty<string>("entitylumpname");
 
-                    if (childEntityLumps.TryGetValue(entityLumpName, out var childLump))
+                    if (entityLumpName != null && childEntityLumps.TryGetValue(entityLumpName, out var childLump))
                     {
                         LoadEntitiesFromLump(childLump, entityLumpName, transformationMatrix);
                     }
