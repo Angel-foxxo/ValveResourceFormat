@@ -31,6 +31,7 @@ namespace GUI.Types.Renderer
         public Dictionary<string, byte> RenderAttributes { get; } = [];
         public WorldLightingInfo LightingInfo { get; }
         public WorldFogInfo FogInfo { get; set; } = new();
+        public WorldPostProcessInfo PostProcessInfo { get; set; } = new();
         private UniformBuffer<LightingConstants> lightingBuffer;
 
         public VrfGuiContext GuiContext { get; }
@@ -278,14 +279,14 @@ namespace GUI.Types.Renderer
             [DepthOnlyProgram.Animated] = [],
         };
 
-        public void SetupSceneShadows(Camera camera)
+        public void SetupSceneShadows(Camera camera, int shadowMapSize)
         {
             if (!LightingInfo.EnableDynamicShadows)
             {
                 return;
             }
 
-            LightingInfo.UpdateSunLightFrustum(camera);
+            LightingInfo.UpdateSunLightFrustum(camera, shadowMapSize);
 
             foreach (var bucket in CulledShadowDrawCalls.Values)
             {

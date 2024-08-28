@@ -196,13 +196,14 @@ void CalculateDirectLighting(inout LightingTerms_t lighting, inout MaterialPrope
             {
                 vec3 lightVector = GetLightDirection(mat.PositionWS, uLightIndex);
                 vec3 lightColor = GetLightColor(uLightIndex);
+                vec3 lightColorModulated = lightColor * visibility;
 
                 vec3 previousDiffuse = lighting.DiffuseDirect;
-                CalculateShading(lighting, lightVector, visibility * lightColor, mat);
+                CalculateShading(lighting, lightVector, lightColorModulated, mat);
 
                 if (D_BAKED_LIGHTING_FROM_LIGHTMAP == 1 && bLightmapBakedDirectDiffuse)
                 {
-                    lighting.DiffuseDirect = previousDiffuse + (visibility * lightColor);
+                    lighting.DiffuseDirect = previousDiffuse + lightColorModulated;
                 }
             }
         }
@@ -322,6 +323,11 @@ void CalculateIndirectLighting(inout LightingTerms_t lighting, inout MaterialPro
         vAmbient[i] = textureLod(g_tLPV_Irradiance, vIndirectSampleCoords + vec3(0, 0, vDepthSliceOffsets[i]), 0.0).rgb;
         lighting.DiffuseIndirect += vAmbient[i] * vNormalSquared[i];
     }
+
+    // SteamVR Home lpv irradiance is RGBM Dxt5
+    #if (LightmapGameVersionNumber == 0)
+        lighting.DiffuseIndirect = pow2(lighting.DiffuseIndirect); // not bothering with RGBM
+    #endif
 
 #elif (D_BAKED_LIGHTING_FROM_VERTEX_STREAM == 1)
     lighting.DiffuseIndirect = vPerVertexLightingOut.rgb;

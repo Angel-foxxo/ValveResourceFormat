@@ -87,6 +87,8 @@ namespace GUI
             versionLabel = new ToolStripMenuItem();
             checkForUpdatesToolStripMenuItem = new ToolStripMenuItem();
             newVersionAvailableToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            openWelcomeScreenToolStripMenuItem = new ToolStripMenuItem();
             menuStrip.SuspendLayout();
             tabContextMenuStrip.SuspendLayout();
             vpkContextMenu.SuspendLayout();
@@ -112,7 +114,7 @@ namespace GUI
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, toolStripSeparator2, registerVpkFileAssociationToolStripMenuItem, createVpkFromFolderToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openToolStripMenuItem, toolStripSeparator2, registerVpkFileAssociationToolStripMenuItem, createVpkFromFolderToolStripMenuItem, toolStripSeparator4, openWelcomeScreenToolStripMenuItem });
             fileToolStripMenuItem.Image = (System.Drawing.Image)resources.GetObject("fileToolStripMenuItem.Image");
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Padding = new Padding(4);
@@ -312,7 +314,7 @@ namespace GUI
             // toolStripSeparator3
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new System.Drawing.Size(209, 6);
+            toolStripSeparator3.Size = new System.Drawing.Size(205, 6);
             // 
             // openWithDefaultAppToolStripMenuItem
             // 
@@ -518,6 +520,17 @@ namespace GUI
             newVersionAvailableToolStripMenuItem.Text = "New version available";
             newVersionAvailableToolStripMenuItem.Visible = false;
             newVersionAvailableToolStripMenuItem.Click += NewVersionAvailableToolStripMenuItem_Click;
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new System.Drawing.Size(200, 6);
+            // 
+            // openWelcomeScreenToolStripMenuItem
+            // 
+            openWelcomeScreenToolStripMenuItem.Name = "openWelcomeScreenToolStripMenuItem";
+            openWelcomeScreenToolStripMenuItem.Size = new System.Drawing.Size(203, 22);
+            openWelcomeScreenToolStripMenuItem.Text = "Open welcome screen";
+            openWelcomeScreenToolStripMenuItem.Click += OnOpenWelcomeScreenToolStripMenuItem_Click;
             // 
             // MainForm
             // 
@@ -534,6 +547,7 @@ namespace GUI
             MinimumSize = new System.Drawing.Size(347, 340);
             Name = "MainForm";
             SizeGripStyle = SizeGripStyle.Hide;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Source 2 Viewer";
             Load += MainForm_Load;
             Shown += MainForm_Shown;
@@ -601,6 +615,8 @@ namespace GUI
         private ToolStripMenuItem versionLabel;
         private ToolStripMenuItem checkForUpdatesToolStripMenuItem;
         private ToolStripMenuItem newVersionAvailableToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripMenuItem openWelcomeScreenToolStripMenuItem;
     }
 }
 

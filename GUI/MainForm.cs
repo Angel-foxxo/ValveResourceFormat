@@ -238,7 +238,11 @@ namespace GUI
                 OpenFile(file);
             }
 
-            if (args.Length == 0 && Settings.Config.OpenExplorerOnStart != 0)
+            if (Settings.IsFirstStartup)
+            {
+                OpenWelcome();
+            }
+            else if (args.Length == 0 && Settings.Config.OpenExplorerOnStart != 0)
             {
                 OpenExplorer();
             }
@@ -847,58 +851,50 @@ namespace GUI
                 }
             }
 
-            var loadingFile = new LoadingFile();
             var explorerTab = new TabPage("Explorer")
             {
-                ToolTipText = "Explorer"
+                ToolTipText = "Explorer",
+                ImageIndex = ImageListLookup["_folder_star"],
             };
-            TabPage explorerTabRef = null;
 
             try
             {
-                explorerTab.Controls.Add(loadingFile);
-                explorerTab.ImageIndex = ImageListLookup["_folder_star"];
+                explorerTab.Controls.Add(new ExplorerControl
+                {
+                    Dock = DockStyle.Fill,
+                });
                 mainTabs.TabPages.Insert(1, explorerTab);
                 mainTabs.SelectTab(explorerTab);
-                explorerTabRef = explorerTab;
                 explorerTab = null;
             }
             finally
             {
                 explorerTab?.Dispose();
             }
+        }
 
-            Task.Factory.StartNew(() =>
+        private void OpenWelcome()
+        {
+            var welcomeTab = new TabPage("Welcome")
             {
-                var explorer = new ExplorerControl
-                {
-                    Dock = DockStyle.Fill,
-                };
+                ToolTipText = "Welcome",
+                ImageIndex = ImageListLookup["_folder_star"],
+            };
 
-                Invoke(() =>
-                {
-                    loadingFile.Dispose();
-                    explorerTabRef.Controls.Add(explorer);
-                    MainForm.DarkModeCS.ThemeControl(explorer);
-                });
-            }).ContinueWith(t =>
+            try
             {
-                Log.Error(nameof(ExplorerControl), t.Exception.ToString());
-
-                t.Exception?.Flatten().Handle(ex =>
+                welcomeTab.Controls.Add(new WelcomeControl
                 {
-                    loadingFile.Dispose();
-
-                    var control = new CodeTextBox(ex.ToString());
-
-                    explorerTabRef.Controls.Add(control);
-
-                    return false;
+                    Dock = DockStyle.Fill
                 });
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted,
-            TaskScheduler.FromCurrentSynchronizationContext());
+                mainTabs.TabPages.Add(welcomeTab);
+                mainTabs.SelectTab(welcomeTab);
+                welcomeTab = null;
+            }
+            finally
+            {
+                welcomeTab?.Dispose();
+            }
         }
 
         public static int GetImageIndexForExtension(string extension)
@@ -926,15 +922,62 @@ namespace GUI
             Log.ClearConsole();
         }
 
-        private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        private void MainForm_Shown(object sender, EventArgs e)
         {
-            Task.Run(CheckForUpdates);
+            if (!Settings.Config.Update.CheckAutomatically)
+            {
+                return;
+            }
 
+            if (Settings.Config.Update.UpdateAvailable)
+            {
+                checkForUpdatesToolStripMenuItem.Visible = false;
+                checkForUpdatesToolStripMenuItem.Enabled = false;
+                newVersionAvailableToolStripMenuItem.Text = "New update available";
+                newVersionAvailableToolStripMenuItem.Visible = true;
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+
+            if (DateTime.TryParseExact(Settings.Config.Update.LastCheck, "s", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var lastCheck))
+            {
+                var diff = now.Subtract(lastCheck);
+
+                // Perform auto update check once a day
+                if (diff.TotalDays < 1)
+                {
+                    return;
+                }
+            }
+
+            Settings.Config.Update.LastCheck = now.ToString("s");
+
+            CheckForUpdatesCore(false);
+        }
+
+        private void CheckForUpdatesToolStripMenuItem_Click(object sender, EventArgs e) => CheckForUpdatesCore(true);
+
+        private void CheckForUpdatesCore(bool showForm)
+        {
             checkForUpdatesToolStripMenuItem.Enabled = false;
+
+            Task.Run(() => CheckForUpdates(showForm));
         }
 
         private void NewVersionAvailableToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            // This happens when the auto update checker displays the new update label, but there is no actual update data available
+            if (!UpdateChecker.IsNewVersionAvailable)
+            {
+                checkForUpdatesToolStripMenuItem.Visible = true;
+                newVersionAvailableToolStripMenuItem.Visible = false;
+
+                Task.Run(() => CheckForUpdates(true));
+
+                return;
+            }
+
             using var form = new UpdateAvailableForm();
             form.ShowDialog(this);
         }
@@ -944,7 +987,7 @@ namespace GUI
             return (int)(value * DeviceDpi / 96f);
         }
 
-        private async Task CheckForUpdates()
+        private async Task CheckForUpdates(bool showForm)
         {
             await UpdateChecker.CheckForUpdates().ConfigureAwait(false);
 
@@ -959,10 +1002,14 @@ namespace GUI
                 else
                 {
                     checkForUpdatesToolStripMenuItem.Text = "Up to date";
+                    checkForUpdatesToolStripMenuItem.Enabled = true;
                 }
 
-                using var form = new UpdateAvailableForm();
-                form.ShowDialog(this);
+                if (showForm)
+                {
+                    using var form = new UpdateAvailableForm();
+                    form.ShowDialog(this);
+                }
             });
         }
 
