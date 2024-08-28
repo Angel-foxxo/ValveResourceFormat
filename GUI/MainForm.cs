@@ -323,16 +323,6 @@ namespace GUI
             base.OnClosing(e);
         }
 
-        private void MainForm_Shown(object sender, EventArgs e)
-        {
-            if ((Settings.AppTheme)Settings.Config.Theme != Settings.AppTheme.System)
-            {
-                // This is slightly stupid, but darkmode is initialized before settings load
-                // And can't move settings higher because it has log calls which require the console window to exist
-                DarkModeCS.UpdateTheme();
-            }
-        }
-
         private void MainForm_Load(object sender, EventArgs e)
         {
             // so we can bind keys to actions properly
@@ -927,6 +917,13 @@ namespace GUI
             if (!Settings.Config.Update.CheckAutomatically)
             {
                 return;
+            }
+
+            if ((Settings.AppTheme)Settings.Config.Theme != Settings.AppTheme.System)
+            {
+                // This is slightly stupid, but darkmode is initialized before settings load
+                // And can't move settings higher because it has log calls which require the console window to exist
+                DarkModeCS.UpdateTheme();
             }
 
             if (Settings.Config.Update.UpdateAvailable)

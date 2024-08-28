@@ -55,7 +55,7 @@ namespace GUI.Forms
             themeLabel = new System.Windows.Forms.Label();
             groupBox3 = new Controls.BetterGroupBox();
             tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            openExplorerOnStartCheckbox = new System.Windows.Forms.CheckBox();
+            openExplorerOnStartCheckbox = new Controls.BetterCheckBox();
             openExplorerOnStartLabel = new System.Windows.Forms.Label();
             groupBox4 = new Controls.BetterGroupBox();
             tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
