@@ -277,7 +277,7 @@ namespace ValveResourceFormat.IO
         {
             for (int i = 0; i < meshes.Length; i++)
             {
-                PhysicsMeshes.Add(new PhysMeshData(meshes.ElementAt(i)));
+                PhysicsMeshes.Add(new PhysMeshData(meshes[i]));
             }
         }
 
