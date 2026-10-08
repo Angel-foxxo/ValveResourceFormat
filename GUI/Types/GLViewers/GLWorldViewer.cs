@@ -39,6 +39,9 @@ namespace GUI.Types.GLViewers
         private WorldNodeLoader? LoadedWorldNode;
         public WorldLoader? LoadedWorld;
         private EntityLump.Entity? entityInfoEntity;
+        private CameraPathEditor? cameraPathEditor;
+        private bool cameraPathKeyHeld;
+        private bool cameraPathMouseCaptured;
 
         /// <summary>Jump from the entity info popup to the entity's node in the I/O graph tab, when the map has one.</summary>
         public Func<EntityLump.Entity, bool>? ShowEntityInGraph { get; set; }
@@ -62,6 +65,9 @@ namespace GUI.Types.GLViewers
 
         public override void Dispose()
         {
+            // Delete GL resources before the base disposes the GL context
+            cameraPathEditor?.Dispose();
+
             base.Dispose();
 
             worldLayersComboBox?.Dispose();
@@ -262,6 +268,107 @@ namespace GUI.Types.GLViewers
 
         protected override bool PrewarmsRenderer => true;
 
+        protected override void OnUpdate(float frameTime)
+        {
+            base.OnUpdate(frameTime);
+
+            cameraPathEditor?.Update(frameTime, Renderer.Camera);
+        }
+
+        protected override void RenderOverlayLines()
+        {
+            cameraPathEditor?.Render(Renderer.Camera);
+        }
+
+        protected override void OnMouseDown(object? sender, MouseEventArgs e)
+        {
+            // A click on a camera path gizmo or keyframe is the editor's, and must not start mouse look,
+            // which would hide the cursor the drag follows
+            if (e.Button == MouseButtons.Left && e.Clicks == 1 && !Input.WalkMode && cameraPathEditor?.OnMouseDown(e.X, e.Y) == true)
+            {
+                cameraPathMouseCaptured = true;
+                GLControl?.Focus();
+                return;
+            }
+
+            base.OnMouseDown(sender, e);
+        }
+
+        protected override void OnMouseMove(int x, int y)
+        {
+            cameraPathEditor?.OnMouseMove(x, y);
+
+            if (!cameraPathMouseCaptured)
+            {
+                base.OnMouseMove(x, y);
+            }
+        }
+
+        protected override void OnMouseUp(object? sender, MouseEventArgs e)
+        {
+            // The press never reached the base, so neither does its release, which would pick the scene
+            if (cameraPathMouseCaptured && e.Button == MouseButtons.Left)
+            {
+                cameraPathMouseCaptured = false;
+                cameraPathEditor?.OnMouseUp();
+                return;
+            }
+
+            base.OnMouseUp(sender, e);
+        }
+
+        protected override void OnKeyDown(Keys keyData)
+        {
+            // Z on its own toggles mouse look, so these never reach the base
+            if (cameraPathEditor != null)
+            {
+                if (keyData == (Keys.Control | Keys.Z))
+                {
+                    cameraPathEditor.Undo();
+                    return;
+                }
+
+                if (keyData is (Keys.Control | Keys.Y) or (Keys.Control | Keys.Shift | Keys.Z))
+                {
+                    cameraPathEditor.Redo();
+                    return;
+                }
+
+                // With a keyframe selected, delete removes it rather than hiding the selected scene nodes
+                if (keyData == Keys.Delete && cameraPathEditor.DeleteSelectedKeyframe())
+                {
+                    return;
+                }
+            }
+
+            // Holding a key repeats its key down, which would drop a keyframe every repeat
+            if (cameraPathEditor != null && !cameraPathKeyHeld && (keyData == Keys.K || keyData == Keys.P))
+            {
+                cameraPathKeyHeld = true;
+
+                if (keyData == Keys.K)
+                {
+                    cameraPathEditor.AddKeyframe();
+                }
+                else
+                {
+                    cameraPathEditor.TogglePlayback();
+                }
+            }
+
+            base.OnKeyDown(keyData);
+        }
+
+        protected override void OnKeyUp(Keys keyCode)
+        {
+            if (keyCode is Keys.K or Keys.P)
+            {
+                cameraPathKeyHeld = false;
+            }
+
+            base.OnKeyUp(keyCode);
+        }
+
         protected override void OnFirstPaint()
         {
             Input.MoveCamera(new Vector3(0, -150f, 0));
@@ -324,6 +431,12 @@ namespace GUI.Types.GLViewers
                     cameraComboBox.SelectedIndex = 0;
                     cameraComboBox.EndUpdate();
                 }
+            }
+
+            if (LoadedWorld != null)
+            {
+                cameraPathEditor = new CameraPathEditor(Scene.RendererContext, Input, Path.GetFileNameWithoutExtension(LoadedWorld.MapName));
+                cameraPathEditor.AddControls(UiControl);
             }
 
             if (world != null)

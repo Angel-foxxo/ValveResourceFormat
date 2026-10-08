@@ -811,6 +811,11 @@ namespace GUI.Types.GLViewers
 
             BlitFramebufferToScreen();
 
+            using (new GLDebugGroup("Overlay Lines Render"))
+            {
+                RenderOverlayLines();
+            }
+
             if (Input.ShowCrosshair)
             {
                 crosshairRenderer.Render(Renderer.Camera);
@@ -885,6 +890,14 @@ namespace GUI.Types.GLViewers
             Picker?.TriggerEventIfAny();
 
             Renderer.PerfStats.MarkFrameEnd();
+        }
+
+        /// <summary>
+        /// Draws viewer specific lines over the finished frame, after postprocessing, so exposure and
+        /// tonemapping do not dim their colours.
+        /// </summary>
+        protected virtual void RenderOverlayLines()
+        {
         }
 
         protected void AddBaseGridControl()
